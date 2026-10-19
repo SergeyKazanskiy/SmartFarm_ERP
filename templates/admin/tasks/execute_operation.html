@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{% blocktranslate with op=op_code task=task.task_name %}Операция {{ op }} для задачи «{{ task }}»{% endblocktranslate %}</h1>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <table>
+      {{ form.as_table }}
+    </table>
+    <div class="submit-row">
+      <input type="submit" value="{% translate 'Выполнить' %}" class="default">
+      <a href="{% url 'admin:tasks_tasktask_change' task.id %}" class="button cancel-link">
+        {% translate 'Отмена' %}
+      </a>
+    </div>
+  </form>
+{% endblock %}

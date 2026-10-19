@@ -14,9 +14,45 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# from django.contrib import admin
+# from django.urls import path
+
+# urlpatterns = [
+#     path('admin/', admin.site.urls),
+# ]
+
+
+
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+from django.utils.translation import gettext_lazy as _
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+# # Кастомные заголовки админки (локализация)
+# admin.site.site_header = _("ERP Administration")
+# admin.site.site_title = _("ERP")
+# admin.site.index_title = _("Control Panel")
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+#     # Админка с префиксом языка: /ru/admin/, /en/admin/
+    path("i18n/", include("django.conf.urls.i18n")),
+    path("admin/", admin.site.urls),
+
+#     # API v1
+#     path("api/v1/", include("apps.companies.api.urls")),
+#     path("api/v1/", include("apps.hr.api.urls")),
+#     path("api/v1/", include("apps.tasks.api.urls")),
+
+#     # OpenAPI
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Пример URL-адресов:
+# http://localhost:8000/api/schema/ — YAML/JSON-схема.
+# http://localhost:8000/api/docs/ — Swagger UI с кнопкой Authorize.

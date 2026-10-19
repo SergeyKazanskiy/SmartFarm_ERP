@@ -1,0 +1,44 @@
+# 1. Клонировать, установить окружение
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+
+# 2. Поднять инфраструктуру
+docker compose up -d db
+
+# 3. Настроить .env
+cp .env.example .env
+
+# 4. Миграции
+python manage.py makemigrations core companies hr tasks
+python manage.py migrate
+
+# 5. Создать группы для ролей (hr_specialist и т.д.)
+python manage.py shell -c "
+from django.contrib.auth.models import Group
+for role in ['hr_specialist', 'department_head', 'safety_officer', 'employee', 'dispatcher']:
+    Group.objects.get_or_create(name=role)
+print('Роли созданы')
+"
+
+# 6. Создать компанию и суперпользователя
+python manage.py shell -c "
+from apps.companies.models import Company
+c = Company.objects.create(name='Моя компания', short_name='МК')
+print('Компания ID:', c.id)
+"
+python manage.py createsuperuser
+
+# 7. Загрузить workflow
+python manage.py load_workflow --company=1
+
+# 8. Запустить воркер событий (в отдельном терминале)
+python manage.py process_events
+
+# 9. Запустить веб-сервер
+python manage.py runserver
+
+# 10. Открыть
+#  - http://localhost:8000/admin/         — админка
+#  - http://localhost:8000/api/docs/      — Swagger
+#  - http://localhost:8000/ru/admin/      — админка на русском
