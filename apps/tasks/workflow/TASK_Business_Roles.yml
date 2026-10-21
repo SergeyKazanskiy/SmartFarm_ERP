@@ -1,0 +1,278 @@
+# =====================================================================================
+# TASK — каталог форм для бизнес-операций
+# =====================================================================================
+
+process: TASK-01
+process_name: "Задачи"
+role: "dispatcher"
+operations:
+
+  - op_code: [OP-TASK-01, OP-TASK-02]
+    name: "Создание и редактирование задачи"
+    table: task_task
+    type: [insert, update]
+    event: "Task.task.save"
+    button: "Сохранить задачу"
+    fields:
+      - field: task_id
+        label: "Задача (пусто для новой)"
+        type: select
+        required: false
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+      - field: source_type
+        label: "Источник"
+        type: select
+        required: false
+        options: [aps, pm, manual]
+      - field: source_id
+        label: "Идентификатор источника"
+        type: text
+        required: false
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: false
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: task_name
+        label: "Название задачи"
+        type: text
+        required: true
+      - field: description
+        label: "Описание"
+        type: textarea
+        required: false
+      - field: planned_start
+        label: "Плановое начало"
+        type: datetime
+        required: false
+      - field: planned_finish
+        label: "Плановое окончание"
+        type: datetime
+        required: false
+      - field: priority
+        label: "Приоритет (1 — самый высокий)"
+        type: number
+        required: false
+      - field: work_type
+        label: "Тип работы"
+        type: text
+        required: false
+      - field: estimated_hours
+        label: "Расчётное время, часы"
+        type: number
+        required: false
+
+  - op_code: OP-TASK-03
+    name: "Изменение статуса задачи"
+    table: task_task
+    type: update
+    event: "Task.task.updateStatus"
+    button: "Изменить статус"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+      - field: status_id
+        label: "Статус"
+        type: select
+        required: true
+        options: [created, assigned, in_progress, completed, cancelled, on_hold]
+      - field: completion_percent
+        label: "Процент завершения"
+        type: number
+        required: false
+
+  - op_code: OP-TASK-04
+    name: "Назначение исполнителя"
+    table: task_assignment
+    type: insert
+    event: "Task.task.assign"
+    button: "Назначить исполнителя"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+      - field: employee_id
+        label: "Исполнитель"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: role_id
+        label: "Роль"
+        type: select
+        required: false
+        source: { table: hr_position, value_field: position_id, label_field: position_name }
+
+  - op_code: OP-TASK-05
+    name: "Начало выполнения"
+    table: task_task
+    type: update
+    event: "Task.task.start"
+    button: "Начать выполнение"
+    precondition: "status_id = assigned"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+
+  - op_code: OP-TASK-06
+    name: "Завершение задачи"
+    table: task_task
+    type: update
+    event: "Task.task.complete"
+    button: "Завершить задачу"
+    precondition: "status_id = in_progress"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+
+  - op_code: OP-TASK-07
+    name: "Отмена задачи"
+    table: task_task
+    type: update
+    event: "Task.task.cancel"
+    button: "Отменить задачу"
+    precondition: "status_id in (created, assigned)"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+
+  - op_code: [OP-TASK-08, OP-TASK-09]
+    name: "Приостановка / Возобновление"
+    table: task_task
+    type: update
+    event: "Task.task.holdToggle"
+    button: "Приостановить / Возобновить"
+    precondition: "status_id in (in_progress, on_hold)"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+
+  - op_code: OP-TASK-10
+    name: "Обновление процента завершения"
+    table: task_task
+    type: update
+    event: "Task.task.updateCompletion"
+    button: "Обновить прогресс"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+      - field: completion_percent
+        label: "Процент завершения"
+        type: number
+        required: true
+
+---
+process: TASK-02
+process_name: "Комментарии и фото"
+role: "employee"
+operations:
+
+  - op_code: [OP-TASK-11, OP-TASK-12, OP-TASK-13]
+    name: "Ведение комментариев"
+    table: task_comment
+    type: [insert, update, delete]
+    event: "Task.comment.save"
+    button: "Добавить комментарий"
+    fields:
+      - field: comment_id
+        label: "Комментарий (пусто для нового)"
+        type: select
+        required: false
+        source: { table: task_comment, value_field: comment_id, label_field: comment_id }
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+      - field: comment_text
+        label: "Текст комментария"
+        type: textarea
+        required: true
+
+  - op_code: [OP-TASK-14, OP-TASK-15]
+    name: "Ведение фотоотчётов"
+    table: task_photo
+    type: [insert, delete]
+    event: "Task.photo.save"
+    button: "Добавить фото"
+    fields:
+      - field: photo_id
+        label: "Фото (пусто для нового)"
+        type: select
+        required: false
+        source: { table: task_photo, value_field: photo_id, label_field: photo_id }
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+      - field: photo_url
+        label: "Ссылка на фото"
+        type: text
+        required: true
+      - field: description
+        label: "Описание"
+        type: text
+        required: false
+
+---
+process: TASK-03
+process_name: "Учёт времени"
+role: "employee"
+operations:
+
+  - op_code: [OP-TASK-16, OP-TASK-17, OP-TASK-18]
+    name: "Ведение учёта времени"
+    table: task_time_tracking
+    type: [insert, update, delete]
+    event: "Task.timeTracking.save"
+    button: "Добавить время"
+    fields:
+      - field: time_tracking_id
+        label: "Запись (пусто для новой)"
+        type: select
+        required: false
+        source: { table: task_time_tracking, value_field: time_tracking_id, label_field: time_tracking_id }
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: task_task, value_field: task_id, label_field: task_name }
+      - field: employee_id
+        label: "Исполнитель"
+        type: hidden
+        source: current_user
+      - field: date_logged
+        label: "Дата"
+        type: date
+        required: true
+      - field: hours
+        label: "Часы"
+        type: number
+        required: true
+      - field: description
+        label: "Описание выполненной работы"
+        type: text
+        required: false
+
+  - op_code: OP-TASK-19
+    name: "Рас

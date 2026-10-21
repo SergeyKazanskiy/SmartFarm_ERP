@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 # Реверс-маппинг: event_type → псевдонимы, которые могут быть в on_events
 # (собираем из EVENT_ALIASES наоборот).
-REVERSE_ALIASES: dict[str, list[str]] = {}
-for alias, event_type in EVENT_ALIASES.items():
-    REVERSE_ALIASES.setdefault(event_type, []).append(alias)
+# REVERSE_ALIASES: dict[str, list[str]] = {} ???
+# for alias, event_type in EVENT_ALIASES.items():
+#     REVERSE_ALIASES.setdefault(event_type, []).append(alias)
 
 
 class TaskCreator:
@@ -35,16 +35,23 @@ class TaskCreator:
     @classmethod
     @transaction.atomic
     def create_from_event(cls, event: DomainEvent) -> list[TaskTask]:
-        aliases = REVERSE_ALIASES.get(event.event_type, [])
-        if not aliases:
-            return []
+        # aliases = REVERSE_ALIASES.get(event.event_type, [])
+        # if not aliases:
+        #     return []
 
-        # Ищем определения, у которых on_events пересекается с aliases
+    # Ищем определения, у которых on_events содержит наш event_type.
+        # ArrayField: __contains=[event_type] означает «в массиве есть элемент».
         definitions = ProcessTaskDefinition.objects.filter(
             company_id=event.company_id,
             is_active=True,
-            on_events__overlap=aliases,   # JSONB overlap для PostgreSQL
+            on_events__contains=[event.event_type],
         )
+        # Ищем определения, у которых on_events пересекается с aliases
+        # definitions = ProcessTaskDefinition.objects.filter(
+        #     company_id=event.company_id,
+        #     is_active=True,
+        #     on_events__overlap=aliases,   # JSONB overlap для PostgreSQL
+        # )
 
         created_tasks = []
         for definition in definitions:

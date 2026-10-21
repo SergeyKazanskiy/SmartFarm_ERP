@@ -12,9 +12,18 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.companies.models import Company
 from core.workflow_loader import WorkflowLoader
 
+
 WORKFLOW_DIRS = {
     "HR": Path("apps/hr/workflow"),
     "TASK": Path("apps/tasks/workflow"),
+    "CP": Path("apps/cp/workflow"),
+}
+
+# Business_Roles — по одному на модуль (по имени файла)
+BUSINESS_ROLES_BY_MODULE = {
+    "HR": "HR_Business_Roles.yml",
+    "TASK": "TASK_Business_Roles.yml",
+    "CP": "CP_Business_Roles.yml",          # ← добавили
 }
 
 
@@ -25,7 +34,6 @@ class Command(BaseCommand):
         parser.add_argument("--company", type=int, required=True)
         parser.add_argument(
             "--module", type=str, choices=list(WORKFLOW_DIRS.keys()),
-            help="Если не указан — все модули",
         )
 
     def handle(self, *args, **options):
@@ -46,9 +54,17 @@ class Command(BaseCommand):
                 )
                 continue
 
-            loader = WorkflowLoader(company_id=company.id, module=module)
+            business_roles_file = BUSINESS_ROLES_BY_MODULE.get(module)
+            business_roles_path = (
+                directory / business_roles_file if business_roles_file else None
+            )
 
-            # Загружаем основной файл workflow: *_Process_Workflow.yml
+            loader = WorkflowLoader(
+                company_id=company.id,
+                module=module,
+                business_roles_path=business_roles_path,
+            )
+
             for path in sorted(directory.glob("*_Process_Workflow.yml")):
                 self.stdout.write(f"Загрузка {path} ...")
                 stats = loader.load_file(path)

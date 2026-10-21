@@ -49,12 +49,21 @@ class ProcessTaskDefinition(CompanyScopedModel):
     # )
 
     from django.contrib.postgres.fields import ArrayField
+    # События, при которых создаётся задача (реальные event_type)
     on_events = ArrayField(
         models.CharField(max_length=128),
         default=list, blank=True,
+        db_index=True,
         verbose_name=_("Trigger events"),
         help_text=_("Список event_type, при которых создаётся задача"),
     )
+    # Соответствие on_* → event_type (для отладки и UI)
+    event_aliases = models.JSONField(
+        default=dict, blank=True,
+        verbose_name=_("Event aliases"),
+        help_text=_("Например {on_insert: 'CP.counterparty.save'}"),
+    )
+
 
     # SQL-запросы операции: {"on_attach": "OP-HR-18"}
     sql_queries = models.JSONField(default=dict, verbose_name=_("SQL queries"))

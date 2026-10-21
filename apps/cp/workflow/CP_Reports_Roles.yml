@@ -1,0 +1,295 @@
+# =====================================================================================
+# CP — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на CP_Schema.json
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Менеджер по продажам
+# =====================================================================================
+- role: "sales_manager"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-CP-01: Карточка контрагента
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CP-01
+      report: "Карточка контрагента"
+      description: >
+        Полная информация о контрагенте: код, наименование, тип, категория,
+        контактные данные, кредитный лимит, условия оплаты и доставки.
+        Используется для проверки контрагента перед заключением сделки.
+      parameters:
+        - name: counterparty_id
+          label: "Контрагент"
+          type: select
+          required: true
+          description: "Выберите контрагента"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Карточка контрагента"
+          columns:
+            - { field: code, label: "Код", type: string }
+            - { field: name, label: "Наименование", type: string }
+            - { field: counterparty_type_name, label: "Тип", type: string, widget: badge }
+            - { field: category_name, label: "Категория", type: string, widget: badge }
+            - { field: tax_id, label: "ИНН", type: string }
+            - { field: phone, label: "Телефон", type: string }
+            - { field: email, label: "Email", type: string }
+            - { field: website, label: "Сайт", type: string }
+            - { field: industry, label: "Отрасль", type: string }
+            - { field: credit_limit, label: "Кредитный лимит", type: number, format: currency }
+            - { field: payment_terms, label: "Условия оплаты", type: string }
+            - { field: delivery_terms, label: "Условия доставки", type: string }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { active: "success", inactive: "neutral", blocked: "danger" } }
+      query_ref: Q-CP-R01
+      linked_operations:
+        - OP-CP-05  # Создание контрагента
+        - OP-CP-06  # Редактирование контрагента
+      export:
+        formats: [pdf, print]
+        template: "counterparty_card"
+
+    # -------------------------------------------------------------------------------
+    # REP-CP-02: История взаимодействий
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CP-02
+      report: "История взаимодействий"
+      description: >
+        Полная история всех взаимодействий с контрагентом за период:
+        звонки, встречи, письма, переговоры. Показывает дату, тип,
+        контактное лицо, суть и результат.
+        Используется для анализа отношений с контрагентом.
+      parameters:
+        - name: counterparty_id
+          label: "Контрагент"
+          type: select
+          required: true
+          description: "Выберите контрагента"
+          options: []  # Заполняется динамически из БД
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "История взаимодействий"
+          columns:
+            - { field: interaction_date, label: "Дата", type: datetime, sortable: true }
+            - { field: interaction_type, label: "Тип", type: string, widget: badge, statusMap: { call: "info", meeting: "warning", email: "success", negotiation: "warning", other: "neutral" } }
+            - { field: contact_person, label: "Контактное лицо", type: string }
+            - { field: employee_id, label: "Ответственный", type: number, format: integer }
+            - { field: subject, label: "Тема", type: string }
+            - { field: description, label: "Описание", type: string }
+            - { field: result, label: "Результат", type: string }
+      query_ref: Q-CP-R02
+      linked_operations:
+        - OP-CP-19  # Создание взаимодействия
+        - OP-CP-20  # Редактирование взаимодействия
+      export:
+        formats: [pdf, excel, print]
+        template: "interaction_history"
+
+    # -------------------------------------------------------------------------------
+    # REP-CP-03: Реестр договоров
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CP-03
+      report: "Реестр договоров"
+      description: >
+        Полный список договоров за период с указанием контрагента,
+        номера, даты, срока действия, типа, суммы и статуса.
+        Используется для контроля договорной базы и планирования работы.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр договоров"
+          columns:
+            - { field: counterparty_name, label: "Контрагент", type: string, sortable: true }
+            - { field: contract_number, label: "№ договора", type: string, sortable: true }
+            - { field: contract_date, label: "Дата", type: date, sortable: true }
+            - { field: valid_from, label: "Действителен с", type: date }
+            - { field: valid_to, label: "Действителен до", type: date }
+            - { field: contract_type, label: "Тип", type: string, widget: badge, statusMap: { purchase: "info", sales: "success", lease: "warning", service: "neutral" } }
+            - { field: amount, label: "Сумма", type: number, format: currency }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { draft: "info", active: "success", completed: "neutral", cancelled: "danger" } }
+      summary:
+        - field: amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-CP-R03
+      linked_operations:
+        - OP-CP-21  # Создание договора
+        - OP-CP-22  # Редактирование договора
+        - OP-CP-23  # Активация договора
+        - OP-CP-24  # Завершение договора
+      export:
+        formats: [pdf, excel, print]
+        template: "contract_register"
+
+    # -------------------------------------------------------------------------------
+    # REP-CP-04: Черный список контрагентов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CP-04
+      report: "Черный список контрагентов"
+      description: >
+        Список всех контрагентов, находящихся в черном списке.
+        Показывает дату блокировки, причину и кто заблокировал.
+        Используется для контроля рисков и безопасности.
+      parameters: []  # Без параметров
+      sections:
+        - title: "Черный список"
+          columns:
+            - { field: code, label: "Код", type: string }
+            - { field: name, label: "Наименование", type: string, sortable: true }
+            - { field: block_date, label: "Дата блокировки", type: date, sortable: true }
+            - { field: reason, label: "Причина", type: string }
+            - { field: blocked_by_employee_id, label: "Заблокировал", type: number, format: integer }
+      query_ref: Q-CP-R04
+      linked_operations:
+        - OP-CP-26  # Добавление в черный список
+        - OP-CP-27  # Удаление из черного списка
+      export:
+        formats: [pdf, excel, print]
+        template: "blacklist"
+
+
+# =====================================================================================
+# РОЛЬ: Менеджер по закупкам
+# =====================================================================================
+- role: "procurement_manager"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-CP-01: Карточка контрагента
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CP-01
+      report: "Карточка контрагента"
+      description: >
+        Полная информация о контрагенте: код, наименование, тип, категория,
+        контактные данные, кредитный лимит, условия оплаты и доставки.
+        Используется для проверки поставщика перед заключением договора.
+      parameters:
+        - name: counterparty_id
+          label: "Контрагент"
+          type: select
+          required: true
+          description: "Выберите контрагента"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Карточка контрагента"
+          columns:
+            - { field: code, label: "Код", type: string }
+            - { field: name, label: "Наименование", type: string }
+            - { field: counterparty_type_name, label: "Тип", type: string, widget: badge }
+            - { field: category_name, label: "Категория", type: string, widget: badge }
+            - { field: tax_id, label: "ИНН", type: string }
+            - { field: phone, label: "Телефон", type: string }
+            - { field: email, label: "Email", type: string }
+            - { field: website, label: "Сайт", type: string }
+            - { field: industry, label: "Отрасль", type: string }
+            - { field: credit_limit, label: "Кредитный лимит", type: number, format: currency }
+            - { field: payment_terms, label: "Условия оплаты", type: string }
+            - { field: delivery_terms, label: "Условия доставки", type: string }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { active: "success", inactive: "neutral", blocked: "danger" } }
+      query_ref: Q-CP-R01
+      linked_operations:
+        - OP-CP-05  # Создание контрагента
+        - OP-CP-06  # Редактирование контрагента
+      export:
+        formats: [pdf, print]
+        template: "counterparty_card"
+
+
+# =====================================================================================
+# РОЛЬ: Юрист
+# =====================================================================================
+- role: "lawyer"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-CP-03: Реестр договоров
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CP-03
+      report: "Реестр договоров"
+      description: >
+        Полный список договоров за период с указанием контрагента,
+        номера, даты, срока действия, типа, суммы и статуса.
+        Используется для юридического контроля и мониторинга.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр договоров"
+          columns:
+            - { field: counterparty_name, label: "Контрагент", type: string, sortable: true }
+            - { field: contract_number, label: "№ договора", type: string, sortable: true }
+            - { field: contract_date, label: "Дата", type: date, sortable: true }
+            - { field: valid_from, label: "Действителен с", type: date }
+            - { field: valid_to, label: "Действителен до", type: date }
+            - { field: contract_type, label: "Тип", type: string, widget: badge, statusMap: { purchase: "info", sales: "success", lease: "warning", service: "neutral" } }
+            - { field: amount, label: "Сумма", type: number, format: currency }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { draft: "info", active: "success", completed: "neutral", cancelled: "danger" } }
+      summary:
+        - field: amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-CP-R03
+      linked_operations:
+        - OP-CP-21  # Создание договора
+        - OP-CP-22  # Редактирование договора
+        - OP-CP-23  # Активация договора
+        - OP-CP-24  # Завершение договора
+      export:
+        formats: [pdf, excel, print]
+        template: "contract_register"
+
+
+# =====================================================================================
+# РОЛЬ: Специалист по безопасности
+# =====================================================================================
+- role: "security_manager"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-CP-04: Черный список контрагентов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CP-04
+      report: "Черный список контрагентов"
+      description: >
+        Список всех контрагентов, находящихся в черном списке.
+        Показывает дату блокировки, причину и кто заблокировал.
+        Используется для контроля рисков и безопасности.
+      parameters: []  # Без параметров
+      sections:
+        - title: "Черный список"
+          columns:
+            - { field: code, label: "Код", type: string }
+            - { field: name, label: "Наименование", type: string, sortable: true }
+            - { field: block_date, label: "Дата блокировки", type: date, sortable: true }
+            - { field: reason, label: "Причина", type: string }
+            - { field: blocked_by_employee_id, label: "Заблокировал", type: number, format: integer }
+      query_ref: Q-CP-R04
+      linked_operations:
+        - OP-CP-26  # Добавление в черный список
+        - OP-CP-27  # Удаление из черного списка
+      export:
+        formats: [pdf, excel, print]
+        template: "blacklist"

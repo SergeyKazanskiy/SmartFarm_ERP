@@ -1,0 +1,285 @@
+# =====================================================================================
+# TASK_Scenarios.yml — Сценарии взаимодействия модуля управления задачами (TASK)
+# с другими модулями ERP
+# =====================================================================================
+
+meta:
+  title: TASK_Scenarios_Definition
+  version: "1.0"
+  description: >
+    Описание сквозных сценариев взаимодействия модуля управления задачами (TASK)
+    с другими модулями ERP: APS, PM, HR.
+
+scenario_types:
+  - type: full_cycle
+    description: Полный жизненный цикл задачи
+  - type: integration
+    description: Интеграционное взаимодействие между модулями
+  - type: exception
+    description: Обработка исключительных ситуаций
+
+# =====================================================================================
+# СЦЕНАРИЙ TASK-01: ПОЛНЫЙ ЦИКЛ ЗАДАЧИ (ОТ APS ДО ЗАВЕРШЕНИЯ)
+# =====================================================================================
+- scenario_id: SCENARIO-TASK-001
+  name: "Полный цикл задачи (от APS до завершения)"
+  description: >
+    Полный жизненный цикл задачи:
+    - Получение задачи от APS (TASK)
+    - Назначение исполнителя (TASK → HR)
+    - Начало выполнения (TASK)
+    - Учёт времени, комментарии, фото (TASK)
+    - Завершение задачи (TASK)
+    - Возврат статуса в APS (TASK → APS)
+  type: full_cycle
+  priority: critical
+
+  lanes:
+    - lane_id: APS
+      lane_name: "APS — Планирование"
+      module: APS
+    - lane_id: TASK
+      lane_name: "TASK — Задачи"
+      module: TASK
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: PM
+      lane_name: "PM — Проекты"
+      module: PM
+
+  steps:
+    - step_id: TC-01
+      lane: APS
+      task: "Передача задачи в TASK"
+      description: "APS передаёт конкретную задачу в модуль TASK"
+      trigger: "План сформирован"
+      system_action: "task_task.source_type = 'aps'"
+      ui_notification: "Задача получена от APS"
+
+    - step_id: TC-02
+      lane: TASK
+      task: "Создание задачи"
+      process_ref: [TASK-01, TASK-TASK-01-01]
+      operation_ref: OP-TASK-01
+      description: "Создание задачи в модуле TASK"
+      system_action: "task_task.status = 'created'"
+      ui_notification: "Задача создана"
+
+    - step_id: TC-03
+      lane: TASK
+      task: "Назначение исполнителя"
+      process_ref: [TASK-01, TASK-TASK-01-02]
+      operation_ref: OP-TASK-04
+      description: "Назначение исполнителя на задачу"
+      system_action: "task_task.status = 'assigned'"
+      ui_notification: "Исполнитель назначен"
+
+    - step_id: TC-04
+      lane: HR
+      task: "Проверка доступности исполнителя"
+      description: "Проверка доступности сотрудника"
+      system_action: "hr_employee.status = 'active'"
+      ui_notification: "Исполнитель доступен"
+
+    - step_id: TC-05
+      lane: TASK
+      task: "Начало выполнения"
+      process_ref: [TASK-01, TASK-TASK-01-03]
+      operation_ref: OP-TASK-05
+      description: "Исполнитель начинает работу"
+      system_action: "task_task.status = 'in_progress'"
+      ui_notification: "Работа начата"
+
+    - step_id: TC-06
+      lane: TASK
+      task: "Учёт времени и комментарии"
+      process_ref: [TASK-02, TASK-TASK-02-01]
+      operation_ref: [OP-TASK-16, OP-TASK-11]
+      description: "Ведение учёта времени и комментариев"
+      system_action: "task_time_tracking.hours = добавлены"
+      ui_notification: "Время учтено"
+
+    - step_id: TC-07
+      lane: TASK
+      task: "Завершение задачи"
+      process_ref: [TASK-01, TASK-TASK-01-05]
+      operation_ref: OP-TASK-06
+      description: "Завершение задачи исполнителем"
+      system_action: "task_task.status = 'completed'"
+      ui_notification: "Задача завершена"
+
+    - step_id: TC-08
+      lane: TASK
+      task: "Обновление статуса в APS"
+      description: "Возврат статуса задачи в APS"
+      system_action: "aps_schedule.status = 'completed'"
+      ui_notification: "Статус передан в APS"
+
+    - step_id: TC-09
+      lane: PM
+      task: "Обновление статуса в PM"
+      description: "Обновление статуса задачи в модуле PM"
+      system_action: "pm_task.status = 'completed'"
+      ui_notification: "Статус передан в PM"
+
+    - step_id: TC-END
+      lane: TASK
+      task: "Завершение сценария"
+      description: "Задача выполнена. Статусы обновлены."
+      system_action: "core_audit_log запись о завершении задачи"
+      ui_notification: "Задача завершена"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ TASK-02: ПРОСРОЧКА ЗАДАЧИ (АВТОМАТИЧЕСКОЕ УВЕДОМЛЕНИЕ)
+# =====================================================================================
+- scenario_id: SCENARIO-TASK-002
+  name: "Просрочка задачи (автоматическое уведомление)"
+  description: >
+    Обработка просрочки задачи:
+    - Обнаружение просрочки (TASK)
+    - Уведомление исполнителя (TASK)
+    - Уведомление диспетчера (TASK)
+    - Корректировка сроков (TASK → APS)
+  type: exception
+  priority: high
+
+  lanes:
+    - lane_id: TASK
+      lane_name: "TASK — Задачи"
+      module: TASK
+    - lane_id: APS
+      lane_name: "APS — Планирование"
+      module: APS
+    - lane_id: PM
+      lane_name: "PM — Проекты"
+      module: PM
+
+  steps:
+    - step_id: OD-01
+      lane: TASK
+      task: "Обнаружение просрочки"
+      description: "Система обнаруживает просрочку задачи"
+      trigger: "Ежедневная проверка"
+      system_action: "task_task.status = 'on_hold'"
+      ui_notification: "ОБНАРУЖЕНА ПРОСРОЧКА ЗАДАЧИ"
+
+    - step_id: OD-02
+      lane: TASK
+      task: "Создание уведомления исполнителю"
+      process_ref: [TASK-03, TASK-TASK-03-01]
+      operation_ref: OP-TASK-20
+      description: "Уведомление исполнителя о просрочке"
+      system_action: "task_notification.notification_type = 'overdue'"
+      ui_notification: "Исполнитель уведомлён"
+
+    - step_id: OD-03
+      lane: TASK
+      task: "Уведомление диспетчера"
+      description: "Уведомление диспетчера о просрочке"
+      system_action: "task_notification.notification_type = 'overdue'"
+      ui_notification: "Диспетчер уведомлён"
+
+    - step_id: OD-04
+      lane: TASK
+      task: "Корректировка сроков"
+      description: "Корректировка сроков задачи"
+      system_action: "task_task.planned_finish = новый_срок"
+      ui_notification: "Сроки скорректированы"
+
+    - step_id: OD-05
+      lane: APS
+      task: "Обновление плана"
+      description: "Обновление плана в APS"
+      system_action: "aps_plan_item = обновлён"
+      ui_notification: "План обновлён"
+
+    - step_id: OD-06
+      lane: PM
+      task: "Обновление статуса в PM"
+      description: "Обновление статуса задачи в PM"
+      system_action: "pm_task.status = 'on_hold'"
+      ui_notification: "Статус передан в PM"
+
+    - step_id: OD-END
+      lane: TASK
+      task: "Завершение сценария"
+      description: "Просрочка обработана"
+      system_action: "core_audit_log запись о просрочке"
+      ui_notification: "Обработка просрочки завершена"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ TASK-03: ИЗМЕНЕНИЕ ЗАДАЧИ В ПРОЦЕССЕ ВЫПОЛНЕНИЯ
+# =====================================================================================
+- scenario_id: SCENARIO-TASK-003
+  name: "Изменение задачи в процессе выполнения"
+  description: >
+    Изменение задачи в процессе выполнения:
+    - Запрос на изменение (PM → TASK)
+    - Обновление задачи (TASK)
+    - Уведомление исполнителя (TASK)
+    - Обновление плана (TASK → APS)
+  type: integration
+  priority: medium
+
+  lanes:
+    - lane_id: PM
+      lane_name: "PM — Проекты"
+      module: PM
+    - lane_id: TASK
+      lane_name: "TASK — Задачи"
+      module: TASK
+    - lane_id: APS
+      lane_name: "APS — Планирование"
+      module: APS
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+
+  steps:
+    - step_id: CH-01
+      lane: PM
+      task: "Запрос на изменение задачи"
+      description: "PM инициирует изменение задачи"
+      trigger: "Изменение требований"
+      system_action: "pm_change_request.status = 'approved'"
+      ui_notification: "Запрос на изменение получен"
+
+    - step_id: CH-02
+      lane: TASK
+      task: "Обновление задачи"
+      process_ref: [TASK-01, TASK-TASK-01-08]
+      operation_ref: OP-TASK-02
+      description: "Обновление задачи"
+      system_action: "task_task.task_name = новое_название"
+      ui_notification: "Задача обновлена"
+
+    - step_id: CH-03
+      lane: TASK
+      task: "Уведомление исполнителя"
+      description: "Уведомление исполнителя об изменении"
+      system_action: "task_notification.notification_type = 'status_change'"
+      ui_notification: "Исполнитель уведомлён"
+
+    - step_id: CH-04
+      lane: APS
+      task: "Обновление плана"
+      description: "Обновление плана в APS"
+      system_action: "aps_plan_item = обновлён"
+      ui_notification: "План обновлён"
+
+    - step_id: CH-05
+      lane: HR
+      task: "Проверка загрузки исполнителя"
+      description: "Проверка загрузки исполнителя"
+      system_action: "hr_employee.status = 'active'"
+      ui_notification: "Исполнитель доступен"
+
+    - step_id: CH-END
+      lane: TASK
+      task: "Завершение сценария"
+      description: "Задача обновлена"
+      system_action: "core_audit_log запись об изменении задачи"
+      ui_notification: "Изменение задачи завершено"

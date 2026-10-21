@@ -1,0 +1,423 @@
+meta:
+  title: HR_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов управления персоналом с ролями, задачами,
+    переходами между состояниями и привязкой дашбордов, отчётов, форм и
+    SQL-запросов (по кодам OP-HR-01…37). Объединяет через процессы
+    HR_Business_Queries.sql (SQL), HR_Business_Roles.yml (поля форм),
+    HR_Dashboards_Roles.yml (дашборды), HR_Reports_Roles.yml (отчёты).
+  schema_notes: >
+    Задача (task) соответствует ОДНОМУ экрану/форме — принцип идентичен
+    остальным *_Process_Workflow.yml файлам платформы.
+
+roles_catalog:
+  hr_specialist: HR-специалист (кадровик)
+  department_head: Руководитель подразделения
+  safety_officer: Специалист по охране труда
+  employee: Сотрудник (самообслуживание)
+
+processes:
+
+- id: HR-01
+  name: Справочники
+  description: Ведение должностей, графиков работы, навыков, квалификаций, типов сертификатов и типов отсутствий.
+  dashboards: []
+  reports: []
+  tasks:
+
+  - id: TASK-HR-01-01
+    name: Ведение категорий и должностей
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-01, OP-HR-02, OP-HR-03]
+    sql_queries:
+      on_insert_category:
+        query_code: OP-HR-01
+        description: Создание категории должностей
+      on_save_position:
+        query_code: [OP-HR-02, OP-HR-03]
+        description: Создание/изменение должности
+    transitions: []
+
+  - id: TASK-HR-01-02
+    name: Ведение графиков работы
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-04, OP-HR-05]
+    sql_queries:
+      on_save:
+        query_code: [OP-HR-04, OP-HR-05]
+        description: Создание/изменение графика работы
+    transitions: []
+
+  - id: TASK-HR-01-03
+    name: Ведение навыков и квалификаций
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-06, OP-HR-07, OP-HR-08, OP-HR-09]
+    sql_queries:
+      on_insert_group:
+        query_code: OP-HR-06
+        description: Создание группы навыков
+      on_save_skill:
+        query_code: [OP-HR-07, OP-HR-08]
+        description: Создание/изменение навыка
+      on_insert_qualification:
+        query_code: OP-HR-09
+        description: Создание квалификации
+    transitions:
+    - target_task: TASK-HR-03-01
+      condition: Навык заведён, сотрудники могут проходить самооценку
+      on_event: [on_save_skill]
+
+  - id: TASK-HR-01-04
+    name: Ведение типов сертификатов и отсутствий
+    role: safety_officer
+    has_form: true
+    form_ref: [OP-HR-10, OP-HR-11]
+    sql_queries:
+      on_insert_certificate_type:
+        query_code: OP-HR-10
+        description: Создание типа сертификата/допуска
+      on_insert_absence_type:
+        query_code: OP-HR-11
+        description: Создание типа отсутствия
+    transitions: []
+
+- id: HR-02
+  name: Кадровый учёт сотрудника
+  description: Жизненный цикл сотрудника от приёма на работу до увольнения, кадровые переводы, кадровые документы.
+  dashboards:
+  - DASH-HR-01 (Персонал предприятия)
+  reports:
+  - REP-HR-01 (Личная карточка сотрудника)
+  tasks:
+
+  - id: TASK-HR-02-01
+    name: Приём сотрудника на работу
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-12]
+    sql_queries:
+      on_hire:
+        query_code: OP-HR-12
+        description: Приём сотрудника на работу
+    transitions:
+    - target_task: TASK-HR-02-06
+      condition: Сотрудник принят, необходимо прикрепить трудовой договор и приказ
+      on_event: [on_hire]
+    - target_task: TASK-HR-03-01
+      condition: Сотрудник принят, может пройти самооценку навыков
+      on_event: [on_hire]
+
+  - id: TASK-HR-02-02
+    name: Кадровый перевод
+    role: department_head
+    has_form: true
+    form_ref: [OP-HR-13]
+    sql_queries:
+      on_transfer:
+        query_code: OP-HR-13
+        description: Кадровый перевод (изменение должности/подразделения/графика)
+    transitions: []
+
+  - id: TASK-HR-02-03
+    name: Оформление / завершение длительного отсутствия
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-14, OP-HR-15]
+    sql_queries:
+      on_start_leave:
+        query_code: OP-HR-14
+        description: Оформление длительного отсутствия сотрудника
+      on_end_leave:
+        query_code: OP-HR-15
+        description: Возвращение сотрудника из длительного отсутствия
+    transitions: []
+
+  - id: TASK-HR-02-04
+    name: Отстранение сотрудника от работы
+    role: department_head
+    has_form: true
+    form_ref: [OP-HR-16]
+    sql_queries:
+      on_suspend:
+        query_code: OP-HR-16
+        description: Отстранение сотрудника от работы
+    transitions:
+    - target_task: TASK-HR-02-05
+      condition: По результатам разбирательства принимается решение об увольнении
+      on_event: [on_suspend]
+
+  - id: TASK-HR-02-05
+    name: Увольнение сотрудника
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-17]
+    sql_queries:
+      on_dismiss:
+        query_code: OP-HR-17
+        description: Увольнение сотрудника
+    transitions:
+    - target_task: END_PROCESS
+      condition: Сотрудник уволен, ресурс исключён из подбора APS
+      on_event: [on_dismiss]
+
+  - id: TASK-HR-02-06
+    name: Прикрепление кадрового документа
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-18]
+    sql_queries:
+      on_attach:
+        query_code: OP-HR-18
+        description: Прикрепление кадрового документа сотрудника
+    transitions: []
+
+- id: HR-03
+  name: Навыки и оценка компетенций
+  description: Самооценка сотрудником своих навыков, подтверждение руководителем и периодическая количественная оценка продуктивности для APS.
+  dashboards:
+  - DASH-HR-02 (Компетенции и допуски)
+  reports:
+  - REP-HR-02 (Матрица компетенций)
+  tasks:
+
+  - id: TASK-HR-03-01
+    name: Самооценка навыка сотрудником
+    role: employee
+    has_form: true
+    form_ref: [OP-HR-19]
+    sql_queries:
+      on_self_assess:
+        query_code: OP-HR-19
+        description: Самооценка навыка сотрудником
+    transitions:
+    - target_task: TASK-HR-03-02
+      condition: Самооценка внесена, ожидает подтверждения руководителем
+      on_event: [on_self_assess]
+
+  - id: TASK-HR-03-02
+    name: Подтверждение уровня навыка руководителем
+    role: department_head
+    has_form: true
+    form_ref: [OP-HR-20]
+    sql_queries:
+      on_confirm:
+        query_code: OP-HR-20
+        description: Подтверждение/корректировка уровня навыка руководителем
+    transitions:
+    - target_task: TASK-HR-03-03
+      condition: Уровень подтверждён, доступен для использования APS при подборе исполнителя
+      on_event: [on_confirm]
+
+  - id: TASK-HR-03-03
+    name: Внесение количественной оценки продуктивности
+    role: department_head
+    has_form: true
+    form_ref: [OP-HR-21]
+    sql_queries:
+      on_score:
+        query_code: OP-HR-21
+        description: Внесение количественной оценки продуктивности по навыку
+    transitions: []
+
+  - id: TASK-HR-03-04
+    name: Присвоение и продление квалификации
+    role: hr_specialist
+    has_form: true
+    form_ref: [OP-HR-22, OP-HR-23]
+    sql_queries:
+      on_assign:
+        query_code: OP-HR-22
+        description: Присвоение квалификации сотруднику
+      on_extend:
+        query_code: OP-HR-23
+        description: Продление срока действия квалификации
+    transitions: []
+
+- id: HR-04
+  name: Допуски и безопасность
+  description: Выдача и продление сертификатов/допусков, медицинских осмотров и водительских удостоверений — контроль права доступа к работам повышенной опасности.
+  dashboards:
+  - DASH-HR-02 (Компетенции и допуски)
+  reports:
+  - REP-HR-03 (Реестр истекающих допусков)
+  tasks:
+
+  - id: TASK-HR-04-01
+    name: Выдача / продление сертификата
+    role: safety_officer
+    has_form: true
+    form_ref: [OP-HR-24, OP-HR-25]
+    sql_queries:
+      on_issue:
+        query_code: OP-HR-24
+        description: Выдача сертификата/допуска сотруднику
+      on_extend:
+        query_code: OP-HR-25
+        description: Продление срока действия сертификата/допуска
+    transitions: []
+
+  - id: TASK-HR-04-02
+    name: Регистрация медицинского осмотра
+    role: safety_officer
+    has_form: true
+    form_ref: [OP-HR-26]
+    sql_queries:
+      on_insert:
+        query_code: OP-HR-26
+        description: Регистрация результата медицинского осмотра
+    transitions: []
+
+  - id: TASK-HR-04-03
+    name: Регистрация / продление водительского удостоверения
+    role: safety_officer
+    has_form: true
+    form_ref: [OP-HR-27, OP-HR-28]
+    sql_queries:
+      on_insert:
+        query_code: OP-HR-27
+        description: Регистрация водительского удостоверения
+      on_extend:
+        query_code: OP-HR-28
+        description: Продление водительского удостоверения
+    transitions: []
+
+- id: HR-05
+  name: Отсутствия
+  description: Подача, согласование и отмена заявок на отпуск, больничный, командировку.
+  dashboards:
+  - DASH-HR-01 (Персонал предприятия)
+  reports:
+  - REP-HR-04 (Ведомость отсутствий)
+  tasks:
+
+  - id: TASK-HR-05-01
+    name: Подача заявки на отсутствие
+    role: employee
+    has_form: true
+    form_ref: [OP-HR-29]
+    sql_queries:
+      on_request:
+        query_code: OP-HR-29
+        description: Подача заявки на отсутствие
+    transitions:
+    - target_task: TASK-HR-05-02
+      condition: Заявка подана в статусе requested, ожидает согласования
+      on_event: [on_request]
+
+  - id: TASK-HR-05-02
+    name: Рассмотрение заявки на отсутствие
+    role: department_head
+    has_form: true
+    form_ref: [OP-HR-30, OP-HR-31]
+    sql_queries:
+      on_approve:
+        query_code: OP-HR-30
+        description: Согласование отсутствия
+      on_reject:
+        query_code: OP-HR-31
+        description: Отклонение заявки на отсутствие
+    transitions:
+    - target_task: TASK-HR-05-03
+      condition: 'Отсутствие согласовано: период учитывается в доступности ресурса APS'
+      on_event: [on_approve]
+    - target_task: END_PROCESS
+      condition: Заявка отклонена
+      on_event: [on_reject]
+
+  - id: TASK-HR-05-03
+    name: Отмена ранее согласованного отсутствия
+    role: employee
+    has_form: true
+    form_ref: [OP-HR-32]
+    sql_queries:
+      on_cancel:
+        query_code: OP-HR-32
+        description: Отмена ранее согласованного отсутствия
+    transitions:
+    - target_task: END_PROCESS
+      condition: Отсутствие отменено, сотрудник снова доступен для планирования
+      on_event: [on_cancel]
+
+- id: HR-06
+  name: Табелирование
+  description: Внесение фактически отработанного времени и его утверждение руководителем — источник для Payroll.
+  dashboards:
+  - DASH-HR-03 (Табелирование)
+  reports:
+  - REP-HR-05 (Табель учёта рабочего времени)
+  tasks:
+
+  - id: TASK-HR-06-01
+    name: Внесение / изменение записи табеля
+    role: employee
+    has_form: true
+    form_ref: [OP-HR-33, OP-HR-34]
+    sql_queries:
+      on_insert:
+        query_code: OP-HR-33
+        description: Внесение записи табеля
+      on_update:
+        query_code: OP-HR-34
+        description: Изменение записи табеля
+    transitions:
+    - target_task: TASK-HR-06-02
+      condition: Данные внесены, табель готов к отправке на утверждение
+      on_event: [on_insert, on_update]
+
+  - id: TASK-HR-06-02
+    name: Отправка табеля на утверждение
+    role: employee
+    has_form: true
+    form_ref: [OP-HR-35]
+    sql_queries:
+      on_submit:
+        query_code: OP-HR-35
+        description: Отправка табеля на утверждение
+    transitions:
+    - target_task: TASK-HR-06-03
+      condition: Табель в статусе submitted, ожидает утверждения руководителем
+      on_event: [on_submit]
+
+  - id: TASK-HR-06-03
+    name: Утверждение или отклонение табеля
+    role: department_head
+    has_form: true
+    form_ref: [OP-HR-36, OP-HR-37]
+    sql_queries:
+      on_approve:
+        query_code: OP-HR-36
+        description: Утверждение записи табеля
+      on_reject:
+        query_code: OP-HR-37
+        description: Отклонение записи табеля (возврат на доработку)
+    transitions:
+    - target_task: END_PROCESS
+      condition: Табель утверждён — данные передаются в Payroll для расчёта заработной платы
+      on_event: [on_approve]
+    - target_task: TASK-HR-06-01
+      condition: Табель отклонён, возвращён на доработку
+      on_event: [on_reject]
+
+bpmn_diagrams:
+- id: BPMN-HR-01
+  name: Кадровый учёт
+  description: Справочники и полный жизненный цикл сотрудника от приёма до увольнения.
+  process_ids:
+  - HR-01
+  - HR-02
+- id: BPMN-HR-02
+  name: Компетенции и допуски
+  description: Оценка навыков, квалификации и контроль допусков к работам повышенной опасности.
+  process_ids:
+  - HR-03
+  - HR-04
+- id: BPMN-HR-03
+  name: Учёт рабочего времени
+  description: Отсутствия и табелирование — основа для планирования (APS) и расчёта заработной платы (Payroll).
+  process_ids:
+  - HR-05
+  - HR-06

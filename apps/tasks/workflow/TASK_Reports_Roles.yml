@@ -1,0 +1,239 @@
+# =====================================================================================
+# TASK — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на TASK_Schema.json
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Сотрудник
+# =====================================================================================
+- role: "employee"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-TASK-01: Карточка задачи
+    # -------------------------------------------------------------------------------
+    - report_code: REP-TASK-01
+      report: "Карточка задачи"
+      description: >
+        Полная информация о задаче: название, описание, даты,
+        статус, приоритет, тип работ и затраты времени.
+        А также список комментариев, фото и учет времени.
+      parameters:
+        - name: task_id
+          label: "ID задачи"
+          type: number
+          required: true
+          description: "Введите ID задачи"
+      sections:
+        - title: "Основная информация"
+          columns:
+            - { field: task_name, label: "Задача", type: string }
+            - { field: description, label: "Описание", type: string }
+            - { field: planned_start, label: "План старт", type: datetime }
+            - { field: planned_finish, label: "План финиш", type: datetime }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { created: "info", assigned: "info", in_progress: "warning", completed: "success", cancelled: "danger" } }
+            - { field: completion_percent, label: "Выполнение (%)", type: number, format: percent }
+            - { field: priority, label: "Приоритет", type: string, widget: status, statusMap: { "1": "danger", "2": "warning", "3": "info", "4": "neutral", "5": "neutral" } }
+            - { field: work_type, label: "Тип работ", type: string }
+            - { field: estimated_hours, label: "План (ч)", type: number, format: decimal }
+            - { field: actual_hours, label: "Факт (ч)", type: number, format: decimal }
+        - title: "Комментарии"
+          columns:
+            - { field: employee_id, label: "Автор", type: number, format: integer }
+            - { field: comment_text, label: "Комментарий", type: string }
+            - { field: created_at, label: "Дата", type: datetime }
+        - title: "Фото"
+          columns:
+            - { field: photo_url, label: "Фото", type: string }
+            - { field: description, label: "Описание", type: string }
+            - { field: created_at, label: "Дата", type: datetime }
+        - title: "Учёт времени"
+          columns:
+            - { field: date_logged, label: "Дата", type: date }
+            - { field: hours, label: "Часы", type: number, format: decimal }
+            - { field: description, label: "Описание", type: string }
+      summary:
+        - field: hours
+          label: "Итого часов"
+          aggregation: SUM
+      query_ref: Q-TASK-R01
+      linked_operations:
+        - OP-TASK-01  # Создание задачи
+        - OP-TASK-02  # Редактирование задачи
+      export:
+        formats: [pdf, print]
+        template: "task_card"
+
+    # -------------------------------------------------------------------------------
+    # REP-TASK-02: Отчёт по времени
+    # -------------------------------------------------------------------------------
+    - report_code: REP-TASK-02
+      report: "Отчёт по времени"
+      description: >
+        Детальный отчет о затратах времени сотрудника по задачам за период.
+        Показывает дату, задачу, количество часов и описание.
+        Используется для анализа загрузки и расчета зарплаты.
+      parameters:
+        - name: employee_id
+          label: "Сотрудник"
+          type: select
+          required: true
+          description: "Выберите сотрудника"
+          options: []  # Заполняется динамически из БД
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Учёт времени"
+          columns:
+            - { field: task_id, label: "ID задачи", type: number, format: integer }
+            - { field: task_name, label: "Задача", type: string }
+            - { field: date_logged, label: "Дата", type: date, sortable: true }
+            - { field: hours, label: "Часы", type: number, format: decimal }
+            - { field: description, label: "Описание", type: string }
+        - title: "Итого"
+          columns:
+            - { field: total_hours, label: "Всего часов", type: number, format: decimal }
+      summary:
+        - field: hours
+          label: "Итого часов"
+          aggregation: SUM
+      query_ref: Q-TASK-R02
+      linked_operations:
+        - OP-TASK-16  # Добавление времени
+        - OP-TASK-17  # Редактирование времени
+      export:
+        formats: [pdf, excel, print]
+        template: "time_report"
+
+
+# =====================================================================================
+# РОЛЬ: Диспетчер
+# =====================================================================================
+- role: "dispatcher"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-TASK-01: Карточка задачи
+    # -------------------------------------------------------------------------------
+    - report_code: REP-TASK-01
+      report: "Карточка задачи"
+      description: >
+        Полная информация о задаче: название, описание, даты,
+        статус, приоритет, тип работ и затраты времени.
+      parameters:
+        - name: task_id
+          label: "ID задачи"
+          type: number
+          required: true
+          description: "Введите ID задачи"
+      sections:
+        - title: "Основная информация"
+          columns:
+            - { field: task_name, label: "Задача", type: string }
+            - { field: description, label: "Описание", type: string }
+            - { field: planned_start, label: "План старт", type: datetime }
+            - { field: planned_finish, label: "План финиш", type: datetime }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { created: "info", assigned: "info", in_progress: "warning", completed: "success", cancelled: "danger" } }
+            - { field: completion_percent, label: "Выполнение (%)", type: number, format: percent }
+            - { field: priority, label: "Приоритет", type: string, widget: status, statusMap: { "1": "danger", "2": "warning", "3": "info", "4": "neutral", "5": "neutral" } }
+            - { field: work_type, label: "Тип работ", type: string }
+            - { field: estimated_hours, label: "План (ч)", type: number, format: decimal }
+            - { field: actual_hours, label: "Факт (ч)", type: number, format: decimal }
+        - title: "Комментарии"
+          columns:
+            - { field: employee_id, label: "Автор", type: number, format: integer }
+            - { field: comment_text, label: "Комментарий", type: string }
+            - { field: created_at, label: "Дата", type: datetime }
+      query_ref: Q-TASK-R01
+      linked_operations:
+        - OP-TASK-01  # Создание задачи
+        - OP-TASK-02  # Редактирование задачи
+      export:
+        formats: [pdf, print]
+        template: "task_card"
+
+    # -------------------------------------------------------------------------------
+    # REP-TASK-03: Реестр задач
+    # -------------------------------------------------------------------------------
+    - report_code: REP-TASK-03
+      report: "Реестр задач"
+      description: >
+        Полный список всех задач за период с указанием приоритета,
+        статуса, исполнителя, дат и процента выполнения.
+        Используется для контроля всех задач в системе.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр задач"
+          columns:
+            - { field: task_id, label: "ID", type: number, format: integer }
+            - { field: task_name, label: "Задача", type: string, sortable: true }
+            - { field: priority, label: "Приоритет", type: string, widget: status, statusMap: { "1": "danger", "2": "warning", "3": "info", "4": "neutral", "5": "neutral" } }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { created: "info", assigned: "info", in_progress: "warning", completed: "success", cancelled: "danger" } }
+            - { field: assigned_to, label: "Исполнитель", type: number, format: integer }
+            - { field: planned_start, label: "План старт", type: datetime }
+            - { field: planned_finish, label: "План финиш", type: datetime }
+            - { field: completion_percent, label: "Выполнение (%)", type: number, format: percent }
+      query_ref: Q-TASK-R03
+      linked_operations:
+        - OP-TASK-01  # Создание задачи
+        - OP-TASK-02  # Редактирование задачи
+        - OP-TASK-03  # Изменение статуса
+        - OP-TASK-04  # Назначение задачи
+      export:
+        formats: [pdf, excel, print]
+        template: "task_register"
+
+    # -------------------------------------------------------------------------------
+    # REP-TASK-04: Анализ загрузки исполнителей
+    # -------------------------------------------------------------------------------
+    - report_code: REP-TASK-04
+      report: "Анализ загрузки исполнителей"
+      description: >
+        Сравнительный анализ загрузки исполнителей:
+        количество задач, выполненные задачи, процент выполнения,
+        общее количество часов.
+        Используется для распределения нагрузки и оценки эффективности.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Загрузка исполнителей"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: total_tasks, label: "Всего задач", type: number, format: integer }
+            - { field: completed_tasks, label: "Выполнено", type: number, format: integer }
+            - { field: completion_rate, label: "Выполнение (%)", type: number, format: percent, color: status }
+            - { field: total_hours, label: "Всего часов", type: number, format: decimal }
+      query_ref: Q-TASK-R04
+      linked_operations:
+        - OP-TASK-04  # Назначение задачи
+        - OP-TASK-06  # Завершение задачи
+        - OP-TASK-16  # Добавление времени
+      export:
+        formats: [pdf, excel, print]
+        template: "employee_load"

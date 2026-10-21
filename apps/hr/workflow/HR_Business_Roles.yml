@@ -1,0 +1,711 @@
+# =====================================================================================
+# HR — каталог форм для бизнес-операций
+# Источник: HR_Business_Queries.sql (37 операций OP-HR-01…37, схема v1.2).
+# Структура аналогична Production/Construction/WMS_Business_Roles.yml.
+# =====================================================================================
+
+process: HR-01
+process_name: "Справочники"
+role: "hr_specialist"
+operations:
+
+  - op_code: OP-HR-01
+    name: "Создание категории должностей"
+    table: hr_position_category
+    type: insert
+    event: "HR.positionCategory.create"
+    button: "Создать категорию"
+    fields:
+      - field: category_name
+        label: "Название категории"
+        type: text
+        required: true
+
+  - op_code: [OP-HR-02, OP-HR-03]
+    name: "Ведение справочника должностей"
+    table: hr_position
+    type: [insert, update]
+    event: "HR.position.save"
+    button: "Сохранить должность"
+    fields:
+      - field: position_id
+        label: "Должность (пусто для новой)"
+        type: select
+        required: false
+        source: { table: hr_position, value_field: position_id, label_field: position_name }
+      - field: position_name
+        label: "Название должности"
+        type: text
+        required: true
+      - field: category_id
+        label: "Категория должности"
+        type: select
+        required: false
+        source: { table: hr_position_category, value_field: category_id, label_field: category_name }
+
+  - op_code: [OP-HR-04, OP-HR-05]
+    name: "Ведение графиков работы"
+    table: hr_work_schedule
+    type: [insert, update]
+    event: "HR.workSchedule.save"
+    button: "Сохранить график"
+    fields:
+      - field: schedule_id
+        label: "График (пусто для нового)"
+        type: select
+        required: false
+        source: { table: hr_work_schedule, value_field: schedule_id, label_field: schedule_name }
+      - field: schedule_name
+        label: "Название графика"
+        type: text
+        required: true
+      - field: schedule_type
+        label: "Тип графика"
+        type: text
+        required: false
+      - field: weekday_schedule_json
+        label: "Расписание по дням недели"
+        type: repeater
+        required: false
+        fields:
+          - field: weekday
+            label: "День недели"
+            type: select
+            options: [Пн, Вт, Ср, Чт, Пт, Сб, Вс]
+          - field: start_time
+            label: "Начало"
+            type: text
+          - field: end_time
+            label: "Окончание"
+            type: text
+
+  - op_code: OP-HR-06
+    name: "Создание группы навыков"
+    table: hr_skill_group
+    type: insert
+    event: "HR.skillGroup.create"
+    button: "Создать группу"
+    fields:
+      - field: skill_group_name
+        label: "Название группы навыков"
+        type: text
+        required: true
+
+  - op_code: [OP-HR-07, OP-HR-08]
+    name: "Ведение справочника навыков"
+    table: hr_skill
+    type: [insert, update]
+    event: "HR.skill.save"
+    button: "Сохранить навык"
+    fields:
+      - field: skill_id
+        label: "Навык (пусто для нового)"
+        type: select
+        required: false
+        source: { table: hr_skill, value_field: skill_id, label_field: skill_name }
+      - field: skill_name
+        label: "Название навыка"
+        type: text
+        required: true
+      - field: skill_group_id
+        label: "Группа навыков"
+        type: select
+        required: false
+        source: { table: hr_skill_group, value_field: skill_group_id, label_field: skill_group_name }
+      - field: requires_certificate
+        label: "Требует сертификата/допуска"
+        type: checkbox
+        required: false
+
+  - op_code: OP-HR-09
+    name: "Создание квалификации"
+    table: hr_qualification
+    type: insert
+    event: "HR.qualification.create"
+    button: "Создать квалификацию"
+    fields:
+      - field: qualification_name
+        label: "Название квалификации"
+        type: text
+        required: true
+
+  - op_code: OP-HR-10
+    name: "Создание типа сертификата/допуска"
+    table: hr_certificate
+    type: insert
+    role: "safety_officer"
+    event: "HR.certificate.create"
+    button: "Создать тип сертификата"
+    fields:
+      - field: certificate_name
+        label: "Название сертификата"
+        type: text
+        required: true
+      - field: certificate_type
+        label: "Категория сертификата"
+        type: text
+        required: false
+
+  - op_code: OP-HR-11
+    name: "Создание типа отсутствия"
+    table: hr_absence_type
+    type: insert
+    event: "HR.absenceType.create"
+    button: "Создать тип отсутствия"
+    fields:
+      - field: absence_type_name
+        label: "Название типа отсутствия"
+        type: text
+        required: true
+
+---
+process: HR-02
+process_name: "Кадровый учёт сотрудника"
+role: "hr_specialist"
+statuses: [active, on_leave, suspended, dismissed]
+operations:
+
+  - op_code: OP-HR-12
+    name: "Приём сотрудника на работу"
+    table: hr_employee
+    type: insert
+    event: "HR.employee.hire"
+    button: "Оформить приём на работу"
+    fields:
+      - field: natural_person_id
+        label: "Физическое лицо"
+        type: select
+        required: true
+        source: { table: dict_natural_person, value_field: natural_person_id, label_field: last_name }
+      - field: personnel_number
+        label: "Табельный номер"
+        type: text
+        required: false
+      - field: position_id
+        label: "Должность"
+        type: select
+        required: true
+        source: { table: hr_position, value_field: position_id, label_field: position_name }
+      - field: department_id
+        label: "Подразделение"
+        type: select
+        required: true
+        source: { table: core_department, value_field: department_id, label_field: department_name }
+      - field: employment_date
+        label: "Дата приёма на работу"
+        type: date
+        required: true
+      - field: schedule_id
+        label: "График работы"
+        type: select
+        required: false
+        source: { table: hr_work_schedule, value_field: schedule_id, label_field: schedule_name }
+
+  - op_code: OP-HR-13
+    name: "Кадровый перевод"
+    table: hr_employee
+    type: update
+    role: "department_head"
+    event: "HR.employee.transfer"
+    button: "Оформить перевод"
+    precondition: "status_id = active"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: position_id
+        label: "Новая должность"
+        type: select
+        required: true
+        source: { table: hr_position, value_field: position_id, label_field: position_name }
+      - field: department_id
+        label: "Новое подразделение"
+        type: select
+        required: true
+        source: { table: core_department, value_field: department_id, label_field: department_name }
+      - field: schedule_id
+        label: "Новый график работы"
+        type: select
+        required: false
+        source: { table: hr_work_schedule, value_field: schedule_id, label_field: schedule_name }
+
+  - op_code: OP-HR-14
+    name: "Оформление длительного отсутствия сотрудника"
+    table: hr_employee
+    type: update
+    event: "HR.employee.startLeave"
+    button: "Оформить длительное отсутствие"
+    precondition: "status_id = active"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-HR-15
+    name: "Возвращение сотрудника из длительного отсутствия"
+    table: hr_employee
+    type: update
+    event: "HR.employee.endLeave"
+    button: "Оформить выход на работу"
+    precondition: "status_id = on_leave"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-HR-16
+    name: "Отстранение сотрудника от работы"
+    table: hr_employee
+    type: update
+    role: "department_head"
+    event: "HR.employee.suspend"
+    button: "Отстранить от работы"
+    precondition: "status_id = active"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-HR-17
+    name: "Увольнение сотрудника"
+    table: hr_employee
+    type: update
+    event: "HR.employee.dismiss"
+    button: "Оформить увольнение"
+    precondition: "status_id in (active, on_leave, suspended)"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: dismissal_date
+        label: "Дата увольнения"
+        type: date
+        required: true
+
+  - op_code: OP-HR-18
+    name: "Прикрепление кадрового документа"
+    table: hr_employee_document
+    type: insert
+    event: "HR.employeeDocument.attach"
+    button: "Прикрепить документ"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: document_id
+        label: "Документ"
+        type: select
+        required: true
+        source: { table: doc_document, value_field: document_id, label_field: document_number }
+      - field: document_role
+        label: "Роль документа"
+        type: text
+        required: false
+
+---
+process: HR-03
+process_name: "Навыки и оценка компетенций"
+operations:
+
+  - op_code: OP-HR-19
+    name: "Самооценка навыка сотрудником"
+    table: hr_employee_skill
+    type: insert
+    role: "employee"
+    event: "HR.employeeSkill.selfAssess"
+    button: "Оценить свой навык"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: hidden
+        source: current_user
+      - field: skill_id
+        label: "Навык"
+        type: select
+        required: true
+        source: { table: hr_skill, value_field: skill_id, label_field: skill_name }
+      - field: self_assessed_level
+        label: "Уровень владения (самооценка)"
+        type: text
+        required: true
+
+  - op_code: OP-HR-20
+    name: "Подтверждение уровня навыка руководителем"
+    table: hr_employee_skill
+    type: update
+    role: "department_head"
+    event: "HR.employeeSkill.confirm"
+    button: "Подтвердить уровень"
+    fields:
+      - field: employee_skill_id
+        label: "Оценка навыка"
+        type: select
+        required: true
+        source: { table: hr_employee_skill, value_field: employee_skill_id, label_field: employee_skill_id }
+      - field: confirmed_level
+        label: "Подтверждённый уровень"
+        type: text
+        required: true
+      - field: confirmed_by_employee_id
+        label: "Кто подтверждает"
+        type: hidden
+        source: current_user
+
+  - op_code: OP-HR-21
+    name: "Внесение количественной оценки продуктивности"
+    table: hr_employee_competency_score
+    type: insert
+    role: "department_head"
+    event: "HR.employeeCompetencyScore.create"
+    button: "Внести оценку"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: skill_id
+        label: "Навык"
+        type: select
+        required: true
+        source: { table: hr_skill, value_field: skill_id, label_field: skill_name }
+      - field: score_value
+        label: "Значение оценки"
+        type: number
+        required: true
+      - field: evaluated_by_employee_id
+        label: "Кто оценивает"
+        type: hidden
+        source: current_user
+
+  - op_code: OP-HR-22
+    name: "Присвоение квалификации сотруднику"
+    table: hr_employee_qualification
+    type: insert
+    role: "hr_specialist"
+    event: "HR.employeeQualification.assign"
+    button: "Присвоить квалификацию"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: qualification_id
+        label: "Квалификация"
+        type: select
+        required: true
+        source: { table: hr_qualification, value_field: qualification_id, label_field: qualification_name }
+      - field: valid_to
+        label: "Действует до"
+        type: date
+        required: false
+
+  - op_code: OP-HR-23
+    name: "Продление срока действия квалификации"
+    table: hr_employee_qualification
+    type: update
+    role: "hr_specialist"
+    event: "HR.employeeQualification.extend"
+    button: "Продлить"
+    fields:
+      - field: employee_qualification_id
+        label: "Квалификация сотрудника"
+        type: select
+        required: true
+        source: { table: hr_employee_qualification, value_field: employee_qualification_id, label_field: employee_qualification_id }
+      - field: valid_to
+        label: "Новый срок действия"
+        type: date
+        required: true
+
+---
+process: HR-04
+process_name: "Допуски и безопасность"
+role: "safety_officer"
+operations:
+
+  - op_code: OP-HR-24
+    name: "Выдача сертификата/допуска сотруднику"
+    table: hr_employee_certificate
+    type: insert
+    event: "HR.employeeCertificate.issue"
+    button: "Выдать сертификат"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: certificate_id
+        label: "Тип сертификата"
+        type: select
+        required: true
+        source: { table: hr_certificate, value_field: certificate_id, label_field: certificate_name }
+      - field: certificate_number
+        label: "Номер удостоверения"
+        type: text
+        required: false
+      - field: issue_date
+        label: "Дата выдачи"
+        type: date
+        required: true
+      - field: expire_date
+        label: "Действует до"
+        type: date
+        required: false
+
+  - op_code: OP-HR-25
+    name: "Продление сертификата/допуска"
+    table: hr_employee_certificate
+    type: update
+    event: "HR.employeeCertificate.extend"
+    button: "Продлить"
+    fields:
+      - field: employee_certificate_id
+        label: "Сертификат сотрудника"
+        type: select
+        required: true
+        source: { table: hr_employee_certificate, value_field: employee_certificate_id, label_field: employee_certificate_id }
+      - field: expire_date
+        label: "Новый срок действия"
+        type: date
+        required: true
+
+  - op_code: OP-HR-26
+    name: "Регистрация результата медицинского осмотра"
+    table: hr_medical_check
+    type: insert
+    event: "HR.medicalCheck.create"
+    button: "Зарегистрировать медосмотр"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: examination_date
+        label: "Дата осмотра"
+        type: date
+        required: true
+      - field: valid_to
+        label: "Действует до"
+        type: date
+        required: false
+      - field: result
+        label: "Результат осмотра"
+        type: text
+        required: true
+
+  - op_code: OP-HR-27
+    name: "Регистрация водительского удостоверения"
+    table: hr_driving_license
+    type: insert
+    event: "HR.drivingLicense.create"
+    button: "Зарегистрировать удостоверение"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: license_number
+        label: "Номер удостоверения"
+        type: text
+        required: true
+      - field: categories
+        label: "Категории управления"
+        type: text
+        required: false
+      - field: valid_to
+        label: "Действует до"
+        type: date
+        required: false
+
+  - op_code: OP-HR-28
+    name: "Продление водительского удостоверения"
+    table: hr_driving_license
+    type: update
+    event: "HR.drivingLicense.extend"
+    button: "Продлить"
+    fields:
+      - field: driving_license_id
+        label: "Удостоверение"
+        type: select
+        required: true
+        source: { table: hr_driving_license, value_field: driving_license_id, label_field: license_number }
+      - field: valid_to
+        label: "Новый срок действия"
+        type: date
+        required: true
+
+---
+process: HR-05
+process_name: "Отсутствия"
+statuses: [requested, approved, rejected, cancelled]
+operations:
+
+  - op_code: OP-HR-29
+    name: "Подача заявки на отсутствие"
+    table: hr_employee_absence
+    type: insert
+    role: "employee"
+    event: "HR.employeeAbsence.request"
+    button: "Подать заявку"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: hidden
+        source: current_user
+      - field: absence_type_id
+        label: "Тип отсутствия"
+        type: select
+        required: true
+        source: { table: hr_absence_type, value_field: absence_type_id, label_field: absence_type_name }
+      - field: date_from
+        label: "Дата начала"
+        type: date
+        required: true
+      - field: date_to
+        label: "Дата окончания"
+        type: date
+        required: true
+
+  - op_code: [OP-HR-30, OP-HR-31]
+    name: "Рассмотрение заявки на отсутствие"
+    table: hr_employee_absence
+    type: update
+    role: "department_head"
+    event: "HR.employeeAbsence.review"
+    button: "Согласовать / Отклонить"
+    precondition: "status = requested"
+    fields:
+      - field: absence_id
+        label: "Заявка на отсутствие"
+        type: select
+        required: true
+        source: { table: hr_employee_absence, value_field: absence_id, label_field: absence_id }
+      - field: approved_by_employee_id
+        label: "Кто рассматривает"
+        type: hidden
+        source: current_user
+
+  - op_code: OP-HR-32
+    name: "Отмена ранее согласованного отсутствия"
+    table: hr_employee_absence
+    type: update
+    role: "employee"
+    event: "HR.employeeAbsence.cancel"
+    button: "Отменить отсутствие"
+    precondition: "status = approved"
+    fields:
+      - field: absence_id
+        label: "Отсутствие"
+        type: select
+        required: true
+        source: { table: hr_employee_absence, value_field: absence_id, label_field: absence_id }
+
+---
+process: HR-06
+process_name: "Табелирование"
+statuses: [draft, submitted, approved, rejected]
+operations:
+
+  - op_code: OP-HR-33
+    name: "Внесение записи табеля"
+    table: hr_timesheet
+    type: insert
+    role: "employee"
+    event: "HR.timesheet.create"
+    button: "Внести запись"
+    fields:
+      - field: employee_id
+        label: "Сотрудник"
+        type: hidden
+        source: current_user
+      - field: task_id
+        label: "Задача (Workflow)"
+        type: select
+        required: false
+        source: { table: wf_task, value_field: task_id, label_field: task_id }
+      - field: work_date
+        label: "Дата работы"
+        type: date
+        required: true
+      - field: hours_worked
+        label: "Отработано часов"
+        type: number
+        required: true
+      - field: overtime_hours
+        label: "Сверхурочные часы"
+        type: number
+        required: false
+
+  - op_code: OP-HR-34
+    name: "Изменение записи табеля"
+    table: hr_timesheet
+    type: update
+    role: "employee"
+    event: "HR.timesheet.update"
+    button: "Сохранить изменения"
+    precondition: "status_id = draft"
+    fields:
+      - field: timesheet_id
+        label: "Запись табеля"
+        type: select
+        required: true
+        source: { table: hr_timesheet, value_field: timesheet_id, label_field: timesheet_id }
+      - field: hours_worked
+        label: "Отработано часов"
+        type: number
+        required: true
+      - field: overtime_hours
+        label: "Сверхурочные часы"
+        type: number
+        required: false
+
+  - op_code: OP-HR-35
+    name: "Отправка табеля на утверждение"
+    table: hr_timesheet
+    type: update
+    role: "employee"
+    event: "HR.timesheet.submit"
+    button: "Отправить на утверждение"
+    precondition: "status_id = draft"
+    fields:
+      - field: timesheet_id
+        label: "Запись табеля"
+        type: select
+        required: true
+        source: { table: hr_timesheet, value_field: timesheet_id, label_field: timesheet_id }
+
+  - op_code: [OP-HR-36, OP-HR-37]
+    name: "Утверждение или отклонение табеля"
+    table: hr_timesheet
+    type: update
+    role: "department_head"
+    event: "HR.timesheet.review"
+    button: "Утвердить / Отклонить"
+    precondition: "status_id = submitted"
+    fields:
+      - field: timesheet_id
+        label: "Запись табеля"
+        type: select
+        required: true
+        source: { table: hr_timesheet, value_field: timesheet_id, label_field: timesheet_id }
+      - field: approved_by_employee_id
+        label: "Кто утверждает"
+        type: hidden
+        source: current_user

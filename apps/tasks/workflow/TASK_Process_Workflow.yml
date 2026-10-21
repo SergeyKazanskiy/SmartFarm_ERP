@@ -1,0 +1,181 @@
+meta:
+  title: TASK_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов управления задачами с ролями, задачами,
+    переходами между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов.
+
+roles_catalog:
+  dispatcher: Диспетчер
+  master: Мастер участка
+  employee: Исполнитель (сотрудник)
+
+processes:
+
+- id: TASK-01
+  name: Задачи
+  description: Полный жизненный цикл задачи.
+  dashboards:
+  - DASH-TASK-01 (Мои задачи)
+  - DASH-TASK-02 (Все задачи)
+  reports:
+  - REP-TASK-01 (Карточка задачи)
+  tasks:
+  - id: TASK-TASK-01-01
+    name: Создание задачи
+    role: dispatcher
+    has_form: true
+    form_ref: [OP-TASK-01]
+    sql_queries:
+      on_insert:
+        query_code: OP-TASK-01
+    transitions:
+    - target_task: TASK-TASK-01-02
+      condition: Задача создана, требуется назначение исполнителя
+      on_event: [on_insert]
+
+  - id: TASK-TASK-01-02
+    name: Назначение исполнителя
+    role: dispatcher
+    has_form: true
+    form_ref: [OP-TASK-04]
+    sql_queries:
+      on_assign:
+        query_code: OP-TASK-04
+    transitions:
+    - target_task: TASK-TASK-01-03
+      condition: Исполнитель назначен, можно начинать работу
+      on_event: [on_assign]
+
+  - id: TASK-TASK-01-03
+    name: Начало выполнения
+    role: employee
+    has_form: true
+    form_ref: [OP-TASK-05]
+    sql_queries:
+      on_start:
+        query_code: OP-TASK-05
+    transitions:
+    - target_task: TASK-TASK-01-04
+      condition: Работа начата, можно вести учёт времени
+      on_event: [on_start]
+
+  - id: TASK-TASK-01-04
+    name: Выполнение задачи (учёт времени, комментарии, фото)
+    role: employee
+    has_form: true
+    form_ref: [OP-TASK-11, OP-TASK-14, OP-TASK-16, OP-TASK-10]
+    sql_queries:
+      on_comment:
+        query_code: OP-TASK-11
+      on_photo:
+        query_code: OP-TASK-14
+      on_time:
+        query_code: OP-TASK-16
+      on_completion:
+        query_code: OP-TASK-10
+    transitions:
+    - target_task: TASK-TASK-01-05
+      condition: Работа завершена
+      on_event: [on_completion]
+
+  - id: TASK-TASK-01-05
+    name: Завершение задачи
+    role: employee
+    has_form: true
+    form_ref: [OP-TASK-06]
+    sql_queries:
+      on_complete:
+        query_code: OP-TASK-06
+    transitions:
+    - target_task: END_PROCESS
+      condition: Задача завершена
+      on_event: [on_complete]
+
+  - id: TASK-TASK-01-06
+    name: Отмена задачи
+    role: dispatcher
+    has_form: true
+    form_ref: [OP-TASK-07]
+    sql_queries:
+      on_cancel:
+        query_code: OP-TASK-07
+    transitions:
+    - target_task: END_PROCESS
+      condition: Задача отменена
+      on_event: [on_cancel]
+
+  - id: TASK-TASK-01-07
+    name: Приостановка / Возобновление
+    role: employee
+    has_form: true
+    form_ref: [OP-TASK-08, OP-TASK-09]
+    sql_queries:
+      on_hold:
+        query_code: OP-TASK-08
+      on_resume:
+        query_code: OP-TASK-09
+    transitions:
+    - target_task: TASK-TASK-01-04
+      condition: Работа возобновлена
+      on_event: [on_resume]
+
+  - id: TASK-TASK-01-08
+    name: Редактирование задачи
+    role: dispatcher
+    has_form: true
+    form_ref: [OP-TASK-02]
+    sql_queries:
+      on_update:
+        query_code: OP-TASK-02
+    transitions: []
+
+- id: TASK-02
+  name: Учёт времени и отчёты
+  description: Учёт рабочего времени по задачам.
+  dashboards:
+  - DASH-TASK-03 (Учёт времени)
+  reports:
+  - REP-TASK-02 (Отчёт по времени)
+  tasks:
+  - id: TASK-TASK-02-01
+    name: Ведение учёта времени
+    role: employee
+    has_form: true
+    form_ref: [OP-TASK-16, OP-TASK-17, OP-TASK-18]
+    sql_queries:
+      on_insert:
+        query_code: OP-TASK-16
+      on_update:
+        query_code: OP-TASK-17
+      on_delete:
+        query_code: OP-TASK-18
+    transitions: []
+
+- id: TASK-03
+  name: Уведомления
+  description: Управление уведомлениями.
+  dashboards: []
+  reports: []
+  tasks:
+  - id: TASK-TASK-03-01
+    name: Отметка о прочтении
+    role: employee
+    has_form: true
+    form_ref: [OP-TASK-21]
+    sql_queries:
+      on_read:
+        query_code: OP-TASK-21
+    transitions: []
+
+bpmn_diagrams:
+- id: BPMN-TASK-01
+  name: Жизненный цикл задачи
+  description: От создания до завершения.
+  process_ids:
+  - TASK-01
+- id: BPMN-TASK-02
+  name: Учёт времени
+  description: Учёт рабочего времени.
+  process_ids:
+  - TASK-02

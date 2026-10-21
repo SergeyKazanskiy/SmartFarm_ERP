@@ -1,0 +1,362 @@
+# =====================================================================================
+# HR — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на HR_Schema.json версии 1.2
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Кадровик
+# =====================================================================================
+- role: "кадровик"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-HR-01: Личная карточка сотрудника
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-01
+      report: "Личная карточка сотрудника"
+      description: >
+        Полная информация о сотруднике: личные данные, должность,
+        подразделение, навыки, сертификаты и квалификации.
+        Используется для кадрового учета и планирования развития.
+      parameters:
+        - name: employee_id
+          label: "Сотрудник"
+          type: select
+          required: true
+          description: "Выберите сотрудника"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Шапка личной карточки"
+          columns:
+            - { field: natural_person_id, label: "ID физ. лица", type: number, format: integer }
+            - { field: personnel_number, label: "Таб. номер", type: string }
+            - { field: position_id, label: "Должность", type: number, format: integer }
+            - { field: department_id, label: "Подразделение", type: number, format: integer }
+            - { field: employment_date, label: "Дата приема", type: date }
+            - { field: dismissal_date, label: "Дата увольнения", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { active: "success", on_leave: "warning", dismissed: "danger" } }
+        - title: "Навыки"
+          columns:
+            - { field: skill_id, label: "ID навыка", type: number, format: integer }
+            - { field: self_assessed_level, label: "Самооценка", type: number, format: integer }
+            - { field: confirmed_level, label: "Подтвержденный уровень", type: number, format: integer }
+        - title: "Сертификаты и допуски"
+          columns:
+            - { field: certificate_id, label: "ID сертификата", type: number, format: integer }
+            - { field: certificate_number, label: "№ сертификата", type: string }
+            - { field: issue_date, label: "Дата выдачи", type: date }
+            - { field: expire_date, label: "Истекает", type: date }
+        - title: "Квалификации"
+          columns:
+            - { field: qualification_id, label: "ID квалификации", type: number, format: integer }
+            - { field: valid_to, label: "Действительна до", type: date }
+      query_ref: Q-HR-R01
+      linked_operations:
+        - OP-HR-12  # Прием на работу
+        - OP-HR-13  # Кадровое перемещение
+        - OP-HR-22  # Назначение квалификации
+        - OP-HR-24  # Выдача сертификата
+      export:
+        formats: [pdf, print]
+        template: "employee_card"
+
+    # -------------------------------------------------------------------------------
+    # REP-HR-04: Ведомость отсутствий
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-04
+      report: "Ведомость отсутствий"
+      description: >
+        Полный список всех отсутствий сотрудников за период:
+        отпуска, больничные, командировки и другие виды отсутствий.
+        Используется для контроля дисциплины и расчета зарплаты.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Ведомость отсутствий"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: absence_type_name, label: "Тип отсутствия", type: string, widget: badge, statusMap: { vacation: "info", sick_leave: "warning", business_trip: "success", other: "neutral" } }
+            - { field: date_from, label: "С", type: date }
+            - { field: date_to, label: "По", type: date }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { requested: "warning", approved: "success", rejected: "danger" } }
+      query_ref: Q-HR-R04
+      linked_operations:
+        - OP-HR-29  # Создание заявки на отсутствие
+        - OP-HR-30  # Утверждение заявки
+        - OP-HR-31  # Отклонение заявки
+      export:
+        formats: [pdf, excel, print]
+        template: "absence_list"
+
+    # -------------------------------------------------------------------------------
+    # REP-HR-05: Табель учёта рабочего времени
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-05
+      report: "Табель учёта рабочего времени"
+      description: >
+        Детальный табель рабочего времени за период с указанием
+        отработанных часов, сверхурочных и статуса.
+        Используется для расчета зарплаты и контроля рабочего времени.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+        - name: department_id
+          label: "Подразделение"
+          type: select
+          required: false
+          description: "Фильтр по подразделению"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Табель рабочего времени"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: work_date, label: "Дата", type: date }
+            - { field: hours_worked, label: "Отработано (часов)", type: number, format: decimal }
+            - { field: overtime_hours, label: "Сверхурочно (часов)", type: number, format: decimal }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { draft: "info", submitted: "warning", approved: "success", rejected: "danger" } }
+      summary:
+        - field: hours_worked
+          label: "Итого часов"
+          aggregation: SUM
+        - field: overtime_hours
+          label: "Итого сверхурочных"
+          aggregation: SUM
+      query_ref: Q-HR-R05
+      linked_operations:
+        - OP-HR-33  # Создание табеля
+        - OP-HR-36  # Утверждение табеля
+      export:
+        formats: [pdf, excel, print]
+        template: "timesheet"
+
+
+# =====================================================================================
+# РОЛЬ: Руководитель подразделения
+# =====================================================================================
+- role: "руководитель_подразделения"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-HR-02: Матрица компетенций
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-02
+      report: "Матрица компетенций"
+      description: >
+        Матрица навыков сотрудников подразделения с указанием
+        самооценки, подтвержденного уровня и фактического score.
+        Используется для планирования обучения и развития персонала.
+      parameters:
+        - name: department_id
+          label: "Подразделение"
+          type: select
+          required: true
+          description: "Выберите подразделение"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Матрица компетенций"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: skill_name, label: "Навык", type: string }
+            - { field: self_assessed_level, label: "Самооценка", type: number, format: integer }
+            - { field: confirmed_level, label: "Подтвержденный уровень", type: number, format: integer }
+            - { field: score_value, label: "Score", type: number, format: decimal }
+      query_ref: Q-HR-R02
+      linked_operations:
+        - OP-HR-19  # Самооценка навыка
+        - OP-HR-20  # Подтверждение навыка
+        - OP-HR-21  # Оценка компетенции
+      export:
+        formats: [pdf, excel, print]
+        template: "competence_matrix"
+
+    # -------------------------------------------------------------------------------
+    # REP-HR-04: Ведомость отсутствий
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-04
+      report: "Ведомость отсутствий"
+      description: >
+        Полный список всех отсутствий сотрудников за период:
+        отпуска, больничные, командировки и другие виды отсутствий.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Ведомость отсутствий"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: absence_type_name, label: "Тип отсутствия", type: string, widget: badge, statusMap: { vacation: "info", sick_leave: "warning", business_trip: "success", other: "neutral" } }
+            - { field: date_from, label: "С", type: date }
+            - { field: date_to, label: "По", type: date }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { requested: "warning", approved: "success", rejected: "danger" } }
+      query_ref: Q-HR-R04
+      linked_operations:
+        - OP-HR-29  # Создание заявки на отсутствие
+        - OP-HR-30  # Утверждение заявки
+        - OP-HR-31  # Отклонение заявки
+      export:
+        formats: [pdf, excel, print]
+        template: "absence_list"
+
+    # -------------------------------------------------------------------------------
+    # REP-HR-05: Табель учёта рабочего времени
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-05
+      report: "Табель учёта рабочего времени"
+      description: >
+        Детальный табель рабочего времени за период с указанием
+        отработанных часов, сверхурочных и статуса.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+        - name: department_id
+          label: "Подразделение"
+          type: select
+          required: false
+          description: "Фильтр по подразделению"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Табель рабочего времени"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: work_date, label: "Дата", type: date }
+            - { field: hours_worked, label: "Отработано (часов)", type: number, format: decimal }
+            - { field: overtime_hours, label: "Сверхурочно (часов)", type: number, format: decimal }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { draft: "info", submitted: "warning", approved: "success", rejected: "danger" } }
+      summary:
+        - field: hours_worked
+          label: "Итого часов"
+          aggregation: SUM
+        - field: overtime_hours
+          label: "Итого сверхурочных"
+          aggregation: SUM
+      query_ref: Q-HR-R05
+      linked_operations:
+        - OP-HR-33  # Создание табеля
+        - OP-HR-36  # Утверждение табеля
+      export:
+        formats: [pdf, excel, print]
+        template: "timesheet"
+
+    # -------------------------------------------------------------------------------
+    # REP-HR-06: Анализ эффективности персонала по подразделениям
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-06
+      report: "Анализ эффективности персонала по подразделениям"
+      description: >
+        Сравнительный анализ эффективности подразделений:
+        количество сотрудников, отработанные часы, сверхурочные часы,
+        процент подтверждённых навыков, средний score продуктивности.
+        Используется для оценки эффективности работы подразделений.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Эффективность подразделений"
+          columns:
+            - { field: department_name, label: "Подразделение", type: string }
+            - { field: employee_count, label: "Кол-во сотрудников", type: number, format: integer }
+            - { field: total_hours, label: "Всего часов", type: number, format: decimal }
+            - { field: avg_hours_per_employee, label: "Ср. часов на сотрудника", type: number, format: decimal }
+            - { field: overtime_hours, label: "Сверхурочные", type: number, format: decimal }
+            - { field: skill_confirmation_rate, label: "Подтвержденных навыков (%)", type: number, format: percent, color: status }
+            - { field: avg_score, label: "Ср. Score", type: number, format: decimal }
+      summary:
+        - field: employee_count
+          label: "Итого"
+          aggregation: SUM
+        - field: total_hours
+          label: "Итого"
+          aggregation: SUM
+        - field: overtime_hours
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-HR-R06
+      linked_operations:
+        - OP-HR-12  # Прием на работу
+        - OP-HR-20  # Подтверждение навыка
+        - OP-HR-21  # Оценка компетенции
+        - OP-HR-33  # Создание табеля
+        - OP-HR-36  # Утверждение табеля
+      export:
+        formats: [pdf, excel, print]
+        template: "department_efficiency"
+
+
+# =====================================================================================
+# РОЛЬ: Специалист по охране труда
+# =====================================================================================
+- role: "специалист_по_охране_труда"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-HR-03: Реестр истекающих допусков
+    # -------------------------------------------------------------------------------
+    - report_code: REP-HR-03
+      report: "Реестр истекающих допусков"
+      description: >
+        Список всех допусков, сертификатов и медосмотров,
+        срок действия которых истекает в ближайшее время.
+        Используется для своевременного продления и контроля безопасности.
+      parameters:
+        - name: days_threshold
+          label: "Горизонт (дней)"
+          type: number
+          required: true
+          default: 30
+          description: "Количество дней до истечения срока"
+      sections:
+        - title: "Истекающие допуски"
+          columns:
+            - { field: record_kind, label: "Тип", type: string, widget: badge, statusMap: { certificate: "info", medical_check: "warning", driving_license: "success" } }
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: name, label: "Наименование", type: string }
+            - { field: expire_date, label: "Истекает", type: date }
+      query_ref: Q-HR-R03
+      linked_operations:
+        - OP-HR-24  # Выдача сертификата
+        - OP-HR-25  # Продление сертификата
+        - OP-HR-26  # Прохождение медосмотра
+        - OP-HR-27  # Продление медосмотра
+        - OP-HR-28  # Получение водительского удостоверения
+      export:
+        formats: [pdf, excel, print]
+        template: "expiring_permits"

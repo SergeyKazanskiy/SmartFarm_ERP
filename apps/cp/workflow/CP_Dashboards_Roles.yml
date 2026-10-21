@@ -1,0 +1,670 @@
+# =====================================================================================
+# CP — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на CP_Schema.json
+# =====================================================================================
+
+- role: "sales_manager"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-CP-01: Реестр контрагентов
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CP-01
+      dashboard: "Реестр контрагентов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-counterparties"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Всего контрагентов"
+              subtitle: "всего в системе"
+              dataSource: "Q-CP-01-01"
+              field: "total_counterparties"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-05]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Активные контрагенты"
+              subtitle: "в работе"
+              dataSource: "Q-CP-01-02"
+              field: "active_counterparties"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 100
+                  status: "success"
+                  label: "Отличная база"
+                - field: "value"
+                  operator: "between"
+                  value: 50
+                  value2: 100
+                  status: "warning"
+                  label: "Средняя база"
+                - field: "value"
+                  operator: "<"
+                  value: 50
+                  status: "danger"
+                  label: "Требует пополнения"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-05, OP-CP-07]
+
+        - id: "sec-analytics-counterparties"
+          type: "analytics"
+          title: "Структура контрагентов"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение по типам"
+              subtitle: "структура контрагентов"
+              dataSource: "Q-CP-01-03"
+              chartType: "pie"
+              category: "counterparty_type_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-01, OP-CP-05]
+              
+            - widget_id: W01-04
+              type: Chart
+              title: "Распределение по категориям"
+              subtitle: "категории контрагентов"
+              dataSource: "Q-CP-01-04"
+              chartType: "pie"
+              category: "category_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-03, OP-CP-05]
+
+        - id: "sec-detailed-counterparties"
+          type: "analytics"
+          title: "Последние добавленные"
+          widgets:
+            - widget_id: W01-05
+              type: Table
+              title: "Последние добавленные контрагенты"
+              subtitle: "новые записи"
+              dataSource: "Q-CP-01-05"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "counterparty_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "code"
+                  title: "Код"
+                  width: 100
+                - field: "name"
+                  title: "Наименование"
+                  width: 250
+                  sortable: true
+                - field: "counterparty_type_id"
+                  title: "Тип"
+                  width: 120
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "active": "success"
+                      "inactive": "neutral"
+                      "blocked": "danger"
+                - field: "created_at"
+                  title: "Дата создания"
+                  width: 150
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 12 }
+              linked_operations: [OP-CP-05]
+
+    # -------------------------------------------------------------------------------
+    # DASH-CP-02: Аналитика по контрагентам
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CP-02
+      dashboard: "Аналитика по контрагентам"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-rating"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Средний рейтинг"
+              subtitle: "по всем контрагентам"
+              dataSource: "Q-CP-02-01"
+              field: "avg_rating"
+              aggregation: "AVG"
+              format: "number"
+              suffix: " ★"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 4.5
+                  status: "success"
+                  label: "Отлично"
+                - field: "value"
+                  operator: "between"
+                  value: 3.5
+                  value2: 4.5
+                  status: "warning"
+                  label: "Хорошо"
+                - field: "value"
+                  operator: "<"
+                  value: 3.5
+                  status: "danger"
+                  label: "Требует внимания"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-18]
+
+        - id: "sec-analytics-rating"
+          type: "analytics"
+          title: "Рейтинг и взаимодействия"
+          widgets:
+            - widget_id: W02-02
+              type: Table
+              title: "ТОП-10 контрагентов по рейтингу"
+              subtitle: "лидеры"
+              dataSource: "Q-CP-02-02"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "code"
+                  title: "Код"
+                  width: 100
+                - field: "name"
+                  title: "Наименование"
+                  width: 250
+                  sortable: true
+                - field: "rating_value"
+                  title: "Рейтинг"
+                  width: 120
+                  align: "right"
+                - field: "rating_type"
+                  title: "Тип рейтинга"
+                  width: 120
+                - field: "rating_date"
+                  title: "Дата"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+              grid: { w: 6 }
+              linked_operations: [OP-CP-05, OP-CP-18]
+              
+            - widget_id: W02-03
+              type: Chart
+              title: "Количество взаимодействий по типам"
+              subtitle: "за месяц"
+              dataSource: "Q-CP-02-03"
+              chartType: "bar"
+              category: "interaction_type"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "count"
+                  label: "Количество"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-CP-19]
+
+    # -------------------------------------------------------------------------------
+    # DASH-CP-03: Договоры
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CP-03
+      dashboard: "Договоры"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-contracts"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Активные договоры"
+              subtitle: "действующие контракты"
+              dataSource: "Q-CP-03-01"
+              field: "active_contracts"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-21, OP-CP-23]
+
+        - id: "sec-alerts-contracts"
+          type: "alerts"
+          title: "Истекающие договоры"
+          widgets:
+            - widget_id: W03-02
+              type: Table
+              title: "Истекающие договоры (30 дней)"
+              subtitle: "требуют внимания"
+              dataSource: "Q-CP-03-02"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "contract_number"
+                  title: "№ договора"
+                  width: 130
+                  sortable: true
+                - field: "counterparty_name"
+                  title: "Контрагент"
+                  width: 200
+                  sortable: true
+                - field: "valid_to"
+                  title: "Действителен до"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "contract_type"
+                  title: "Тип"
+                  width: 120
+                - field: "amount"
+                  title: "Сумма"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "currency_id"
+                  title: "Валюта"
+                  width: 80
+                  align: "center"
+              grid: { w: 12 }
+              linked_operations: [OP-CP-21, OP-CP-23]
+
+    # -------------------------------------------------------------------------------
+    # DASH-CP-04: Черный список
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CP-04
+      dashboard: "Черный список"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-blacklist"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Контрагентов в черном списке"
+              subtitle: "заблокированы"
+              dataSource: "Q-CP-04-01"
+              field: "blacklisted_count"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 3
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 4
+                  value2: 10
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 10
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-26]
+
+        - id: "sec-detailed-blacklist"
+          type: "alerts"
+          title: "Черный список"
+          widgets:
+            - widget_id: W04-02
+              type: Table
+              title: "Черный список"
+              subtitle: "заблокированные контрагенты"
+              dataSource: "Q-CP-04-02"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "code"
+                  title: "Код"
+                  width: 100
+                - field: "name"
+                  title: "Наименование"
+                  width: 250
+                  sortable: true
+                - field: "block_date"
+                  title: "Дата блокировки"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "reason"
+                  title: "Причина"
+                  width: 250
+                - field: "blocked_by_employee_id"
+                  title: "Заблокировал"
+                  width: 120
+                  align: "center"
+              grid: { w: 12 }
+              linked_operations: [OP-CP-05, OP-CP-26]
+
+
+# =====================================================================================
+# РОЛЬ: Менеджер по закупкам
+# =====================================================================================
+- role: "procurement_manager"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-CP-01: Реестр контрагентов (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CP-01
+      dashboard: "Реестр контрагентов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-procurement"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Всего контрагентов"
+              dataSource: "Q-CP-01-01"
+              field: "total_counterparties"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-05]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Активные контрагенты"
+              dataSource: "Q-CP-01-02"
+              field: "active_counterparties"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-05, OP-CP-07]
+
+        - id: "sec-analytics-procurement"
+          type: "analytics"
+          title: "Структура"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение по типам"
+              dataSource: "Q-CP-01-03"
+              chartType: "pie"
+              category: "counterparty_type_name"
+              showLegend: true
+              height: 320
+              series:
+                - field: "count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-01, OP-CP-05]
+
+        - id: "sec-detailed-procurement"
+          type: "analytics"
+          title: "Последние добавленные"
+          widgets:
+            - widget_id: W01-05
+              type: Table
+              title: "Последние добавленные контрагенты"
+              dataSource: "Q-CP-01-05"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "counterparty_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "code"
+                  title: "Код"
+                  width: 100
+                - field: "name"
+                  title: "Наименование"
+                  width: 250
+                  sortable: true
+                - field: "counterparty_type_id"
+                  title: "Тип"
+                  width: 120
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "active": "success"
+                      "inactive": "neutral"
+                      "blocked": "danger"
+                - field: "created_at"
+                  title: "Дата создания"
+                  width: 150
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 8 }
+              linked_operations: [OP-CP-05]
+
+
+# =====================================================================================
+# РОЛЬ: Юрист
+# =====================================================================================
+- role: "lawyer"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-CP-03: Договоры (расширенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CP-03
+      dashboard: "Договоры"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-lawyer"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Активные договоры"
+              dataSource: "Q-CP-03-01"
+              field: "active_contracts"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-21, OP-CP-23]
+
+        - id: "sec-alerts-lawyer"
+          type: "alerts"
+          title: "Истекающие договоры"
+          widgets:
+            - widget_id: W03-02
+              type: Table
+              title: "Истекающие договоры (30 дней)"
+              dataSource: "Q-CP-03-02"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "contract_number"
+                  title: "№ договора"
+                  width: 130
+                  sortable: true
+                - field: "counterparty_name"
+                  title: "Контрагент"
+                  width: 200
+                  sortable: true
+                - field: "valid_to"
+                  title: "Действителен до"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "contract_type"
+                  title: "Тип"
+                  width: 120
+                - field: "amount"
+                  title: "Сумма"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "currency_id"
+                  title: "Валюта"
+                  width: 80
+                  align: "center"
+              grid: { w: 6 }
+              linked_operations: [OP-CP-21, OP-CP-23]
+
+        - id: "sec-detailed-lawyer"
+          type: "analytics"
+          title: "Все договоры"
+          widgets:
+            - widget_id: W03-03
+              type: Table
+              title: "Все договоры по контрагентам"
+              subtitle: "реестр договоров"
+              dataSource: "Q-CP-03-03"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "counterparty_name"
+                  title: "Контрагент"
+                  width: 200
+                  sortable: true
+                - field: "contract_number"
+                  title: "№ договора"
+                  width: 130
+                  sortable: true
+                - field: "contract_date"
+                  title: "Дата"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "valid_from"
+                  title: "Действителен с"
+                  width: 120
+                  formatter: "date"
+                - field: "valid_to"
+                  title: "Действителен до"
+                  width: 120
+                  formatter: "date"
+                - field: "contract_type"
+                  title: "Тип"
+                  width: 120
+                - field: "amount"
+                  title: "Сумма"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "draft": "info"
+                      "active": "success"
+                      "completed": "neutral"
+                      "cancelled": "danger"
+              grid: { w: 12 }
+              linked_operations: [OP-CP-21]
+
+
+# =====================================================================================
+# РОЛЬ: Специалист по безопасности
+# =====================================================================================
+- role: "security_manager"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-CP-04: Черный список
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CP-04
+      dashboard: "Черный список"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-security"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Контрагентов в черном списке"
+              dataSource: "Q-CP-04-01"
+              field: "blacklisted_count"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 3
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 4
+                  value2: 10
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 10
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-CP-26]
+
+        - id: "sec-detailed-security"
+          type: "alerts"
+          title: "Черный список"
+          widgets:
+            - widget_id: W04-02
+              type: Table
+              title: "Черный список"
+              subtitle: "заблокированные контрагенты"
+              dataSource: "Q-CP-04-02"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "code"
+                  title: "Код"
+                  width: 100
+                - field: "name"
+                  title: "Наименование"
+                  width: 250
+                  sortable: true
+                - field: "block_date"
+                  title: "Дата блокировки"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "reason"
+                  title: "Причина"
+                  width: 250
+                - field: "blocked_by_employee_id"
+                  title: "Заблокировал"
+                  width: 120
+                  align: "center"
+              grid: { w: 12 }
+              linked_operations: [OP-CP-05, OP-CP-26]

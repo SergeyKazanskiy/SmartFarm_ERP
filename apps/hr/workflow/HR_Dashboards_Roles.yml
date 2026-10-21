@@ -1,0 +1,595 @@
+# =====================================================================================
+# HR — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на HR_Schema.json версии 1.2 (18 таблиц)
+# =====================================================================================
+
+- role: "кадровик"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-HR-01: Персонал предприятия
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-HR-01
+      dashboard: "Персонал предприятия"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-personnel"
+          type: "kpi"
+          title: "Ключевые показатели персонала"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные сотрудники"
+              subtitle: "в штате"
+              dataSource: "Q-HR-01-01"
+              field: "active_employees"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-12, OP-HR-17]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Сотрудники в длительном отсутствии"
+              subtitle: "отпуск, больничный"
+              dataSource: "Q-HR-01-02"
+              field: "on_leave_employees"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 3
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 4
+                  value2: 8
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: ">"
+                  value: 8
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-14, OP-HR-15]
+
+        - id: "sec-analytics-personnel"
+          type: "analytics"
+          title: "Аналитика персонала"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение сотрудников по подразделениям"
+              subtitle: "структура компании"
+              dataSource: "Q-HR-01-03"
+              chartType: "pie"
+              category: "department_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "employee_count"
+                  label: "Количество сотрудников"
+              grid: { w: 6 }
+              linked_operations: [OP-HR-12, OP-HR-13]
+
+        - id: "sec-detailed-personnel"
+          type: "analytics"
+          title: "Детальная информация"
+          widgets:
+            - widget_id: W01-04
+              type: Table
+              title: "Кадровые переводы за период"
+              subtitle: "история изменений"
+              dataSource: "Q-HR-01-04"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "audit_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "employee_id"
+                  title: "ID сотрудника"
+                  width: 100
+                  align: "center"
+                - field: "operation_date"
+                  title: "Дата"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+                - field: "old_value_json"
+                  title: "Было"
+                  width: 200
+                - field: "new_value_json"
+                  title: "Стало"
+                  width: 200
+              grid: { w: 12 }
+              linked_operations: [OP-HR-13]
+
+    # -------------------------------------------------------------------------------
+    # DASH-HR-02: Компетенции и допуски
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-HR-02
+      dashboard: "Компетенции и допуски"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-competencies"
+          type: "kpi"
+          title: "Ключевые показатели компетенций"
+          widgets:
+            - widget_id: W02-04
+              type: Indicator
+              title: "Сотрудники без действующей квалификации"
+              subtitle: "риск простоя"
+              dataSource: "Q-HR-02-04"
+              field: "employees_without_valid_qualification"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 3
+                  value2: 5
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 5
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-22, OP-HR-23]
+
+
+# =====================================================================================
+# РОЛЬ: Руководитель подразделения
+# =====================================================================================
+- role: "руководитель_подразделения"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-HR-01: Персонал предприятия (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-HR-01
+      dashboard: "Персонал предприятия"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-personnel-head"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные сотрудники"
+              dataSource: "Q-HR-01-01"
+              field: "active_employees"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-12, OP-HR-17]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Сотрудники в длительном отсутствии"
+              dataSource: "Q-HR-01-02"
+              field: "on_leave_employees"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-14, OP-HR-15]
+
+        - id: "sec-alerts-personnel-head"
+          type: "alerts"
+          title: "Заявки на отсутствие"
+          widgets:
+            - widget_id: W01-05
+              type: Table
+              title: "Заявки на отсутствие, ожидающие рассмотрения"
+              subtitle: "требуют утверждения"
+              dataSource: "Q-HR-01-05"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "absence_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "personnel_number"
+                  title: "Таб. номер"
+                  width: 100
+                - field: "absence_type_name"
+                  title: "Тип отсутствия"
+                  width: 150
+                - field: "date_from"
+                  title: "С"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "date_to"
+                  title: "По"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "status"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "requested": "warning"
+                      "approved": "success"
+                      "rejected": "danger"
+              grid: { w: 12 }
+              linked_operations: [OP-HR-29, OP-HR-30, OP-HR-31]
+
+    # -------------------------------------------------------------------------------
+    # DASH-HR-02: Компетенции и допуски
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-HR-02
+      dashboard: "Компетенции и допуски"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-competencies-head"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Навыки, ожидающие подтверждения"
+              subtitle: "требуют утверждения руководителем"
+              dataSource: "Q-HR-02-01"
+              field: "pending_confirmation"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 3
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 3
+                  status: "warning"
+                  label: "Требует внимания"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-19, OP-HR-20]
+
+        - id: "sec-analytics-competencies-head"
+          type: "analytics"
+          title: "Матрица навыков"
+          widgets:
+            - widget_id: W02-02
+              type: Table
+              title: "Матрица подтверждённых навыков по подразделению"
+              subtitle: "уровень компетенций"
+              dataSource: "Q-HR-02-02"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "department_name"
+                  title: "Подразделение"
+                  width: 200
+                  sortable: true
+                - field: "skill_name"
+                  title: "Навык"
+                  width: 200
+                  sortable: true
+                - field: "employees_with_skill"
+                  title: "Сотрудников с навыком"
+                  width: 150
+                  align: "right"
+              grid: { w: 12 }
+              linked_operations: [OP-HR-20]
+
+    # -------------------------------------------------------------------------------
+    # DASH-HR-03: Табелирование
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-HR-03
+      dashboard: "Табелирование"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-timesheets"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Табели, ожидающие утверждения"
+              subtitle: "требуют подписи"
+              dataSource: "Q-HR-03-01"
+              field: "pending_timesheets"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 2
+                  status: "warning"
+                  label: "Требует внимания"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-35, OP-HR-36, OP-HR-37]
+              
+            - widget_id: W03-03
+              type: Indicator
+              title: "Суммарные сверхурочные часы"
+              subtitle: "за период"
+              dataSource: "Q-HR-03-03"
+              field: "total_overtime_hours"
+              aggregation: "SUM"
+              format: "number"
+              suffix: " ч"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 40
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 40
+                  status: "warning"
+                  label: "Переработка"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-33, OP-HR-36]
+
+        - id: "sec-analytics-timesheets"
+          type: "analytics"
+          title: "Отработанные часы"
+          widgets:
+            - widget_id: W03-02
+              type: Chart
+              title: "Отработанные часы по сотрудникам"
+              subtitle: "за период"
+              dataSource: "Q-HR-03-02"
+              chartType: "bar"
+              category: "employee_id"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+                unit: "ч"
+              series:
+                - field: "total_hours"
+                  label: "Отработанные часы"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-HR-33, OP-HR-36]
+
+    # -------------------------------------------------------------------------------
+    # DASH-HR-04: Эффективность персонала (инвестиционная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-HR-04
+      dashboard: "Эффективность персонала"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-efficiency-head"
+          type: "kpi"
+          title: "Ключевые показатели эффективности"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Средняя производительность"
+              subtitle: "часов/человек по подразделению"
+              dataSource: "Q-HR-04-01"
+              field: "avg_hours_per_employee"
+              aggregation: "AVG"
+              format: "number"
+              suffix: " ч"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 160
+                  status: "success"
+                  label: "Высокая"
+                - field: "value"
+                  operator: "between"
+                  value: 120
+                  value2: 160
+                  status: "warning"
+                  label: "Средняя"
+                - field: "value"
+                  operator: "<"
+                  value: 120
+                  status: "danger"
+                  label: "Низкая"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-33, OP-HR-36]
+              
+            - widget_id: W04-02
+              type: Indicator
+              title: "Средний уровень подтверждённых навыков"
+              subtitle: "компетенции сотрудников"
+              dataSource: "Q-HR-04-02"
+              field: "confirmation_rate"
+              aggregation: "SUM"
+              format: "percent"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 80
+                  status: "success"
+                  label: "Отлично"
+                - field: "value"
+                  operator: "between"
+                  value: 50
+                  value2: 80
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: "<"
+                  value: 50
+                  status: "danger"
+                  label: "Низкий уровень"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-20]
+
+        - id: "sec-analytics-efficiency-head"
+          type: "analytics"
+          title: "Рейтинги"
+          widgets:
+            - widget_id: W04-03
+              type: Chart
+              title: "ТОП-5 сотрудников по продуктивности"
+              subtitle: "score"
+              dataSource: "Q-HR-04-03"
+              chartType: "bar"
+              category: "personnel_number"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "avg_score"
+                  label: "Средний score"
+                  color: "#34d399"
+              grid: { w: 6 }
+              linked_operations: [OP-HR-21]
+
+        - id: "sec-alerts-efficiency-head"
+          type: "alerts"
+          title: "Риски простоя"
+          widgets:
+            - widget_id: W04-04
+              type: Table
+              title: "Сотрудники с истекшими квалификациями"
+              subtitle: "риск простоя"
+              dataSource: "Q-HR-04-04"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "employee_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "personnel_number"
+                  title: "Таб. номер"
+                  width: 100
+                - field: "position_id"
+                  title: "Должность"
+                  width: 150
+                - field: "qualification_name"
+                  title: "Квалификация"
+                  width: 180
+                  sortable: true
+                - field: "valid_to"
+                  title: "Действителен до"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "days_expired"
+                  title: "Просрочено (дней)"
+                  width: 120
+                  align: "right"
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "1-30": "warning"
+                      "31-60": "danger"
+                      "61": "danger"
+              grid: { w: 6 }
+              linked_operations: [OP-HR-22, OP-HR-23]
+
+
+# =====================================================================================
+# РОЛЬ: Специалист по охране труда
+# =====================================================================================
+- role: "специалист_по_охране_труда"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-HR-02: Компетенции и допуски
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-HR-02
+      dashboard: "Компетенции и допуски"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-safety"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-04
+              type: Indicator
+              title: "Сотрудники без действующей квалификации"
+              subtitle: "риск простоя"
+              dataSource: "Q-HR-02-04"
+              field: "employees_without_valid_qualification"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 3
+                  value2: 5
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 5
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-HR-22, OP-HR-23]
+
+        - id: "sec-alerts-safety"
+          type: "alerts"
+          title: "Истекающие допуски"
+          widgets:
+            - widget_id: W02-03
+              type: Table
+              title: "Допуски/медосмотры/удостоверения с истекающим сроком"
+              subtitle: "в ближайшие 30 дней"
+              dataSource: "Q-HR-02-03"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "record_kind"
+                  title: "Тип"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "certificate": "info"
+                      "medical_check": "warning"
+                      "driving_license": "info"
+                - field: "employee_id"
+                  title: "ID сотрудника"
+                  width: 100
+                  align: "center"
+                - field: "name"
+                  title: "Наименование"
+                  width: 250
+                  sortable: true
+                - field: "expire_date"
+                  title: "Истекает"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+              grid: { w: 12 }
+              linked_operations: [OP-HR-24, OP-HR-25, OP-HR-26, OP-HR-27, OP-HR-28]

@@ -1,0 +1,41 @@
+# 1. Миграция под event_aliases
+python manage.py makemigrations tasks
+python manage.py migrate
+
+# 2. Загрузка workflow CP (нужны YAML-файлы в apps/cp/workflow/)
+python manage.py load_workflow --company=1 --module=CP
+
+# Ожидаете вывод:
+#   Загрузка apps/cp/workflow/CP_Process_Workflow.yml ...
+#     created=13, updated=0, transitions=1
+#   Workflow загружен
+
+# 3. Загрузка demo-данных
+python manage.py demo_cp --company=1 --file=apps/cp/workflow/CP_test_data.json
+
+# Ожидаете:
+#   Демо-данные CP загружены:
+#     counterparty_type: 4
+#     category: 4
+#     counterparty: 5
+#     contact_person: 5
+#     bank_account: 3
+#     address: 2
+#     rating: 5
+#     interaction: 5
+#     contract: 4
+#     attachment: 3
+#     blacklist: 1
+
+# 4. Обработка событий
+python manage.py process_events --once
+
+# 5. Проверить, что задачи создались
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+for t in TaskTask.objects.all()[:20]:
+    print(t.id, t.definition.code, t.assigned_role, t.status, t.source_id)
+"
+
+# 6. Запуск тестов
+pytest apps/cp/tests/ -v

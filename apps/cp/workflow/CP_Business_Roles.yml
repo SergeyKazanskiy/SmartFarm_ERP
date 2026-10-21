@@ -1,0 +1,661 @@
+# =====================================================================================
+# CP — каталог форм для бизнес-операций
+# Источник: CP_Business_Queries.sql (29 операций OP-CP-01…29, схема v1.0).
+# =====================================================================================
+
+process: CP-01
+process_name: "Справочники"
+role: "admin"
+operations:
+
+  - op_code: [OP-CP-01, OP-CP-02]
+    name: "Ведение типов контрагентов"
+    table: cp_counterparty_type
+    type: [insert, update]
+    event: "CP.counterpartyType.save"
+    button: "Сохранить тип"
+    fields:
+      - field: counterparty_type_id
+        label: "Тип (пусто для нового)"
+        type: select
+        required: false
+        source: { table: cp_counterparty_type, value_field: counterparty_type_id, label_field: counterparty_type_name }
+      - field: counterparty_type_name
+        label: "Название типа"
+        type: text
+        required: true
+      - field: is_active
+        label: "Активен"
+        type: checkbox
+        required: false
+
+  - op_code: [OP-CP-03, OP-CP-04]
+    name: "Ведение категорий контрагентов"
+    table: cp_category
+    type: [insert, update]
+    event: "CP.category.save"
+    button: "Сохранить категорию"
+    fields:
+      - field: category_id
+        label: "Категория (пусто для новой)"
+        type: select
+        required: false
+        source: { table: cp_category, value_field: category_id, label_field: category_name }
+      - field: category_name
+        label: "Название категории"
+        type: text
+        required: true
+      - field: parent_id
+        label: "Родительская категория"
+        type: select
+        required: false
+        source: { table: cp_category, value_field: category_id, label_field: category_name }
+      - field: is_active
+        label: "Активна"
+        type: checkbox
+        required: false
+
+---
+process: CP-02
+process_name: "Карточки контрагентов"
+role: "sales_manager"
+operations:
+
+  - op_code: [OP-CP-05, OP-CP-06]
+    name: "Создание и редактирование контрагента"
+    table: cp_counterparty
+    type: [insert, update]
+    event: "CP.counterparty.save"
+    button: "Сохранить контрагента"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент (пусто для нового)"
+        type: select
+        required: false
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: counterparty_type_id
+        label: "Тип контрагента"
+        type: select
+        required: true
+        source: { table: cp_counterparty_type, value_field: counterparty_type_id, label_field: counterparty_type_name }
+      - field: category_id
+        label: "Категория"
+        type: select
+        required: false
+        source: { table: cp_category, value_field: category_id, label_field: category_name }
+      - field: code
+        label: "Внутренний код"
+        type: text
+        required: true
+      - field: name
+        label: "Полное наименование"
+        type: text
+        required: true
+      - field: short_name
+        label: "Краткое наименование"
+        type: text
+        required: false
+      - field: tax_id
+        label: "ИНН/ЕГРПОУ"
+        type: text
+        required: false
+      - field: tax_registration_id
+        label: "Номер налоговой регистрации"
+        type: text
+        required: false
+      - field: vat_registration
+        label: "Номер НДС-регистрации"
+        type: text
+        required: false
+      - field: legal_address
+        label: "Юридический адрес"
+        type: text
+        required: false
+      - field: actual_address
+        label: "Фактический адрес"
+        type: text
+        required: false
+      - field: phone
+        label: "Телефон"
+        type: text
+        required: false
+      - field: email
+        label: "Email"
+        type: text
+        required: false
+      - field: website
+        label: "Веб-сайт"
+        type: text
+        required: false
+      - field: industry
+        label: "Отрасль"
+        type: text
+        required: false
+      - field: credit_limit
+        label: "Кредитный лимит"
+        type: number
+        required: false
+      - field: payment_terms
+        label: "Условия оплаты"
+        type: text
+        required: false
+      - field: delivery_terms
+        label: "Условия поставки"
+        type: text
+        required: false
+      - field: responsible_employee_id
+        label: "Ответственный сотрудник"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-CP-07
+    name: "Изменение статуса контрагента"
+    table: cp_counterparty
+    type: update
+    event: "CP.counterparty.updateStatus"
+    button: "Сохранить статус"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: status_id
+        label: "Статус"
+        type: select
+        required: true
+        options: [active, inactive, blocked, blacklisted]
+
+  - op_code: OP-CP-08
+    name: "Назначение ответственного за контрагента"
+    table: cp_counterparty
+    type: update
+    event: "CP.counterparty.assignResponsible"
+    button: "Назначить"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: responsible_employee_id
+        label: "Ответственный"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: [OP-CP-09, OP-CP-10]
+    name: "Ведение контактных лиц"
+    table: cp_contact_person
+    type: [insert, update]
+    event: "CP.contactPerson.save"
+    button: "Сохранить контакт"
+    fields:
+      - field: contact_id
+        label: "Контакт (пусто для нового)"
+        type: select
+        required: false
+        source: { table: cp_contact_person, value_field: contact_id, label_field: last_name }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: natural_person_id
+        label: "Физическое лицо (если есть)"
+        type: select
+        required: false
+        source: { table: dict_natural_person, value_field: natural_person_id, label_field: last_name }
+      - field: first_name
+        label: "Имя"
+        type: text
+        required: false
+      - field: last_name
+        label: "Фамилия"
+        type: text
+        required: false
+      - field: middle_name
+        label: "Отчество"
+        type: text
+        required: false
+      - field: position
+        label: "Должность"
+        type: text
+        required: false
+      - field: department
+        label: "Отдел"
+        type: text
+        required: false
+      - field: phone
+        label: "Телефон"
+        type: text
+        required: false
+      - field: mobile_phone
+        label: "Мобильный"
+        type: text
+        required: false
+      - field: email
+        label: "Email"
+        type: text
+        required: false
+      - field: is_primary
+        label: "Основной контакт"
+        type: checkbox
+        required: false
+
+  - op_code: OP-CP-11
+    name: "Удаление контактного лица"
+    table: cp_contact_person
+    type: update
+    event: "CP.contactPerson.delete"
+    button: "Удалить контакт"
+    fields:
+      - field: contact_id
+        label: "Контактное лицо"
+        type: select
+        required: true
+        source: { table: cp_contact_person, value_field: contact_id, label_field: last_name }
+
+  - op_code: [OP-CP-12, OP-CP-13]
+    name: "Ведение банковских счетов"
+    table: cp_bank_account
+    type: [insert, update]
+    event: "CP.bankAccount.save"
+    button: "Сохранить счет"
+    fields:
+      - field: bank_account_id
+        label: "Счет (пусто для нового)"
+        type: select
+        required: false
+        source: { table: cp_bank_account, value_field: bank_account_id, label_field: account_number }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: bank_name
+        label: "Банк"
+        type: text
+        required: false
+      - field: bank_code
+        label: "Код банка (МФО/BIC)"
+        type: text
+        required: false
+      - field: account_number
+        label: "Номер счета (IBAN)"
+        type: text
+        required: true
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+      - field: is_primary
+        label: "Основной счет"
+        type: checkbox
+        required: false
+
+  - op_code: OP-CP-14
+    name: "Удаление банковского счета"
+    table: cp_bank_account
+    type: update
+    event: "CP.bankAccount.delete"
+    button: "Удалить счет"
+    fields:
+      - field: bank_account_id
+        label: "Банковский счет"
+        type: select
+        required: true
+        source: { table: cp_bank_account, value_field: bank_account_id, label_field: account_number }
+
+  - op_code: [OP-CP-15, OP-CP-16]
+    name: "Ведение адресов контрагента"
+    table: cp_address
+    type: [insert, update]
+    event: "CP.address.save"
+    button: "Сохранить адрес"
+    fields:
+      - field: address_id
+        label: "Адрес (пусто для нового)"
+        type: select
+        required: false
+        source: { table: cp_address, value_field: address_id, label_field: address_line1 }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: address_type
+        label: "Тип адреса"
+        type: select
+        required: false
+        options: [legal, actual, warehouse, delivery]
+      - field: address_line1
+        label: "Адрес (строка 1)"
+        type: text
+        required: false
+      - field: address_line2
+        label: "Адрес (строка 2)"
+        type: text
+        required: false
+      - field: city
+        label: "Город"
+        type: text
+        required: false
+      - field: region
+        label: "Область/Регион"
+        type: text
+        required: false
+      - field: postal_code
+        label: "Почтовый индекс"
+        type: text
+        required: false
+      - field: country_id
+        label: "Страна"
+        type: select
+        required: false
+        source: { table: dict_country, value_field: country_id, label_field: country_name }
+      - field: is_primary
+        label: "Основной адрес"
+        type: checkbox
+        required: false
+
+  - op_code: OP-CP-17
+    name: "Удаление адреса"
+    table: cp_address
+    type: update
+    event: "CP.address.delete"
+    button: "Удалить адрес"
+    fields:
+      - field: address_id
+        label: "Адрес"
+        type: select
+        required: true
+        source: { table: cp_address, value_field: address_id, label_field: address_line1 }
+
+---
+process: CP-03
+process_name: "Рейтинги и взаимодействия"
+role: "sales_manager"
+operations:
+
+  - op_code: OP-CP-18
+    name: "Добавление рейтинга"
+    table: cp_rating
+    type: insert
+    event: "CP.rating.create"
+    button: "Добавить рейтинг"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: rating_date
+        label: "Дата рейтинга"
+        type: date
+        required: true
+      - field: rating_value
+        label: "Рейтинг (1-10)"
+        type: number
+        required: true
+      - field: rating_type
+        label: "Тип рейтинга"
+        type: select
+        required: false
+        options: [financial, reliability, quality, overall]
+      - field: comment
+        label: "Комментарий"
+        type: textarea
+        required: false
+
+  - op_code: OP-CP-19
+    name: "Регистрация взаимодействия"
+    table: cp_interaction
+    type: insert
+    event: "CP.interaction.create"
+    button: "Зарегистрировать взаимодействие"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: interaction_type
+        label: "Тип взаимодействия"
+        type: select
+        required: true
+        options: [call, meeting, email, visit, complaint]
+      - field: contact_person_id
+        label: "Контактное лицо"
+        type: select
+        required: false
+        source: { table: cp_contact_person, value_field: contact_id, label_field: last_name }
+      - field: employee_id
+        label: "Сотрудник"
+        type: hidden
+        source: current_user
+      - field: subject
+        label: "Тема"
+        type: text
+        required: false
+      - field: description
+        label: "Описание"
+        type: textarea
+        required: false
+      - field: result
+        label: "Результат"
+        type: text
+        required: false
+      - field: next_action_date
+        label: "Дата следующего действия"
+        type: date
+        required: false
+
+  - op_code: OP-CP-20
+    name: "Изменение взаимодействия"
+    table: cp_interaction
+    type: update
+    event: "CP.interaction.update"
+    button: "Сохранить изменения"
+    fields:
+      - field: interaction_id
+        label: "Взаимодействие"
+        type: select
+        required: true
+        source: { table: cp_interaction, value_field: interaction_id, label_field: subject }
+      - field: interaction_type
+        label: "Тип"
+        type: select
+        required: true
+        options: [call, meeting, email, visit, complaint]
+      - field: contact_person_id
+        label: "Контактное лицо"
+        type: select
+        required: false
+        source: { table: cp_contact_person, value_field: contact_id, label_field: last_name }
+      - field: subject
+        label: "Тема"
+        type: text
+        required: false
+      - field: description
+        label: "Описание"
+        type: textarea
+        required: false
+      - field: result
+        label: "Результат"
+        type: text
+        required: false
+      - field: next_action_date
+        label: "Дата следующего действия"
+        type: date
+        required: false
+
+---
+process: CP-04
+process_name: "Договоры"
+role: "lawyer"
+operations:
+
+  - op_code: [OP-CP-21, OP-CP-22]
+    name: "Ведение договоров"
+    table: cp_contract
+    type: [insert, update]
+    event: "CP.contract.save"
+    button: "Сохранить договор"
+    fields:
+      - field: contract_id
+        label: "Договор (пусто для нового)"
+        type: select
+        required: false
+        source: { table: cp_contract, value_field: contract_id, label_field: contract_number }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: contract_number
+        label: "Номер договора"
+        type: text
+        required: false
+      - field: contract_date
+        label: "Дата договора"
+        type: date
+        required: false
+      - field: valid_from
+        label: "Начало действия"
+        type: date
+        required: false
+      - field: valid_to
+        label: "Окончание действия"
+        type: date
+        required: false
+      - field: contract_type
+        label: "Тип договора"
+        type: select
+        required: false
+        options: [sales, procurement, service, partnership]
+      - field: amount
+        label: "Сумма"
+        type: number
+        required: false
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+
+  - op_code: OP-CP-23
+    name: "Активация договора"
+    table: cp_contract
+    type: update
+    event: "CP.contract.activate"
+    button: "Активировать договор"
+    precondition: "status_id = draft"
+    fields:
+      - field: contract_id
+        label: "Договор"
+        type: select
+        required: true
+        source: { table: cp_contract, value_field: contract_id, label_field: contract_number }
+
+  - op_code: OP-CP-24
+    name: "Расторжение договора"
+    table: cp_contract
+    type: update
+    event: "CP.contract.terminate"
+    button: "Расторгнуть договор"
+    precondition: "status_id = active"
+    fields:
+      - field: contract_id
+        label: "Договор"
+        type: select
+        required: true
+        source: { table: cp_contract, value_field: contract_id, label_field: contract_number }
+
+---
+process: CP-05
+process_name: "Черный список"
+role: "security_manager"
+operations:
+
+  - op_code: OP-CP-26
+    name: "Добавление в черный список"
+    table: cp_blacklist
+    type: insert
+    event: "CP.blacklist.add"
+    button: "Заблокировать контрагента"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: reason
+        label: "Причина блокировки"
+        type: textarea
+        required: true
+
+  - op_code: OP-CP-27
+    name: "Удаление из черного списка"
+    table: cp_blacklist
+    type: update
+    event: "CP.blacklist.remove"
+    button: "Разблокировать контрагента"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: unblock_reason
+        label: "Причина разблокировки"
+        type: textarea
+        required: true
+
+---
+process: CP-06
+process_name: "Документы"
+role: "sales_manager"
+operations:
+
+  - op_code: OP-CP-28
+    name: "Прикрепление документа"
+    table: cp_attachment
+    type: insert
+    event: "CP.attachment.create"
+    button: "Прикрепить документ"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: document_id
+        label: "Документ"
+        type: select
+        required: true
+        source: { table: doc_document, value_field: document_id, label_field: document_number }
+      - field: attachment_type
+        label: "Тип документа"
+        type: select
+        required: false
+        options: [registration, contract, certificate, license, passport]
+      - field: description
+        label: "Описание"
+        type: text
+        required: false
+
+  - op_code: OP-CP-29
+    name: "Удаление прикрепленного документа"
+    table: cp_attachment
+    type: delete
+    event: "CP.attachment.delete"
+    button: "Удалить документ"
+    fields:
+      - field: attachment_id
+        label: "Прикрепленный документ"
+        type: select
+        required: true
+        source: { table: cp_attachment, value_field: attachment_id, label_field: attachment_id }

@@ -1,0 +1,496 @@
+# =====================================================================================
+# TASK — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на TASK_Schema.json
+# =====================================================================================
+
+- role: "employee"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-TASK-01: Мои задачи
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-TASK-01
+      dashboard: "Мои задачи"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-my-tasks"
+          type: "kpi"
+          title: "Мои задачи"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Задачи на мне"
+              subtitle: "активные назначения"
+              dataSource: "Q-TASK-01-01"
+              field: "my_tasks"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-04]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "В работе"
+              subtitle: "выполняю сейчас"
+              dataSource: "Q-TASK-01-02"
+              field: "in_progress"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-04, OP-TASK-05]
+              
+            - widget_id: W01-03
+              type: Indicator
+              title: "Просроченные"
+              subtitle: "требуют внимания"
+              dataSource: "Q-TASK-01-03"
+              field: "overdue"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 1
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 2
+                  value2: 3
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 3
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-04, OP-TASK-05]
+
+        - id: "sec-detailed-my-tasks"
+          type: "analytics"
+          title: "Мои активные задачи"
+          widgets:
+            - widget_id: W01-04
+              type: Table
+              title: "Мои активные задачи"
+              subtitle: "в работе"
+              dataSource: "Q-TASK-01-04"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "task_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "task_name"
+                  title: "Задача"
+                  width: 200
+                  sortable: true
+                - field: "priority"
+                  title: "Приоритет"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "1": "danger"
+                      "2": "warning"
+                      "3": "info"
+                      "4": "neutral"
+                      "5": "neutral"
+                - field: "planned_start"
+                  title: "План старт"
+                  width: 120
+                  formatter: "datetime"
+                  sortable: true
+                - field: "planned_finish"
+                  title: "План финиш"
+                  width: 120
+                  formatter: "datetime"
+                  sortable: true
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "created": "info"
+                      "assigned": "info"
+                      "in_progress": "warning"
+                      "completed": "success"
+                      "cancelled": "danger"
+                - field: "completion_percent"
+                  title: "Выполнение (%)"
+                  width: 120
+                  widget:
+                    type: "progress"
+                    max: 100
+              grid: { w: 12 }
+              linked_operations: [OP-TASK-04, OP-TASK-05, OP-TASK-06]
+
+    # -------------------------------------------------------------------------------
+    # DASH-TASK-03: Учёт времени
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-TASK-03
+      dashboard: "Учёт времени"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-time"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Всего часов за неделю"
+              subtitle: "учтено времени"
+              dataSource: "Q-TASK-03-01"
+              field: "total_hours"
+              aggregation: "SUM"
+              format: "number"
+              suffix: " ч"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-16]
+
+        - id: "sec-detailed-time"
+          type: "analytics"
+          title: "Мои записи времени"
+          widgets:
+            - widget_id: W03-02
+              type: Table
+              title: "Мои записи времени"
+              subtitle: "учет времени"
+              dataSource: "Q-TASK-03-02"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "time_tracking_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "task_id"
+                  title: "ID задачи"
+                  width: 100
+                  align: "center"
+                - field: "date_logged"
+                  title: "Дата"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "hours"
+                  title: "Часы"
+                  width: 100
+                  align: "right"
+                - field: "description"
+                  title: "Описание"
+                  width: 250
+              grid: { w: 8 }
+              linked_operations: [OP-TASK-16, OP-TASK-17]
+
+
+# =====================================================================================
+# РОЛЬ: Диспетчер
+# =====================================================================================
+- role: "dispatcher"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-TASK-02: Все задачи
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-TASK-02
+      dashboard: "Все задачи"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-all-tasks"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Всего задач"
+              subtitle: "в системе"
+              dataSource: "Q-TASK-02-01"
+              field: "total_tasks"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-01]
+              
+            - widget_id: W02-02
+              type: Indicator
+              title: "Задач в работе"
+              subtitle: "активные"
+              dataSource: "Q-TASK-02-02"
+              field: "in_progress_tasks"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-01, OP-TASK-05]
+              
+            - widget_id: W02-03
+              type: Indicator
+              title: "Просроченных задач"
+              subtitle: "критические"
+              dataSource: "Q-TASK-02-03"
+              field: "overdue_tasks"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 5
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 6
+                  value2: 15
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 15
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-01, OP-TASK-05]
+
+        - id: "sec-analytics-all-tasks"
+          type: "analytics"
+          title: "Аналитика задач"
+          widgets:
+            - widget_id: W02-04
+              type: Chart
+              title: "Распределение по статусам"
+              subtitle: "все задачи"
+              dataSource: "Q-TASK-02-04"
+              chartType: "pie"
+              category: "status_id"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "task_count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-01, OP-TASK-03]
+
+        - id: "sec-alerts-all-tasks"
+          type: "alerts"
+          title: "Срочные и без исполнителя"
+          widgets:
+            - widget_id: W02-05
+              type: Table
+              title: "Все задачи (срочные)"
+              subtitle: "приоритет 1-2"
+              dataSource: "Q-TASK-02-05"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "task_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "task_name"
+                  title: "Задача"
+                  width: 180
+                  sortable: true
+                - field: "priority"
+                  title: "Приоритет"
+                  width: 80
+                  align: "center"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "created": "info"
+                      "assigned": "info"
+                      "in_progress": "warning"
+                      "completed": "success"
+                      "cancelled": "danger"
+                - field: "planned_start"
+                  title: "Старт"
+                  width: 120
+                  formatter: "datetime"
+                - field: "planned_finish"
+                  title: "Финиш"
+                  width: 120
+                  formatter: "datetime"
+                - field: "assigned_to"
+                  title: "Исполнитель"
+                  width: 100
+                  align: "center"
+                - field: "completion_percent"
+                  title: "Выполнение (%)"
+                  width: 100
+                  widget:
+                    type: "progress"
+                    max: 100
+              grid: { w: 6 }
+              linked_operations: [OP-TASK-01, OP-TASK-02, OP-TASK-03]
+              
+            - widget_id: W02-06
+              type: Table
+              title: "Задачи без исполнителя"
+              subtitle: "требуют назначения"
+              dataSource: "Q-TASK-02-06"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "task_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "task_name"
+                  title: "Задача"
+                  width: 200
+                  sortable: true
+                - field: "status_id"
+                  title: "Статус"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "created": "info"
+                      "assigned": "info"
+                - field: "planned_start"
+                  title: "Старт"
+                  width: 120
+                  formatter: "datetime"
+                - field: "planned_finish"
+                  title: "Финиш"
+                  width: 120
+                  formatter: "datetime"
+              grid: { w: 6 }
+              linked_operations: [OP-TASK-01]
+
+    # -------------------------------------------------------------------------------
+    # DASH-TASK-03: Учёт времени (расширенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-TASK-03
+      dashboard: "Учёт времени"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-time"
+          type: "analytics"
+          title: "Затраты времени"
+          widgets:
+            - widget_id: W03-03
+              type: Chart
+              title: "Затраты времени по исполнителям"
+              subtitle: "последние 30 дней"
+              dataSource: "Q-TASK-03-03"
+              chartType: "bar"
+              category: "employee_id"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 400
+              leftAxis:
+                format: "number"
+                unit: "ч"
+              series:
+                - field: "total_hours"
+                  label: "Часы"
+                  color: "#60a5fa"
+              grid: { w: 12 }
+              linked_operations: [OP-TASK-16]
+
+
+# =====================================================================================
+# РОЛЬ: Мастер
+# =====================================================================================
+- role: "master"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-TASK-02: Все задачи (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-TASK-02
+      dashboard: "Все задачи"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-master"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Всего задач"
+              dataSource: "Q-TASK-02-01"
+              field: "total_tasks"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-01]
+              
+            - widget_id: W02-02
+              type: Indicator
+              title: "Задач в работе"
+              dataSource: "Q-TASK-02-02"
+              field: "in_progress_tasks"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-TASK-01, OP-TASK-05]
+
+        - id: "sec-detailed-master"
+          type: "analytics"
+          title: "Задачи участка"
+          widgets:
+            - widget_id: W02-05
+              type: Table
+              title: "Все задачи участка"
+              subtitle: "срочные"
+              dataSource: "Q-TASK-02-05"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "task_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "task_name"
+                  title: "Задача"
+                  width: 180
+                  sortable: true
+                - field: "priority"
+                  title: "Приоритет"
+                  width: 80
+                  align: "center"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "created": "info"
+                      "assigned": "info"
+                      "in_progress": "warning"
+                      "completed": "success"
+                      "cancelled": "danger"
+                - field: "planned_start"
+                  title: "Старт"
+                  width: 120
+                  formatter: "datetime"
+                - field: "planned_finish"
+                  title: "Финиш"
+                  width: 120
+                  formatter: "datetime"
+                - field: "assigned_to"
+                  title: "Исполнитель"
+                  width: 100
+                  align: "center"
+                - field: "completion_percent"
+                  title: "Выполнение (%)"
+                  width: 100
+                  widget:
+                    type: "progress"
+                    max: 100
+              grid: { w: 12 }
+              linked_operations: [OP-TASK-01, OP-TASK-02, OP-TASK-03]

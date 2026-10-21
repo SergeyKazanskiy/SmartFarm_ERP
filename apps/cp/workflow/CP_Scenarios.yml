@@ -1,0 +1,855 @@
+# =====================================================================================
+# CP_Scenarios.yml — Сценарии взаимодействия модуля Управление контрагентами (CP)
+# с другими модулями ERP
+# =====================================================================================
+
+meta:
+  title: CP_Scenarios_Definition
+  version: "1.0"
+  description: >
+    Описание сквозных сценариев взаимодействия модуля управления контрагентами (CP)
+    с другими модулями ERP. Пуллы — это модули (CP, Sales, Procurement, WMS, Production,
+    Finance, Fleet, Construction, HR, CRM). Задачи — это бизнес-процессы внутри модулей.
+    Переходы — передача управления между модулями.
+
+scenario_types:
+  - type: full_cycle
+    description: Полный жизненный цикл контрагента от регистрации до завершения сотрудничества
+  - type: integration
+    description: Интеграционное взаимодействие между модулями
+  - type: exception
+    description: Обработка исключительных ситуаций (черный список, блокировка)
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-01: РЕГИСТРАЦИЯ НОВОГО КОНТРАГЕНТА (ПОЛНЫЙ ЦИКЛ)
+# =====================================================================================
+- scenario_id: SCENARIO-CP-001
+  name: "Регистрация нового контрагента"
+  description: >
+    Полный цикл регистрации нового контрагента в системе:
+    - Создание карточки контрагента (CP)
+    - Добавление контактных лиц (CP)
+    - Добавление банковских счетов (CP)
+    - Добавление адресов (CP)
+    - Создание договора (CP → CRM/Finance)
+    - Назначение ответственного (CP → HR)
+    - Прикрепление документов (CP → DOC)
+  type: full_cycle
+  priority: critical
+
+  lanes:
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: CRM
+      lane_name: "CRM — Клиенты"
+      module: CRM
+    - lane_id: FINANCE
+      lane_name: "Finance — Финансы"
+      module: Finance
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: DOC
+      lane_name: "DOC — Документы"
+      module: DOC
+
+  steps:
+    - step_id: CP-01
+      lane: CP
+      task: "Создание карточки контрагента"
+      process_ref: [CP-02, TASK-CP-02-01]
+      operation_ref: OP-CP-05
+      description: "Менеджер создаёт карточку нового контрагента"
+      trigger: "Запрос от отдела продаж или закупок"
+      system_action: "cp_counterparty.status_id = 'active'"
+      ui_notification: "Карточка контрагента создана"
+
+    - step_id: CP-02
+      lane: CP
+      task: "Добавление контактных лиц"
+      process_ref: [CP-02, TASK-CP-02-02]
+      operation_ref: OP-CP-09
+      description: "Добавление контактных лиц контрагента"
+      depends_on: [CP-01]
+      system_action: "cp_contact_person.is_active = true"
+      ui_notification: "Контактные лица добавлены"
+
+    - step_id: CP-03
+      lane: CP
+      task: "Добавление банковских счетов"
+      process_ref: [CP-02, TASK-CP-02-03]
+      operation_ref: OP-CP-12
+      description: "Добавление банковских счетов контрагента"
+      depends_on: [CP-01]
+      system_action: "cp_bank_account.is_active = true"
+      ui_notification: "Банковские счета добавлены"
+
+    - step_id: CP-04
+      lane: CP
+      task: "Добавление адресов"
+      process_ref: [CP-02, TASK-CP-02-04]
+      operation_ref: OP-CP-15
+      description: "Добавление адресов контрагента (юридический, фактический)"
+      depends_on: [CP-01]
+      system_action: "cp_address.is_active = true"
+      ui_notification: "Адреса добавлены"
+
+    - step_id: CP-05
+      lane: CP
+      task: "Назначение ответственного за контрагента"
+      process_ref: [CP-02, TASK-CP-02-06]
+      operation_ref: OP-CP-08
+      description: "Назначение ответственного сотрудника за контрагента"
+      depends_on: [CP-01]
+      system_action: "cp_counterparty.responsible_employee_id = назначенный"
+      ui_notification: "Ответственный назначен"
+
+    - step_id: CP-06
+      lane: CRM
+      task: "Создание сделки (если контрагент — клиент)"
+      process_ref: [CRM-02, TASK-CRM-02-01]
+      operation_ref: OP-CRM-07
+      description: "Создание сделки для клиента"
+      condition: "counterparty_type_id = 'CPT-001'"
+      depends_on: [CP-05]
+      system_action: "crm_opportunity.customer_id = cp_counterparty.counterparty_id"
+      ui_notification: "Сделка создана"
+
+    - step_id: CP-07
+      lane: FINANCE
+      task: "Создание кредитного лимита"
+      description: "Установка кредитного лимита для контрагента"
+      depends_on: [CP-05]
+      system_action: "cp_counterparty.credit_limit = установленный_лимит"
+      ui_notification: "Кредитный лимит установлен"
+
+    - step_id: CP-08
+      lane: DOC
+      task: "Прикрепление документов"
+      process_ref: [CP-06, TASK-CP-06-01]
+      operation_ref: OP-CP-28
+      description: "Прикрепление учредительных документов"
+      depends_on: [CP-01]
+      system_action: "cp_attachment.attachment_type = 'registration'"
+      ui_notification: "Документы прикреплены"
+
+    - step_id: CP-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Контрагент зарегистрирован и готов к работе"
+      system_action: "core_audit_log запись о регистрации контрагента"
+      ui_notification: "Регистрация контрагента завершена"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-02: БЛОКИРОВКА КОНТРАГЕНТА (ЧЕРНЫЙ СПИСОК)
+# =====================================================================================
+- scenario_id: SCENARIO-CP-002
+  name: "Блокировка контрагента (черный список)"
+  description: >
+    Блокировка контрагента и каскадная остановка всех активных операций:
+    - Добавление в черный список (CP)
+    - Блокировка активных заказов (Sales)
+    - Блокировка активных закупок (Procurement)
+    - Приостановка активных договоров (CP)
+    - Приостановка отгрузок (WMS → Fleet)
+    - Уведомление ответственного сотрудника (CP → HR)
+  type: exception
+  priority: critical
+
+  lanes:
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: SALES
+      lane_name: "Sales — Продажи"
+      module: Sales
+    - lane_id: PROCUREMENT
+      lane_name: "Procurement — Закупки"
+      module: Procurement
+    - lane_id: WMS
+      lane_name: "WMS — Склад"
+      module: WMS
+    - lane_id: FLEET
+      lane_name: "Fleet — Транспорт"
+      module: Fleet
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: FINANCE
+      lane_name: "Finance — Финансы"
+      module: Finance
+
+  steps:
+    - step_id: BL-01
+      lane: CP
+      task: "Добавление контрагента в черный список"
+      process_ref: [CP-05, TASK-CP-05-01]
+      operation_ref: OP-CP-26
+      description: "Добавление контрагента в черный список"
+      trigger: "Решение службы безопасности / руководства"
+      system_action: "cp_counterparty.is_blacklisted = true, cp_counterparty.status_id = 'blacklisted'"
+      ui_notification: "Контрагент добавлен в черный список"
+
+    - step_id: BL-02
+      lane: CP
+      task: "Создание записи в черном списке"
+      process_ref: [CP-05, TASK-CP-05-01]
+      operation_ref: OP-CP-26
+      description: "Фиксация причины и даты блокировки"
+      system_action: "cp_blacklist.block_date = now()"
+      ui_notification: "Причина блокировки зафиксирована"
+
+    - step_id: BL-03
+      lane: SALES
+      task: "Блокировка активных заказов клиента"
+      process_ref: [SALES-04, TASK-SALES-04-01]
+      operation_ref: OP-SALES-18
+      description: "Блокировка всех активных заказов контрагента"
+      condition: "Контрагент является клиентом (CPT-001)"
+      system_action: "sales_order.status_id = 'cancelled'"
+      ui_notification: "Активные заказы заблокированы"
+
+    - step_id: BL-04
+      lane: PROCUREMENT
+      task: "Блокировка активных закупок у поставщика"
+      process_ref: [PROC-04, TASK-PROC-04-01]
+      operation_ref: OP-PROC-19
+      description: "Блокировка всех активных закупок у контрагента"
+      condition: "Контрагент является поставщиком (CPT-002)"
+      system_action: "procurement_order.status_id = 'cancelled'"
+      ui_notification: "Активные закупки заблокированы"
+
+    - step_id: BL-05
+      lane: CP
+      task: "Приостановка активных договоров"
+      process_ref: [CP-04, TASK-CP-04-01]
+      operation_ref: OP-CP-24
+      description: "Приостановка всех активных договоров с контрагентом"
+      system_action: "cp_contract.status_id = 'terminated'"
+      ui_notification: "Договоры приостановлены"
+
+    - step_id: BL-06
+      lane: WMS
+      task: "Приостановка отгрузок"
+      description: "Приостановка всех запланированных отгрузок контрагенту"
+      system_action: "sales_shipment.status_id = 'on_hold'"
+      ui_notification: "Отгрузки приостановлены"
+
+    - step_id: BL-07
+      lane: FLEET
+      task: "Отмена запланированных рейсов"
+      process_ref: [FLEET-03, TASK-FLEET-03-01]
+      operation_ref: OP-FLEET-19
+      description: "Отмена всех запланированных рейсов к контрагенту"
+      condition: "fleet_trip.source_object_id = sales_order.order_id"
+      system_action: "fleet_trip.status_id = 'cancelled'"
+      ui_notification: "Рейсы отменены"
+
+    - step_id: BL-08
+      lane: FINANCE
+      task: "Блокировка финансовых операций"
+      description: "Блокировка всех финансовых операций с контрагентом"
+      system_action: "fin_invoice.status_id = 'blocked'"
+      ui_notification: "Финансовые операции заблокированы"
+
+    - step_id: BL-09
+      lane: HR
+      task: "Уведомление ответственного сотрудника"
+      description: "Уведомление ответственного за контрагента сотрудника"
+      system_action: "core_notification отправлена"
+      ui_notification: "Ответственный сотрудник уведомлен"
+
+    - step_id: BL-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Контрагент заблокирован. Все операции остановлены."
+      system_action: "core_audit_log запись о блокировке контрагента"
+      ui_notification: "Блокировка контрагента завершена"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-03: ИЗМЕНЕНИЕ РЕЙТИНГА КОНТРАГЕНТА
+# =====================================================================================
+- scenario_id: SCENARIO-CP-003
+  name: "Изменение рейтинга контрагента"
+  description: >
+    Изменение рейтинга контрагента на основе взаимодействий:
+    - Добавление рейтинга (CP)
+    - Анализ истории рейтингов (CP → Analytics)
+    - Корректировка условий сотрудничества (CP → Sales/Procurement)
+    - Уведомление (CP → HR)
+  type: integration
+  priority: high
+
+  lanes:
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: ANALYTICS
+      lane_name: "Analytics — Аналитика"
+      module: Analytics
+    - lane_id: SALES
+      lane_name: "Sales — Продажи"
+      module: Sales
+    - lane_id: PROCUREMENT
+      lane_name: "Procurement — Закупки"
+      module: Procurement
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+
+  steps:
+    - step_id: RT-01
+      lane: CP
+      task: "Добавление нового рейтинга"
+      process_ref: [CP-03, TASK-CP-03-01]
+      operation_ref: OP-CP-18
+      description: "Добавление нового рейтинга контрагента"
+      trigger: "По результатам взаимодействия"
+      system_action: "cp_rating.rating_value = новое_значение"
+      ui_notification: "Рейтинг добавлен"
+
+    - step_id: RT-02
+      lane: ANALYTICS
+      task: "Анализ истории рейтингов"
+      description: "Анализ динамики рейтинга контрагента"
+      depends_on: [RT-01]
+      system_action: "Расчет среднего рейтинга за период"
+      ui_notification: "Анализ рейтинга выполнен"
+
+    - step_id: RT-03-A
+      lane: SALES
+      task: "Корректировка условий для клиента"
+      description: "Корректировка кредитного лимита и условий оплаты"
+      condition: "Рейтинг > 8 и контрагент — клиент"
+      depends_on: [RT-02]
+      system_action: "cp_counterparty.credit_limit = увеличенный_лимит"
+      ui_notification: "Условия для клиента улучшены"
+
+    - step_id: RT-03-B
+      lane: PROCUREMENT
+      task: "Корректировка условий для поставщика"
+      description: "Корректировка условий оплаты для поставщика"
+      condition: "Рейтинг < 5 и контрагент — поставщик"
+      depends_on: [RT-02]
+      system_action: "cp_counterparty.payment_terms = ужесточенные"
+      ui_notification: "Условия для поставщика изменены"
+
+    - step_id: RT-04
+      lane: HR
+      task: "Уведомление ответственного сотрудника"
+      description: "Уведомление об изменении рейтинга"
+      depends_on: [RT-03-A, RT-03-B]
+      system_action: "core_notification отправлена"
+      ui_notification: "Ответственный сотрудник уведомлен"
+
+    - step_id: RT-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Рейтинг обновлен. Условия скорректированы."
+      system_action: "core_audit_log запись об изменении рейтинга"
+      ui_notification: "Изменение рейтинга завершено"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-04: КОНТРАГЕНТ СТАНОВИТСЯ КЛИЕНТОМ (ПРЕОБРАЗОВАНИЕ)
+# =====================================================================================
+- scenario_id: SCENARIO-CP-004
+  name: "Преобразование контрагента в клиента"
+  description: >
+    Полный цикл преобразования контрагента в клиента:
+    - Изменение типа контрагента (CP)
+    - Создание клиентской карточки (CRM)
+    - Создание коммерческого предложения (CRM → Sales)
+    - Создание заказа (Sales)
+    - Назначение менеджера (CRM → HR)
+  type: full_cycle
+  priority: high
+
+  lanes:
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: CRM
+      lane_name: "CRM — Клиенты"
+      module: CRM
+    - lane_id: SALES
+      lane_name: "Sales — Продажи"
+      module: Sales
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+
+  steps:
+    - step_id: CONV-01
+      lane: CP
+      task: "Изменение типа контрагента"
+      process_ref: [CP-02, TASK-CP-02-01]
+      operation_ref: OP-CP-06
+      description: "Изменение типа контрагента на 'Клиент'"
+      trigger: "Решение руководства"
+      system_action: "cp_counterparty.counterparty_type_id = 'CPT-001'"
+      ui_notification: "Тип контрагента изменен на 'Клиент'"
+
+    - step_id: CONV-02
+      lane: CRM
+      task: "Создание клиентской карточки"
+      process_ref: [CRM-02, TASK-CRM-02-01]
+      operation_ref: OP-CRM-07
+      description: "Создание карточки клиента на основе контрагента"
+      depends_on: [CONV-01]
+      system_action: "sales_customer.counterparty_id = cp_counterparty.counterparty_id"
+      ui_notification: "Клиентская карточка создана"
+
+    - step_id: CONV-03
+      lane: CRM
+      task: "Создание коммерческого предложения"
+      process_ref: [CRM-04, TASK-CRM-04-01]
+      operation_ref: OP-CRM-15
+      description: "Создание коммерческого предложения для клиента"
+      depends_on: [CONV-02]
+      system_action: "crm_commercial_offer.status_id = 'draft'"
+      ui_notification: "Коммерческое предложение создано"
+
+    - step_id: CONV-04
+      lane: SALES
+      task: "Создание заказа клиента"
+      process_ref: [SALES-04, TASK-SALES-04-01]
+      operation_ref: OP-SALES-13
+      description: "Создание заказа клиента"
+      depends_on: [CONV-03]
+      system_action: "sales_order.status_id = 'draft'"
+      ui_notification: "Заказ клиента создан"
+
+    - step_id: CONV-05
+      lane: CRM
+      task: "Назначение менеджера по продажам"
+      process_ref: [CRM-01, TASK-CRM-01-01]
+      operation_ref: OP-CRM-02
+      description: "Назначение ответственного менеджера"
+      depends_on: [CONV-04]
+      system_action: "sales_customer.sales_manager_employee_id = назначенный_менеджер"
+      ui_notification: "Менеджер назначен"
+
+    - step_id: CONV-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Контрагент успешно преобразован в клиента"
+      system_action: "core_audit_log запись о преобразовании"
+      ui_notification: "Преобразование контрагента завершено"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-05: КОНТРАГЕНТ СТАНОВИТСЯ ПОСТАВЩИКОМ (ПРЕОБРАЗОВАНИЕ)
+# =====================================================================================
+- scenario_id: SCENARIO-CP-005
+  name: "Преобразование контрагента в поставщика"
+  description: >
+    Полный цикл преобразования контрагента в поставщика:
+    - Изменение типа контрагента (CP)
+    - Создание карточки поставщика (Procurement)
+    - Создание заявки на закупку (Procurement)
+    - Создание заказа поставщику (Procurement)
+    - Оценка поставщика (Procurement → CP)
+  type: full_cycle
+  priority: high
+
+  lanes:
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: PROCUREMENT
+      lane_name: "Procurement — Закупки"
+      module: Procurement
+    - lane_id: WMS
+      lane_name: "WMS — Склад"
+      module: WMS
+
+  steps:
+    - step_id: SUPP-01
+      lane: CP
+      task: "Изменение типа контрагента"
+      process_ref: [CP-02, TASK-CP-02-01]
+      operation_ref: OP-CP-06
+      description: "Изменение типа контрагента на 'Поставщик'"
+      trigger: "Решение руководства"
+      system_action: "cp_counterparty.counterparty_type_id = 'CPT-002'"
+      ui_notification: "Тип контрагента изменен на 'Поставщик'"
+
+    - step_id: SUPP-02
+      lane: PROCUREMENT
+      task: "Создание карточки поставщика"
+      process_ref: [PROC-01, TASK-PROC-01-01]
+      operation_ref: OP-PROC-01
+      description: "Создание карточки поставщика"
+      depends_on: [SUPP-01]
+      system_action: "procurement_supplier.counterparty_id = cp_counterparty.counterparty_id"
+      ui_notification: "Карточка поставщика создана"
+
+    - step_id: SUPP-03
+      lane: PROCUREMENT
+      task: "Создание заявки на закупку"
+      process_ref: [PROC-02, TASK-PROC-02-01]
+      operation_ref: OP-PROC-03
+      description: "Создание заявки на закупку у нового поставщика"
+      depends_on: [SUPP-02]
+      system_action: "procurement_requisition.status_id = 'draft'"
+      ui_notification: "Заявка на закупку создана"
+
+    - step_id: SUPP-04
+      lane: PROCUREMENT
+      task: "Создание заказа поставщику"
+      process_ref: [PROC-04, TASK-PROC-04-01]
+      operation_ref: OP-PROC-12
+      description: "Создание заказа поставщику"
+      depends_on: [SUPP-03]
+      system_action: "procurement_order.status_id = 'draft'"
+      ui_notification: "Заказ поставщику создан"
+
+    - step_id: SUPP-05
+      lane: PROCUREMENT
+      task: "Оценка поставщика"
+      process_ref: [PROC-03, TASK-PROC-03-01]
+      operation_ref: OP-PROC-10
+      description: "Оценка поставщика по результатам первой поставки"
+      depends_on: [SUPP-04]
+      system_action: "procurement_supplier.rating = оценка"
+      ui_notification: "Поставщик оценен"
+
+    - step_id: SUPP-06
+      lane: WMS
+      task: "Приемка материалов"
+      process_ref: [WMS-02, TASK-WMS-02-03]
+      operation_ref: OP-WMS-13
+      description: "Приемка материалов от нового поставщика"
+      depends_on: [SUPP-04]
+      system_action: "wms_inventory.quantity += поступившее_количество"
+      ui_notification: "Материалы приняты"
+
+    - step_id: SUPP-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Контрагент успешно преобразован в поставщика"
+      system_action: "core_audit_log запись о преобразовании"
+      ui_notification: "Преобразование контрагента завершено"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-06: ПРОСРОЧКА ОПЛАТЫ ОТ КОНТРАГЕНТА
+# =====================================================================================
+- scenario_id: SCENARIO-CP-006
+  name: "Просрочка оплаты от контрагента"
+  description: >
+    Обработка просрочки оплаты от контрагента:
+    - Обнаружение просрочки (Finance)
+    - Уведомление ответственного (Finance → CP → HR)
+    - Напоминание контрагенту (CP → Sales)
+    - Корректировка рейтинга (CP)
+    - Блокировка контрагента (CP, если просрочка > 90 дней)
+  type: exception
+  priority: high
+
+  lanes:
+    - lane_id: FINANCE
+      lane_name: "Finance — Финансы"
+      module: Finance
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: SALES
+      lane_name: "Sales — Продажи"
+      module: Sales
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: SECURITY
+      lane_name: "Security — Безопасность"
+      module: Security
+
+  steps:
+    - step_id: OD-01
+      lane: FINANCE
+      task: "Обнаружение просрочки оплаты"
+      description: "Система определяет, что срок оплаты истек"
+      trigger: "Ежедневная проверка сроков оплаты"
+      system_action: "fin_invoice.due_date < CURRENT_DATE"
+      ui_notification: "ПРОСРОЧКА ОПЛАТЫ: счет {invoice_number}"
+
+    - step_id: OD-02
+      lane: FINANCE
+      task: "Создание уведомления"
+      description: "Уведомление менеджера по продажам"
+      system_action: "core_notification отправлена"
+      ui_notification: "Менеджер уведомлен о просрочке"
+
+    - step_id: OD-03
+      lane: CP
+      task: "Обновление рейтинга контрагента"
+      process_ref: [CP-03, TASK-CP-03-01]
+      operation_ref: OP-CP-18
+      description: "Снижение рейтинга контрагента из-за просрочки"
+      system_action: "cp_rating.rating_value = сниженный_рейтинг"
+      ui_notification: "Рейтинг контрагента снижен"
+
+    - step_id: OD-04
+      lane: SALES
+      task: "Напоминание контрагенту"
+      description: "Менеджер связывается с контрагентом для напоминания"
+      system_action: "cp_interaction.interaction_type = 'call'"
+      ui_notification: "Контрагенту отправлено напоминание"
+
+    - step_id: OD-05-A
+      lane: CP
+      task: "Блокировка контрагента (просрочка > 90 дней)"
+      process_ref: [CP-05, TASK-CP-05-01]
+      operation_ref: OP-CP-26
+      description: "Блокировка контрагента при просрочке более 90 дней"
+      condition: "Просрочка > 90 дней"
+      system_action: "cp_counterparty.is_blacklisted = true"
+      ui_notification: "Контрагент заблокирован"
+
+    - step_id: OD-05-B
+      lane: SECURITY
+      task: "Уведомление службы безопасности"
+      description: "Уведомление службы безопасности о проблемном контрагенте"
+      condition: "Просрочка > 60 дней"
+      system_action: "core_notification отправлена"
+      ui_notification: "Служба безопасности уведомлена"
+
+    - step_id: OD-06
+      lane: HR
+      task: "Уведомление ответственного сотрудника"
+      description: "Уведомление ответственного сотрудника"
+      system_action: "core_notification отправлена"
+      ui_notification: "Ответственный сотрудник уведомлен"
+
+    - step_id: OD-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Просрочка обработана. Приняты меры."
+      system_action: "core_audit_log запись о просрочке"
+      ui_notification: "Обработка просрочки завершена"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-07: ИСТЕЧЕНИЕ СРОКА ДОГОВОРА С КОНТРАГЕНТОМ
+# =====================================================================================
+- scenario_id: SCENARIO-CP-007
+  name: "Истечение срока договора с контрагентом"
+  description: >
+    Обработка истечения срока договора с контрагентом:
+    - Обнаружение истечения срока (CP)
+    - Уведомление ответственного (CP → HR)
+    - Предложение продления (CP → Sales/Procurement)
+    - Продление договора (CP)
+    - Обновление статуса контрагента (CP)
+  type: integration
+  priority: medium
+
+  lanes:
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: SALES
+      lane_name: "Sales — Продажи"
+      module: Sales
+    - lane_id: PROCUREMENT
+      lane_name: "Procurement — Закупки"
+      module: Procurement
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: CRM
+      lane_name: "CRM — Клиенты"
+      module: CRM
+
+  steps:
+    - step_id: EX-01
+      lane: CP
+      task: "Обнаружение истечения срока договора"
+      description: "Система определяет, что срок договора истекает"
+      trigger: "Ежедневная проверка сроков договоров"
+      system_action: "cp_contract.valid_to <= CURRENT_DATE + INTERVAL '30 days'"
+      ui_notification: "ИСТЕКАЕТ СРОК ДОГОВОРА: {contract_number}"
+
+    - step_id: EX-02
+      lane: CP
+      task: "Создание уведомления"
+      description: "Уведомление ответственного сотрудника"
+      system_action: "core_notification отправлена"
+      ui_notification: "Ответственный сотрудник уведомлен"
+
+    - step_id: EX-03
+      lane: SALES
+      task: "Предложение продления клиенту"
+      description: "Менеджер предлагает продление договора клиенту"
+      condition: "contract_type = 'sales'"
+      system_action: "cp_interaction.interaction_type = 'meeting'"
+      ui_notification: "Клиенту предложено продление"
+
+    - step_id: EX-04
+      lane: PROCUREMENT
+      task: "Предложение продления поставщику"
+      description: "Менеджер предлагает продление договора поставщику"
+      condition: "contract_type = 'procurement'"
+      system_action: "cp_interaction.interaction_type = 'email'"
+      ui_notification: "Поставщику предложено продление"
+
+    - step_id: EX-05
+      lane: CP
+      task: "Продление договора"
+      process_ref: [CP-04, TASK-CP-04-01]
+      operation_ref: OP-CP-22
+      description: "Продление срока действия договора"
+      system_action: "cp_contract.valid_to = новый_срок"
+      ui_notification: "Договор продлен"
+
+    - step_id: EX-06
+      lane: CRM
+      task: "Обновление статуса сделки"
+      description: "Обновление статуса сделки при продлении договора"
+      system_action: "crm_opportunity.stage_id = 'closed_won'"
+      ui_notification: "Статус сделки обновлен"
+
+    - step_id: EX-07
+      lane: HR
+      task: "Уведомление об успешном продлении"
+      description: "Уведомление ответственного сотрудника"
+      system_action: "core_notification отправлена"
+      ui_notification: "Ответственный сотрудник уведомлен"
+
+    - step_id: EX-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Договор продлен или завершен"
+      system_action: "core_audit_log запись о продлении договора"
+      ui_notification: "Обработка истечения срока завершена"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ CP-08: АКТУАЛИЗАЦИЯ ДАННЫХ КОНТРАГЕНТА
+# =====================================================================================
+- scenario_id: SCENARIO-CP-008
+  name: "Актуализация данных контрагента"
+  description: >
+    Полный цикл актуализации данных контрагента:
+    - Изменение реквизитов (CP)
+    - Изменение контактных лиц (CP)
+    - Изменение банковских счетов (CP)
+    - Обновление договоров (CP → Sales/Procurement)
+    - Уведомление (CP → HR)
+  type: integration
+  priority: medium
+
+  lanes:
+    - lane_id: CP
+      lane_name: "CP — Контрагенты"
+      module: CP
+    - lane_id: SALES
+      lane_name: "Sales — Продажи"
+      module: Sales
+    - lane_id: PROCUREMENT
+      lane_name: "Procurement — Закупки"
+      module: Procurement
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: FINANCE
+      lane_name: "Finance — Финансы"
+      module: Finance
+
+  steps:
+    - step_id: UP-01
+      lane: CP
+      task: "Изменение реквизитов контрагента"
+      process_ref: [CP-02, TASK-CP-02-01]
+      operation_ref: OP-CP-06
+      description: "Обновление реквизитов контрагента"
+      trigger: "Запрос от контрагента"
+      system_action: "cp_counterparty.updated_at = now()"
+      ui_notification: "Реквизиты контрагента обновлены"
+
+    - step_id: UP-02
+      lane: CP
+      task: "Изменение контактных лиц"
+      process_ref: [CP-02, TASK-CP-02-02]
+      operation_ref: OP-CP-10
+      description: "Обновление контактных лиц"
+      system_action: "cp_contact_person.updated_at = now()"
+      ui_notification: "Контактные лица обновлены"
+
+    - step_id: UP-03
+      lane: CP
+      task: "Изменение банковских счетов"
+      process_ref: [CP-02, TASK-CP-02-03]
+      operation_ref: OP-CP-13
+      description: "Обновление банковских счетов"
+      system_action: "cp_bank_account.updated_at = now()"
+      ui_notification: "Банковские счета обновлены"
+
+    - step_id: UP-04
+      lane: SALES
+      task: "Обновление договоров с клиентом"
+      description: "Обновление данных в договорах с клиентом"
+      condition: "counterparty_type_id = 'CPT-001'"
+      system_action: "cp_contract.updated_at = now()"
+      ui_notification: "Договоры с клиентом обновлены"
+
+    - step_id: UP-05
+      lane: PROCUREMENT
+      task: "Обновление договоров с поставщиком"
+      description: "Обновление данных в договорах с поставщиком"
+      condition: "counterparty_type_id = 'CPT-002'"
+      system_action: "cp_contract.updated_at = now()"
+      ui_notification: "Договоры с поставщиком обновлены"
+
+    - step_id: UP-06
+      lane: FINANCE
+      task: "Обновление финансовых данных"
+      description: "Обновление финансовых данных контрагента"
+      system_action: "fin_invoice.counterparty_id = cp_counterparty.counterparty_id"
+      ui_notification: "Финансовые данные обновлены"
+
+    - step_id: UP-07
+      lane: HR
+      task: "Уведомление ответственного сотрудника"
+      description: "Уведомление об актуализации данных"
+      system_action: "core_notification отправлена"
+      ui_notification: "Ответственный сотрудник уведомлен"
+
+    - step_id: UP-END
+      lane: CP
+      task: "Завершение сценария"
+      description: "Данные контрагента актуализированы"
+      system_action: "core_audit_log запись об актуализации данных"
+      ui_notification: "Актуализация данных завершена"
+
+
+# =====================================================================================
+# ИТОГОВАЯ СТАТИСТИКА
+# =====================================================================================
+statistics:
+  total_scenarios: 8
+  by_type:
+    full_cycle: 3
+    integration: 3
+    exception: 2
+  by_priority:
+    critical: 2
+    high: 3
+    medium: 3
+  modules_involved:
+    - CP: 8
+    - Sales: 5
+    - Procurement: 5
+    - Finance: 4
+    - HR: 6
+    - CRM: 3
+    - WMS: 2
+    - Fleet: 1
+    - Security: 1
+    - Analytics: 1
+    - Construction: 0
+    - Production: 0

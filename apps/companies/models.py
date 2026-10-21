@@ -15,6 +15,11 @@ class Company(models.Model):
     """
     id = models.BigAutoField(primary_key=True)
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    code = models.CharField(
+        max_length=50, unique=True, db_index=True,
+        verbose_name=_("Code"),
+        help_text=_("Внутренний код компании, например COMP-001"),
+    )
     name = models.CharField(max_length=255, verbose_name=_("Name"))
     short_name = models.CharField(
         max_length=100, blank=True, verbose_name=_("Short name")

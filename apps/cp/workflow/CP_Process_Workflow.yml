@@ -1,0 +1,219 @@
+meta:
+  title: CP_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов управления контрагентами с ролями, задачами,
+    переходами между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов.
+
+roles_catalog:
+  admin: Администратор
+  sales_manager: Менеджер по продажам
+  procurement_manager: Менеджер по закупкам
+  lawyer: Юрист
+  security_manager: Руководитель службы безопасности
+  accountant: Бухгалтер
+
+processes:
+
+- id: CP-01
+  name: Справочники
+  description: Ведение типов контрагентов и категорий.
+  dashboards: []
+  reports: []
+  tasks:
+  - id: TASK-CP-01-01
+    name: Ведение типов контрагентов
+    role: admin
+    has_form: true
+    form_ref: [OP-CP-01, OP-CP-02]
+    sql_queries:
+      on_save:
+        query_code: [OP-CP-01, OP-CP-02]
+    transitions: []
+
+  - id: TASK-CP-01-02
+    name: Ведение категорий контрагентов
+    role: admin
+    has_form: true
+    form_ref: [OP-CP-03, OP-CP-04]
+    sql_queries:
+      on_save:
+        query_code: [OP-CP-03, OP-CP-04]
+    transitions: []
+
+- id: CP-02
+  name: Управление контрагентами
+  description: Полный жизненный цикл контрагента.
+  dashboards:
+  - DASH-CP-01 (Реестр контрагентов)
+  reports:
+  - REP-CP-01 (Карточка контрагента)
+  tasks:
+  - id: TASK-CP-02-01
+    name: Создание/редактирование контрагента
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-05, OP-CP-06]
+    sql_queries:
+      on_insert:
+        query_code: OP-CP-05
+      on_update:
+        query_code: OP-CP-06
+    transitions:
+    - target_task: TASK-CP-02-02
+      condition: Контрагент создан, можно добавить контакты
+      on_event: [on_insert, on_update]
+
+  - id: TASK-CP-02-02
+    name: Ведение контактных лиц
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-09, OP-CP-10, OP-CP-11]
+    sql_queries:
+      on_insert:
+        query_code: OP-CP-09
+      on_update:
+        query_code: OP-CP-10
+      on_delete:
+        query_code: OP-CP-11
+    transitions: []
+
+  - id: TASK-CP-02-03
+    name: Ведение банковских счетов
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-12, OP-CP-13, OP-CP-14]
+    sql_queries:
+      on_insert:
+        query_code: OP-CP-12
+      on_update:
+        query_code: OP-CP-13
+      on_delete:
+        query_code: OP-CP-14
+    transitions: []
+
+  - id: TASK-CP-02-04
+    name: Ведение адресов
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-15, OP-CP-16, OP-CP-17]
+    sql_queries:
+      on_insert:
+        query_code: OP-CP-15
+      on_update:
+        query_code: OP-CP-16
+      on_delete:
+        query_code: OP-CP-17
+    transitions: []
+
+  - id: TASK-CP-02-05
+    name: Изменение статуса контрагента
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-07]
+    sql_queries:
+      on_update:
+        query_code: OP-CP-07
+    transitions: []
+
+  - id: TASK-CP-02-06
+    name: Назначение ответственного
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-08]
+    sql_queries:
+      on_update:
+        query_code: OP-CP-08
+    transitions: []
+
+- id: CP-03
+  name: Рейтинги и взаимодействия
+  description: Управление рейтингами и историей взаимодействий.
+  dashboards:
+  - DASH-CP-02 (Аналитика по контрагентам)
+  reports:
+  - REP-CP-02 (История взаимодействий)
+  tasks:
+  - id: TASK-CP-03-01
+    name: Добавление рейтинга
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-18]
+    sql_queries:
+      on_insert:
+        query_code: OP-CP-18
+    transitions: []
+
+  - id: TASK-CP-03-02
+    name: Регистрация взаимодействия
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-19, OP-CP-20]
+    sql_queries:
+      on_insert:
+        query_code: OP-CP-19
+      on_update:
+        query_code: OP-CP-20
+    transitions: []
+
+- id: CP-04
+  name: Договоры
+  description: Управление договорами с контрагентами.
+  dashboards:
+  - DASH-CP-03 (Договоры)
+  reports:
+  - REP-CP-03 (Реестр договоров)
+  tasks:
+  - id: TASK-CP-04-01
+    name: Ведение договоров
+    role: lawyer
+    has_form: true
+    form_ref: [OP-CP-21, OP-CP-22, OP-CP-23, OP-CP-24]
+    sql_queries:
+      on_insert:
+        query_code: OP-CP-21
+      on_update:
+        query_code: OP-CP-22
+      on_activate:
+        query_code: OP-CP-23
+      on_terminate:
+        query_code: OP-CP-24
+    transitions: []
+
+- id: CP-05
+  name: Черный список
+  description: Управление черным списком контрагентов.
+  dashboards:
+  - DASH-CP-04 (Черный список)
+  reports:
+  - REP-CP-04 (Черный список контрагентов)
+  tasks:
+  - id: TASK-CP-05-01
+    name: Управление черным списком
+    role: security_manager
+    has_form: true
+    form_ref: [OP-CP-26, OP-CP-27]
+    sql_queries:
+      on_block:
+        query_code: OP-CP-26
+      on_unblock:
+        query_code: OP-CP-27
+    transitions: []
+
+- id: CP-06
+  name: Документы
+  description: Прикрепление документов к контрагентам.
+  dashboards: []
+  reports: []
+  tasks:
+  - id: TASK-CP-06-01
+    name: Управление документами
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CP-28, OP-CP-29]
+    sql_queries:
+      on_attach:
+        query_code: OP-CP-28
+      on_delete:
+        query_code: OP-CP-29
+    transitions: []

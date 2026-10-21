@@ -1,0 +1,145 @@
+# ==============================================================================
+# МОДУЛЬ: УПРАВЛЕНИЕ ПЕРСОНАЛОМ И КАДРАМИ (HR / HUMAN RESOURCES)
+# ==============================================================================
+
+module_info:
+  id: "HR"
+  name: "Управление персоналом и кадры"
+  version: "1.0"
+  description: "Реестр сквозных бизнес-сценариев для модуля HR и Кадрового учета"
+  related_modules:
+    - "FIN"
+    - "PROD"
+    - "WMS"
+    - "MAINT"
+
+scenarios:
+  - id: "SCENARIO-HR-01"
+    title: "Прием сотрудника на работу (Onboarding & Hire)"
+    description: "Процесс оформления нового сотрудника: от создания карточки, проверки документов и заключения трудового договора до назначения на должность, выдачи СИЗ и расчета первой заработной платы."
+    module: "HR"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "hr_specialist"
+      - "labor_safety_officer"
+      - "payroll_accountant"
+      - "line_manager"
+    steps:
+      - step_id: "HR-01-01"
+        lane: "HR"
+        task: "Регистрация кандидата и сбор персональных данных"
+        process_ref: "[HR-01, TASK-HR-01-01]"
+        operation_ref: "OP-HR-01"
+        description: "Ввод анкетных данных, загрузка сканов документов (паспорт, СНИЛС, ИНН, трудовая книжка)."
+        depends_on: []
+        trigger: "Утвержденный кандидат / Приказ о найме"
+        system_action: "hr_employee.status_id = 'candidate_draft'"
+        ui_notification: "Создан черновик карточки сотрудника."
+
+      - step_id: "HR-01-02"
+        lane: "HR"
+        task: "Оформление трудового договора и кадрового приказа (Т-1)"
+        process_ref: "[HR-01, TASK-HR-01-02]"
+        operation_ref: "OP-HR-02"
+        description: "Назначение оклада/тарифной ставки, штатной единицы, графика работы, подписания ТД и приказа о приеме."
+        depends_on:
+          - "HR-01-01"
+        system_action: "hr_employee.status_id = 'hired', hr_employment_contract.status = 'active'"
+        ui_notification: "Сотрудник принят в штат. Сформирован приказ №..."
+
+      - step_id: "HR-01-03"
+        lane: "HR/Safety"
+        task: "Прохождение вводного инструктажа по охране труда и назначение СИЗ"
+        process_ref: "[HR-03, TASK-HR-03-01]"
+        operation_ref: "OP-HR-10"
+        description: "Проведение инструктажа по ОТ и ТБ, фиксация в журнале, создание нормы выдачи СИЗ."
+        depends_on:
+          - "HR-01-02"
+        system_action: "hr_safety_briefing.status = 'completed', wms_ppe_request.status = 'created'"
+        ui_notification: "Инструктаж пройден. Сформирована заявка на выдачу СИЗ."
+
+      - step_id: "HR-01-04"
+        lane: "FIN/HR"
+        task: "Расчет и начисление заработной платы / Аванса (Payroll)"
+        process_ref: "[FIN-07, TASK-FIN-07-01]"
+        operation_ref: "OP-FIN-25"
+        description: "Включение сотрудника в табель учета рабочего времени и расчетный листок первого месяца."
+        depends_on:
+          - "HR-01-03"
+        system_action: "hr_timesheet.employee_id = active, fin_payroll_line.status = 'calculated'"
+        ui_notification: "Сотрудник включен в расчетную ведомость."
+
+      - step_id: "HR-01-END"
+        lane: "HR"
+        task: "Завершение оформления сотрудника"
+        description: "Процесс найма закрыт, профиль сотрудника полностью активен."
+        depends_on:
+          - "HR-01-04"
+        system_action: "core_audit_log"
+        ui_notification: "Процесс адаптации и оформления завершен."
+
+  - id: "SCENARIO-HR-02"
+    title: "Учет рабочего времени и расчет ЗП с учетом сверхурочных (Timesheet to Payroll)"
+    description: "Формирование табеля учета рабочего времени (Т-13), учет ночных, сверхурочных, больничных и отпусков, расчет НДФЛ, страховых взносов и выплата."
+    module: "HR"
+    scenario_type: "full_cycle"
+    priority: "high"
+    roles:
+      - "timekeeper"
+      - "hr_specialist"
+      - "payroll_accountant"
+      - "treasurer"
+    steps:
+      - step_id: "HR-02-01"
+        lane: "HR/PROD/WMS"
+        task: "Сбор данных СКУД и консолидация табеля рабочего времени"
+        process_ref: "[HR-02, TASK-HR-02-01]"
+        operation_ref: "OP-HR-05"
+        description: "Автоматический импорт отметок проходной (СКУД) и сменных графиков цехов/складов в табель."
+        depends_on: []
+        trigger: "Окончание расчетного периода (месяц/полумесяц)"
+        system_action: "hr_timesheet.status_id = 'draft'"
+        ui_notification: "Данные СКУД импортированы в табель."
+
+      - step_id: "HR-02-02"
+        lane: "HR"
+        task: "Проверка отклонений (Больничные, Отпуска, Прогулы, Сверхчасы)"
+        process_ref: "[HR-02, TASK-HR-02-02]"
+        operation_ref: "OP-HR-06"
+        description: "Утверждение приказа на отпуск, проведение электронных листков нетрудоспособности (ЭЛН) и сверхурочных часов."
+        depends_on:
+          - "HR-02-01"
+        system_action: "hr_timesheet.status_id = 'verified'"
+        ui_notification: "Табель рабочего времени проверен и утвержден."
+
+      - step_id: "HR-02-03"
+        lane: "FIN/HR"
+        task: "Расчет заработной платы, НДФЛ и страховых взносов"
+        process_ref: "[FIN-07, TASK-FIN-07-02]"
+        operation_ref: "OP-FIN-26"
+        description: "Автоматический расчет начислений, удержаний, налогов и формирование расчетно-платежной ведомости (Т-51)."
+        depends_on:
+          - "HR-02-02"
+        system_action: "fin_payroll.status_id = 'calculated', fin_tax_entry.status = 'calculated'"
+        ui_notification: "Заработная плата и налоги рассчитаны."
+
+      - step_id: "HR-02-04"
+        lane: "FIN"
+        task: "Выплата ЗП через зарплатный проект / Кассу"
+        process_ref: "[FIN-04, TASK-FIN-04-03]"
+        operation_ref: "OP-FIN-16"
+        description: "Формирование реестра выплат для банка и отправка платежа."
+        depends_on:
+          - "HR-02-03"
+        system_action: "fin_bank_statement.type = 'payroll_payout', fin_gl_entry.type = 'payroll_settlement'"
+        ui_notification: "Ведомость на выплату зарплаты отправлена в банк."
+
+      - step_id: "HR-02-END"
+        lane: "HR/FIN"
+        task: "Завершение расчетного месяца по ЗП"
+        description: "Расчетный период закрыт, расчетные листки отправлены сотрудникам."
+        depends_on:
+          - "HR-02-04"
+        system_action: "hr_payroll_period.status = 'closed', core_audit_log"
+        ui_notification: "Расчет заработной платы за период успешно закрыт."
