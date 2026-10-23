@@ -1,0 +1,221 @@
+# ==============================================================================
+# МОДУЛЬ: УПРАВЛЕНИЕ СКЛАДОМ (WMS / WAREHOUSE MANAGEMENT)
+# ==============================================================================
+
+module_info:
+  id: "WMS"
+  name: "Управление складом"
+  version: "1.0"
+  description: "Реестр сквозных бизнес-сценариев для модуля WMS (Warehouse Management System)"
+  related_modules:
+    - "PROC"
+    - "PROD"
+    - "SALES"
+    - "FIN"
+    - "FLEET"
+    - "MAINT"
+
+scenarios:
+  - id: "SCENARIO-WMS-01"
+    title: "Приемка и размещение поступающих ТМЦ (Inbound / Putaway)"
+    description: "Процесс разгрузки, первичной приемки, проведения входного контроля качества, маркировки и размещения товара по ячейкам адресного хранения."
+    module: "WMS"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "warehouse_receiver"
+      - "quality_inspector"
+      - "forklift_driver"
+    steps:
+      - step_id: "WMS-01-01"
+        lane: "WMS/PROC"
+        task: "Регистрация прибытия транспорта и создание распоряжения на приемку"
+        process_ref: "[WMS-02, TASK-WMS-02-01]"
+        operation_ref: "OP-WMS-07"
+        description: "Фиксация прибытия ТС, сопоставление с заказом на закупку (PO) или перемещением, открытие зоны разгрузки."
+        depends_on: []
+        trigger: "Прибытие ТС / Распоряжение на приемку"
+        system_action: "wms_inbound_order.status_id = 'arrived'"
+        ui_notification: "Транспорт зарегистрирован на воротах №... Создано задание на разгрузку."
+
+      - step_id: "WMS-01-02"
+        lane: "WMS"
+        task: "Разгрузка, подсчет и первичная приемка на рампе"
+        process_ref: "[WMS-02, TASK-WMS-02-01]"
+        operation_ref: "OP-WMS-08"
+        description: "Сканирование ШК, пересчет упаковок/паллет, фиксация физического поступления в приемной зоне."
+        depends_on:
+          - "WMS-01-01"
+        system_action: "wms_receiving_dock.quantity += received_units"
+        ui_notification: "Товар разгружен и размещен в приемной зоне."
+
+      - step_id: "WMS-01-03"
+        lane: "WMS/Quality"
+        task: "Входной контроль качества и квантование (Маркировка)"
+        process_ref: "[WMS-02, TASK-WMS-02-03]"
+        operation_ref: "OP-WMS-11"
+        description: "Проверка качества/сроков годности, печать и наклейка штрихкодов паллет (SSCC / LPN)."
+        depends_on:
+          - "WMS-01-02"
+        system_action: "wms_lpn.status = 'generated', wms_quality_check.status = 'passed'"
+        ui_notification: "Контроль качества пройден. Паллеты промаркированы."
+
+      - step_id: "WMS-01-04"
+        lane: "WMS"
+        task: "Автоматический расчет ячеек хранения и генерация задач на размещение (Putaway)"
+        process_ref: "[WMS-02, TASK-WMS-02-04]"
+        operation_ref: "OP-WMS-13"
+        description: "Система WMS подбирает оптимальные ячейки хранения с учетом весогабаритных характеристик (ВГХ), товарных групп и стратегий ABC/XYZ."
+        depends_on:
+          - "WMS-01-03"
+        system_action: "wms_task.type = 'putaway', wms_task.status_id = 'assigned'"
+        ui_notification: "Сформированы задачи на размещение по ячейкам."
+
+      - step_id: "WMS-01-05"
+        lane: "WMS"
+        task: "Размещение товара водителем погрузчика / оператором ТСД"
+        process_ref: "[WMS-02, TASK-WMS-02-05]"
+        operation_ref: "OP-WMS-14"
+        description: "Сканирование LPN паллеты, сканирование ШК ячейки назначения, подтверждение перемещения."
+        depends_on:
+          - "WMS-01-04"
+        system_action: "wms_inventory.bin_id = target_bin, wms_task.status_id = 'completed'"
+        ui_notification: "Товар успешно размещен в ячейке."
+
+      - step_id: "WMS-01-END"
+        lane: "WMS"
+        task: "Завершение приемки"
+        description: "Запасы доступны для резервирования и отгрузки."
+        depends_on:
+          - "WMS-01-05"
+        system_action: "wms_inbound_order.status_id = 'completed', core_audit_log"
+        ui_notification: "Приемка и размещение полностью завершены."
+
+  - id: "SCENARIO-WMS-02"
+    title: "Комплектация и отгрузка заказа покупателю (Outbound / Wave Picking)"
+    description: "Процесс отбора товаров со складских ячеек по волнам комплектации, консолидация, упаковывание, контроль отгрузки и передача в транспортировку."
+    module: "WMS"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "wave_planner"
+      - "picker"
+      - "packer"
+      - "shipping_clerk"
+    steps:
+      - step_id: "WMS-02-01"
+        lane: "WMS/SALES"
+        task: "Группировка заказов в волны отбора (Wave Planning) и резервирование"
+        process_ref: "[WMS-03, TASK-WMS-03-01]"
+        operation_ref: "OP-WMS-17"
+        description: "Формирование волны комплектации на основе географии отгрузки, приоритетов и маршрутов доставок."
+        depends_on: []
+        trigger: "Утверждение Заказа покупателя / График отгрузок"
+        system_action: "wms_wave.status_id = 'created', wms_inventory.allocated_qty += qty"
+        ui_notification: "Сформирована волна отбора №... Товар зарезервирован."
+
+      - step_id: "WMS-02-02"
+        lane: "WMS"
+        task: "Выпуск задач на комплектацию (Picking)"
+        process_ref: "[WMS-03, TASK-WMS-03-02]"
+        operation_ref: "OP-WMS-18"
+        description: "Оптимизация обхода ячеек (маршрутизация), выдача задач на ТСД комплектовщиков."
+        depends_on:
+          - "WMS-02-01"
+        system_action: "wms_pick_task.status_id = 'released'"
+        ui_notification: "Задачи на отбор отправлены на ТСД комплектовщиков."
+
+      - step_id: "WMS-02-03"
+        lane: "WMS"
+        task: "Отбор товара комплектовщиком и транспортировка в зону упаковки"
+        process_ref: "[WMS-03, TASK-WMS-03-03]"
+        operation_ref: "OP-WMS-19"
+        description: "Сканирование ячейки, сканирование товара/LPN, подтверждение количества, перемещение в зону контроля/упаковки."
+        depends_on:
+          - "WMS-02-02"
+        system_action: "wms_pick_task.status_id = 'completed', wms_inventory.bin_id = 'packing_zone'"
+        ui_notification: "Товары отбраны и доставлены в зону упаковки."
+
+      - step_id: "WMS-02-04"
+        lane: "WMS"
+        task: "Упаковка, весовой контроль и маркировка грузовых мест"
+        process_ref: "[WMS-03, TASK-WMS-03-04]"
+        operation_ref: "OP-WMS-20"
+        description: "Проверка соответствия отбранных товаров, упаковывание в коробки/паллеты, печать упаковочных листов и транспортных этикеток."
+        depends_on:
+          - "WMS-02-03"
+        system_action: "wms_shipping_unit.status = 'packed', wms_shipping_unit.weight = measured_weight"
+        ui_notification: "Грузовые места упакованы и промаркированы."
+
+      - step_id: "WMS-02-05"
+        lane: "WMS/FLEET"
+        task: "Погрузка в транспортное средство и отгрузка"
+        process_ref: "[WMS-03, TASK-WMS-03-05]"
+        operation_ref: "OP-WMS-21"
+        description: "Сканирование грузовых мест при погрузке в кузов ТС, подписание расходных накладных (ТОРГ-12 / УПД)."
+        depends_on:
+          - "WMS-02-04"
+        system_action: "wms_outbound_order.status_id = 'shipped', wms_inventory.quantity -= shipped_qty"
+        ui_notification: "Товар погружен и отгружен со склада."
+
+      - step_id: "WMS-02-END"
+        lane: "WMS"
+        task: "Завершение цикла отгрузки"
+        description: "Списание товара с баланса склада, обновление статусов заказа."
+        depends_on:
+          - "WMS-02-05"
+        system_action: "core_audit_log"
+        ui_notification: "Цикл отгрузки заказа завершен."
+
+  - id: "SCENARIO-WMS-03"
+    title: "Проведение циклической / Пересчетной инвентаризации (Cycle Counting)"
+    description: "Проведение выборочной или полной инвентаризации ячеек склада без остановки операционной деятельности."
+    module: "WMS"
+    scenario_type: "integration"
+    priority: "medium"
+    roles:
+      - "inventory_auditor"
+      - "warehouse_keeper"
+      - "accountant"
+    steps:
+      - step_id: "WMS-03-01"
+        lane: "WMS"
+        task: "Формирование приказа и задач на цикличный пересчет"
+        process_ref: "[WMS-01, TASK-WMS-01-03]"
+        operation_ref: "OP-WMS-04"
+        description: "Автоматическое формирование списка ячеек/товаров для пересчета по расписанию (ABC-анализ / случайная выборка)."
+        depends_on: []
+        trigger: "График инвентаризации / Расхождение при отборе"
+        system_action: "wms_count_order.status_id = 'active'"
+        ui_notification: "Сформировано задание на инвентаризацию ячеек."
+
+      - step_id: "WMS-03-02"
+        lane: "WMS"
+        task: "Физический пересчет и ввод данных с ТСД (\"Слепой\" подсчет)"
+        process_ref: "[WMS-01, TASK-WMS-01-04]"
+        operation_ref: "OP-WMS-05"
+        description: "Инспектор сканирует ячейку и вводит фактическое количество остатков без отображения учетных данных."
+        depends_on:
+          - "WMS-03-01"
+        system_action: "wms_count_line.actual_qty = entered_qty"
+        ui_notification: "Данные пересчета зафиксированы."
+
+      - step_id: "WMS-03-03"
+        lane: "WMS/FIN"
+        task: "Анализ расхождений и проведение списания/оприходования"
+        process_ref: "[WMS-01, TASK-WMS-01-05]"
+        operation_ref: "OP-WMS-06"
+        description: "Сверка факта с учетом. При наличии отклонений — повторный пересчет или утверждение акта инвентаризации (ИНВ-3/ИНВ-19)."
+        depends_on:
+          - "WMS-03-02"
+        system_action: "wms_inventory.quantity = actual_qty, fin_gl_entry.type = 'inventory_adjustment'"
+        ui_notification: "Акт инвентаризации утвержден. Складские остатки скорректированы."
+
+      - step_id: "WMS-03-END"
+        lane: "WMS"
+        task: "Завершение инвентаризации"
+        description: "Инвентаризация закрыта, результаты отражены в финансовом учете."
+        depends_on:
+          - "WMS-03-03"
+        system_action: "wms_count_order.status_id = 'closed', core_audit_log"
+        ui_notification: "Задание на инвентаризацию успешно закрыто."

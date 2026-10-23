@@ -1,0 +1,285 @@
+{
+    "module": "WMS",
+    "description": "Тестовые данные для модуля Склад",
+    "tables": {
+      "wms_warehouse_type": [
+        {
+          "warehouse_type_id": "WT-001",
+          "warehouse_type_name": "Центральный склад",
+          "company_id": "COMP-001"
+        },
+        {
+          "warehouse_type_id": "WT-002",
+          "warehouse_type_name": "Приобъектный склад",
+          "company_id": "COMP-001"
+        },
+        {
+          "warehouse_type_id": "WT-003",
+          "warehouse_type_name": "Склад готовой продукции",
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_warehouse": [
+        {
+          "warehouse_id": "WH-001",
+          "warehouse_name": "Центральный склад",
+          "warehouse_type_id": "WT-001",
+          "address_id": "ADDR-001",
+          "company_id": "COMP-001"
+        },
+        {
+          "warehouse_id": "WH-002",
+          "warehouse_name": "Склад готовой продукции",
+          "warehouse_type_id": "WT-003",
+          "address_id": "ADDR-001",
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_storage_location": [
+        {
+          "location_id": "LOC-W-001",
+          "warehouse_id": "WH-001",
+          "location_code": "A-01-01",
+          "location_type": "паллетное",
+          "company_id": "COMP-001"
+        },
+        {
+          "location_id": "LOC-W-002",
+          "warehouse_id": "WH-001",
+          "location_code": "A-01-02",
+          "location_type": "паллетное",
+          "company_id": "COMP-001"
+        },
+        {
+          "location_id": "LOC-W-003",
+          "warehouse_id": "WH-001",
+          "location_code": "B-01-01",
+          "location_type": "стеллажное",
+          "company_id": "COMP-001"
+        },
+        {
+          "location_id": "LOC-W-004",
+          "warehouse_id": "WH-002",
+          "location_code": "C-01-01",
+          "location_type": "стеллажное",
+          "company_id": "COMP-001"
+        },
+        {
+          "location_id": "LOC-W-005",
+          "warehouse_id": "WH-002",
+          "location_code": "C-01-02",
+          "location_type": "стеллажное",
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_material_group": [
+        {
+          "material_group_id": "MG-001",
+          "material_group_name": "Электронные компоненты",
+          "parent_id": null,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_group_id": "MG-002",
+          "material_group_name": "Пластиковые детали",
+          "parent_id": null,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_group_id": "MG-003",
+          "material_group_name": "Металлические детали",
+          "parent_id": null,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_group_id": "MG-004",
+          "material_group_name": "Готовая продукция",
+          "parent_id": null,
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_material": [
+        {
+          "material_id": "MAT-001",
+          "material_group_id": "MG-001",
+          "material_code": "PCB-001",
+          "material_name": "Печатная плата (основная)",
+          "unit_id": "UNIT-001",
+          "barcode": "460000001",
+          "min_stock_level": 500,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_id": "MAT-002",
+          "material_group_id": "MG-001",
+          "material_code": "CHIP-001",
+          "material_name": "Микросхема процессора",
+          "unit_id": "UNIT-001",
+          "barcode": "460000002",
+          "min_stock_level": 1000,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_id": "MAT-003",
+          "material_group_id": "MG-002",
+          "material_code": "CASE-001",
+          "material_name": "Корпус телевизора (пластик)",
+          "unit_id": "UNIT-001",
+          "barcode": "460000003",
+          "min_stock_level": 300,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_id": "MAT-004",
+          "material_group_id": "MG-003",
+          "material_code": "PANEL-001",
+          "material_name": "ЖК-панель 55\"",
+          "unit_id": "UNIT-001",
+          "barcode": "460000004",
+          "min_stock_level": 200,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_id": "MAT-005",
+          "material_group_id": "MG-003",
+          "material_code": "PSU-001",
+          "material_name": "Блок питания",
+          "unit_id": "UNIT-001",
+          "barcode": "460000005",
+          "min_stock_level": 400,
+          "company_id": "COMP-001"
+        },
+        {
+          "material_id": "MAT-006",
+          "material_group_id": "MG-004",
+          "material_code": "TV-001",
+          "material_name": "Телевизор SmartTV X-100 55\"",
+          "unit_id": "UNIT-001",
+          "barcode": "460000006",
+          "min_stock_level": 50,
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_material_lot": [
+        {
+          "lot_id": "LOT-001",
+          "material_id": "MAT-001",
+          "lot_number": "LOT-2026-001",
+          "manufacture_date": "2026-06-01",
+          "expiration_date": null,
+          "company_id": "COMP-001"
+        },
+        {
+          "lot_id": "LOT-002",
+          "material_id": "MAT-002",
+          "lot_number": "LOT-2026-002",
+          "manufacture_date": "2026-06-05",
+          "expiration_date": "2028-06-05",
+          "company_id": "COMP-001"
+        },
+        {
+          "lot_id": "LOT-003",
+          "material_id": "MAT-003",
+          "lot_number": "LOT-2026-003",
+          "manufacture_date": "2026-06-10",
+          "expiration_date": null,
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_inventory": [
+        {
+          "inventory_id": "INV-001",
+          "material_id": "MAT-001",
+          "location_id": "LOC-W-001",
+          "lot_id": "LOT-001",
+          "serial_id": null,
+          "quantity": 1500,
+          "unit_cost": 145.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "inventory_id": "INV-002",
+          "material_id": "MAT-002",
+          "location_id": "LOC-W-002",
+          "lot_id": "LOT-002",
+          "serial_id": null,
+          "quantity": 2500,
+          "unit_cost": 240.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "inventory_id": "INV-003",
+          "material_id": "MAT-003",
+          "location_id": "LOC-W-003",
+          "lot_id": "LOT-003",
+          "serial_id": null,
+          "quantity": 600,
+          "unit_cost": 290.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "inventory_id": "INV-004",
+          "material_id": "MAT-004",
+          "location_id": "LOC-W-003",
+          "lot_id": null,
+          "serial_id": null,
+          "quantity": 300,
+          "unit_cost": 2500.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "inventory_id": "INV-005",
+          "material_id": "MAT-005",
+          "location_id": "LOC-W-002",
+          "lot_id": null,
+          "serial_id": null,
+          "quantity": 500,
+          "unit_cost": 180.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "inventory_id": "INV-006",
+          "material_id": "MAT-006",
+          "location_id": "LOC-W-004",
+          "lot_id": null,
+          "serial_id": null,
+          "quantity": 80,
+          "unit_cost": 4500.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_goods_receipt": [
+        {
+          "receipt_id": "REC-001",
+          "warehouse_id": "WH-001",
+          "counterparty_id": "CP-001",
+          "receipt_date": "2026-06-14 10:00:00",
+          "document_id": "DOC-001",
+          "status": "posted",
+          "company_id": "COMP-001"
+        }
+      ],
+      "wms_goods_receipt_line": [
+        {
+          "receipt_line_id": "RECL-001",
+          "receipt_id": "REC-001",
+          "material_id": "MAT-001",
+          "lot_id": "LOT-001",
+          "location_id": "LOC-W-001",
+          "quantity": 1000,
+          "unit_cost": 145.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "receipt_line_id": "RECL-002",
+          "receipt_id": "REC-001",
+          "material_id": "MAT-002",
+          "lot_id": "LOT-002",
+          "location_id": "LOC-W-002",
+          "quantity": 2000,
+          "unit_cost": 240.00,
+          "company_id": "COMP-001"
+        }
+      ]
+    }
+  }

@@ -84,3 +84,56 @@ class CPEvents:
     BLACKLIST_REMOVE = "CP.blacklist.remove"
     ATTACHMENT_CREATE = "CP.attachment.create"
     ATTACHMENT_DELETE = "CP.attachment.delete"
+
+class WMSEvents:
+    """События WMS-модуля (из WMS_Business_Roles.yml)."""
+    # Справочники
+    WAREHOUSE_CREATE = "WMS.warehouse.create"
+    WAREHOUSE_UPDATE = "WMS.warehouse.update"
+    STORAGE_LOCATION_CREATE = "WMS.storageLocation.create"
+    STORAGE_LOCATION_UPDATE = "WMS.storageLocation.update"
+    MATERIAL_GROUP_CREATE = "WMS.materialGroup.create"
+    MATERIAL_GROUP_RENAME = "WMS.materialGroup.rename"
+    MATERIAL_CREATE = "WMS.material.create"
+    MATERIAL_UPDATE = "WMS.material.update"
+    MATERIAL_UPDATE_REORDER_POINT = "WMS.material.updateReorderPoint"
+
+    # Приход
+    GOODS_RECEIPT_CREATE = "WMS.goodsReceipt.create"
+    GOODS_RECEIPT_LINE_CREATE = "WMS.goodsReceiptLine.create"
+    GOODS_RECEIPT_LINE_UPDATE = "WMS.goodsReceiptLine.update"
+    GOODS_RECEIPT_POST = "WMS.goodsReceipt.post"
+    GOODS_RECEIPT_UNPOST = "WMS.goodsReceipt.unpost"
+
+    # Резервирование
+    MATERIAL_RESERVE = "WMS.material.reserve"
+    MATERIAL_ISSUE = "WMS.material.issue"
+    MATERIAL_RELEASE = "WMS.material.release"
+
+    # Перемещение
+    TRANSFER_CREATE = "WMS.transfer.create"
+    TRANSFER_LINE_CREATE = "WMS.transferLine.create"
+    TRANSFER_LINE_UPDATE = "WMS.transferLine.update"
+    TRANSFER_POST = "WMS.transfer.post"
+    TRANSFER_UNPOST = "WMS.transfer.unpost"
+
+    # Списание
+    WRITEOFF_CREATE = "WMS.writeoff.create"
+    WRITEOFF_LINE_CREATE = "WMS.writeoffLine.create"
+    WRITEOFF_POST = "WMS.writeoff.post"
+    WRITEOFF_UNPOST = "WMS.writeoff.unpost"
+
+    # Инвентаризация
+    SNAPSHOT_CREATE = "WMS.inventorySnapshot.create"
+    SNAPSHOT_ITEM_RECORD_COUNT = "WMS.inventorySnapshotItem.recordCount"
+    SNAPSHOT_FINISH_COUNTING = "WMS.inventorySnapshot.finishCounting"
+    SNAPSHOT_APPROVE = "WMS.inventorySnapshot.approve"
+
+    # Партии, серийные номера, тара
+    MATERIAL_LOT_CREATE = "WMS.materialLot.create"
+    MATERIAL_LOT_UPDATE_EXPIRATION = "WMS.materialLot.updateExpiration"
+    SERIAL_NUMBER_CREATE = "WMS.serialNumber.create"
+    CONTAINER_TYPE_CREATE = "WMS.containerType.create"
+    CONTAINER_CREATE = "WMS.container.create"
+    CONTAINER_ITEM_ADD = "WMS.containerItem.add"
+    CONTAINER_ITEM_REMOVE = "WMS.containerItem.remove"    

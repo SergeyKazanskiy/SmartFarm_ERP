@@ -1,0 +1,683 @@
+# =====================================================================================
+# WMS — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на WMS_Schema.json версии 1.2 (21 таблица)
+# =====================================================================================
+
+- role: "кладовщик"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-01: Остатки и дефицит
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-01
+      dashboard: "Остатки и дефицит"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-stock"
+          type: "kpi"
+          title: "Ключевые показатели остатков"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Позиции с остатком ниже точки перезаказа"
+              subtitle: "дефицит"
+              dataSource: "Q-WMS-01-01"
+              field: "deficit_items"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 3
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 4
+                  value2: 10
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 10
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-WMS-09]
+
+        - id: "sec-detailed-stock"
+          type: "alerts"
+          title: "Ведомость дефицита"
+          widgets:
+            - widget_id: W01-03
+              type: Table
+              title: "Ведомость дефицита"
+              subtitle: "материалы ниже точки перезаказа"
+              dataSource: "Q-WMS-01-03"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "material_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "material_name"
+                  title: "Материал"
+                  width: 200
+                  sortable: true
+                - field: "min_stock_level"
+                  title: "Точка перезаказа"
+                  width: 130
+                  align: "right"
+                - field: "current_quantity"
+                  title: "Текущий остаток"
+                  width: 130
+                  align: "right"
+                - field: "shortage_quantity"
+                  title: "Дефицит"
+                  width: 130
+                  align: "right"
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "1-5": "warning"
+                      "6-20": "danger"
+                      "21": "danger"
+              grid: { w: 12 }
+              linked_operations: [OP-WMS-09, OP-WMS-15]
+
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-02: Приход и обеспечение
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-02
+      dashboard: "Приход и обеспечение"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-receipts"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Непроведённые приходные документы"
+              subtitle: "ожидают обработки"
+              dataSource: "Q-WMS-02-01"
+              field: "unposted_receipts"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 2
+                  status: "warning"
+                  label: "Накопление"
+              grid: { w: 4 }
+              linked_operations: [OP-WMS-10, OP-WMS-11]
+
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-03: Движение материалов
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-03
+      dashboard: "Движение материалов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-alerts-movement"
+          type: "alerts"
+          title: "Непроведённые документы"
+          widgets:
+            - widget_id: W03-03
+              type: Table
+              title: "Непроведённые документы"
+              subtitle: "приход/перемещение/списание"
+              dataSource: "Q-WMS-03-03"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "document_kind"
+                  title: "Тип"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "receipt": "info"
+                      "transfer": "warning"
+                      "writeoff": "danger"
+                - field: "document_id"
+                  title: "ID документа"
+                  width: 100
+                  align: "center"
+                - field: "document_date"
+                  title: "Дата"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 12 }
+              linked_operations: [OP-WMS-13, OP-WMS-21, OP-WMS-25]
+
+
+# =====================================================================================
+# РОЛЬ: Заведующий складом
+# =====================================================================================
+- role: "заведующий_складом"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-01: Остатки и дефицит (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-01
+      dashboard: "Остатки и дефицит"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-stock-manager"
+          type: "kpi"
+          title: "Ключевые показатели склада"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Позиции с остатком ниже точки перезаказа"
+              dataSource: "Q-WMS-01-01"
+              field: "deficit_items"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-WMS-09]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Общая стоимость остатков"
+              subtitle: "деньги в товаре"
+              dataSource: "Q-WMS-01-02"
+              field: "total_inventory_value"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 3 }
+              linked_operations: [OP-WMS-13, OP-WMS-30]
+
+        - id: "sec-analytics-stock-manager"
+          type: "analytics"
+          title: "Аналитика остатков"
+          widgets:
+            - widget_id: W01-04
+              type: Chart
+              title: "Структура остатков по группам материалов"
+              subtitle: "стоимость"
+              dataSource: "Q-WMS-01-04"
+              chartType: "pie"
+              category: "material_group_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "group_value"
+                  label: "Стоимость"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-05, OP-WMS-07]
+
+        - id: "sec-alerts-stock-manager"
+          type: "alerts"
+          title: "Дефицит и истекающие сроки"
+          widgets:
+            - widget_id: W01-03
+              type: Table
+              title: "Ведомость дефицита"
+              dataSource: "Q-WMS-01-03"
+              pageSize: 10
+              enableSearch: true
+              columns:
+                - field: "material_name"
+                  title: "Материал"
+                  width: 200
+                  sortable: true
+                - field: "min_stock_level"
+                  title: "Точка перезаказа"
+                  width: 130
+                  align: "right"
+                - field: "current_quantity"
+                  title: "Текущий остаток"
+                  width: 130
+                  align: "right"
+                - field: "shortage_quantity"
+                  title: "Дефицит"
+                  width: 130
+                  align: "right"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-09, OP-WMS-15]
+              
+            - widget_id: W01-05
+              type: Table
+              title: "Партии с истекающим сроком годности"
+              subtitle: "в ближайшие 30 дней"
+              dataSource: "Q-WMS-01-05"
+              pageSize: 10
+              enableSearch: true
+              columns:
+                - field: "lot_id"
+                  title: "ID партии"
+                  width: 80
+                  align: "center"
+                - field: "material_name"
+                  title: "Материал"
+                  width: 180
+                  sortable: true
+                - field: "lot_number"
+                  title: "№ партии"
+                  width: 120
+                - field: "expiration_date"
+                  title: "Истекает"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "remaining_quantity"
+                  title: "Остаток"
+                  width: 120
+                  align: "right"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-31, OP-WMS-32]
+
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-02: Приход и обеспечение (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-02
+      dashboard: "Приход и обеспечение"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-receipts-manager"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Непроведённые приходные документы"
+              dataSource: "Q-WMS-02-01"
+              field: "unposted_receipts"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-WMS-10, OP-WMS-11]
+
+        - id: "sec-analytics-receipts-manager"
+          type: "analytics"
+          title: "Аналитика поступлений"
+          widgets:
+            - widget_id: W02-02
+              type: Chart
+              title: "Динамика поступлений по месяцам"
+              subtitle: "в деньгах"
+              dataSource: "Q-WMS-02-02"
+              chartType: "area"
+              category: "month"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_amount"
+                  label: "Сумма поступлений"
+                  color: "#34d399"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-13]
+              
+            - widget_id: W02-03
+              type: Chart
+              title: "ТОП поставщиков по объёму поставок"
+              subtitle: "за период"
+              dataSource: "Q-WMS-02-03"
+              chartType: "bar"
+              category: "counterparty_id"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_amount"
+                  label: "Объём поставок"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-13]
+
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-03: Движение материалов (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-03
+      dashboard: "Движение материалов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-movement"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Активные резервирования"
+              subtitle: "забронированные материалы"
+              dataSource: "Q-WMS-03-01"
+              field: "active_reservations"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-WMS-15]
+
+        - id: "sec-analytics-movement"
+          type: "analytics"
+          title: "Аналитика движений"
+          widgets:
+            - widget_id: W03-02
+              type: Chart
+              title: "Распределение движений по типам"
+              subtitle: "за период"
+              dataSource: "Q-WMS-03-02"
+              chartType: "pie"
+              category: "transaction_type"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "transaction_count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-WMS-13, OP-WMS-16, OP-WMS-21, OP-WMS-25]
+              
+            - widget_id: W03-04
+              type: Chart
+              title: "ТОП материалов по объёму списания"
+              subtitle: "за период"
+              dataSource: "Q-WMS-03-04"
+              chartType: "bar"
+              category: "material_id"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+                unit: "шт"
+              series:
+                - field: "total_written_off"
+                  label: "Списано"
+                  color: "#f87171"
+              grid: { w: 8 }
+              linked_operations: [OP-WMS-25]
+
+        - id: "sec-alerts-movement-manager"
+          type: "alerts"
+          title: "Непроведённые документы"
+          widgets:
+            - widget_id: W03-03
+              type: Table
+              title: "Непроведённые документы"
+              dataSource: "Q-WMS-03-03"
+              pageSize: 15
+              enableSearch: true
+              columns:
+                - field: "document_kind"
+                  title: "Тип"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "receipt": "info"
+                      "transfer": "warning"
+                      "writeoff": "danger"
+                - field: "document_id"
+                  title: "ID документа"
+                  width: 100
+                  align: "center"
+                - field: "document_date"
+                  title: "Дата"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 12 }
+              linked_operations: [OP-WMS-13, OP-WMS-21, OP-WMS-25]
+
+
+# =====================================================================================
+# РОЛЬ: Менеджер по закупкам
+# =====================================================================================
+- role: "менеджер_по_закупкам"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-01: Остатки и дефицит (сокращенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-01
+      dashboard: "Остатки и дефицит"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-procurement"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Позиции с остатком ниже точки перезаказа"
+              dataSource: "Q-WMS-01-01"
+              field: "deficit_items"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-WMS-09]
+
+        - id: "sec-alerts-procurement"
+          type: "alerts"
+          title: "Дефицит материалов"
+          widgets:
+            - widget_id: W01-03
+              type: Table
+              title: "Ведомость дефицита"
+              dataSource: "Q-WMS-01-03"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "material_name"
+                  title: "Материал"
+                  width: 200
+                  sortable: true
+                - field: "min_stock_level"
+                  title: "Точка перезаказа"
+                  width: 130
+                  align: "right"
+                - field: "current_quantity"
+                  title: "Текущий остаток"
+                  width: 130
+                  align: "right"
+                - field: "shortage_quantity"
+                  title: "Требуется закупить"
+                  width: 150
+                  align: "right"
+              grid: { w: 12 }
+              linked_operations: [OP-WMS-09, OP-WMS-15]
+
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-02: Приход и обеспечение (сокращенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-02
+      dashboard: "Приход и обеспечение"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-procurement"
+          type: "analytics"
+          title: "Аналитика поставок"
+          widgets:
+            - widget_id: W02-02
+              type: Chart
+              title: "Динамика поступлений по месяцам"
+              dataSource: "Q-WMS-02-02"
+              chartType: "area"
+              category: "month"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_amount"
+                  label: "Сумма поступлений"
+                  color: "#34d399"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-13]
+              
+            - widget_id: W02-03
+              type: Chart
+              title: "ТОП поставщиков по объёму поставок"
+              dataSource: "Q-WMS-02-03"
+              chartType: "bar"
+              category: "counterparty_id"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_amount"
+                  label: "Объём поставок"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-13]
+
+    # -------------------------------------------------------------------------------
+    # DASH-WMS-04: Оборачиваемость запасов (инвестиционная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-WMS-04
+      dashboard: "Оборачиваемость запасов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-turnover"
+          type: "kpi"
+          title: "Ключевые показатели оборачиваемости"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Средняя оборачиваемость"
+              subtitle: "дней"
+              dataSource: "Q-WMS-04-01"
+              field: "avg_turnover_days"
+              aggregation: "SUM"
+              format: "number"
+              suffix: " дней"
+              higherIsBetter: false
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 30
+                  status: "success"
+                  label: "Быстрая"
+                - field: "value"
+                  operator: "between"
+                  value: 30
+                  value2: 60
+                  status: "warning"
+                  label: "Средняя"
+                - field: "value"
+                  operator: ">"
+                  value: 60
+                  status: "danger"
+                  label: "Медленная"
+              grid: { w: 4 }
+              linked_operations: [OP-WMS-13, OP-WMS-16, OP-WMS-25]
+
+        - id: "sec-analytics-turnover"
+          type: "analytics"
+          title: "Аналитика оборачиваемости"
+          widgets:
+            - widget_id: W04-02
+              type: Chart
+              title: "Оборачиваемость по группам материалов"
+              subtitle: "дней"
+              dataSource: "Q-WMS-04-02"
+              chartType: "bar"
+              category: "material_group_name"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+                unit: "дней"
+              series:
+                - field: "turnover_days"
+                  label: "Оборачиваемость (дней)"
+                  color: "#a78bfa"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-13, OP-WMS-16, OP-WMS-25]
+              
+            - widget_id: W04-04
+              type: Chart
+              title: "Динамика стоимости запасов"
+              subtitle: "деньги в товаре"
+              dataSource: "Q-WMS-04-04"
+              chartType: "line"
+              category: "month"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "monthly_change"
+                  label: "Изменение стоимости"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-WMS-13, OP-WMS-30]
+
+        - id: "sec-alerts-turnover"
+          type: "alerts"
+          title: "Залежалые материалы"
+          widgets:
+            - widget_id: W04-03
+              type: Table
+              title: "ТОП-10 материалов с самой низкой оборачиваемостью"
+              subtitle: "залежалые"
+              dataSource: "Q-WMS-04-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "material_name"
+                  title: "Материал"
+                  width: 200
+                  sortable: true
+                - field: "stock_value"
+                  title: "Стоимость остатка"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+                - field: "usage_value"
+                  title: "Использовано"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+                - field: "turnover_days"
+                  title: "Оборачиваемость (дней)"
+                  width: 150
+                  align: "right"
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "0-60": "success"
+                      "61-120": "warning"
+                      "121": "danger"
+              grid: { w: 12 }
+              linked_operations: [OP-WMS-13, OP-WMS-16, OP-WMS-25]

@@ -1,0 +1,516 @@
+# =====================================================================================
+# WMS — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на WMS_Schema.json версии 1.2
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Кладовщик
+# =====================================================================================
+- role: "кладовщик"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-WMS-01: Приходный ордер
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-01
+      report: "Приходный ордер"
+      description: >
+        Документ о поступлении материалов на склад. Содержит информацию
+        о складе, контрагенте, дате поступления и позициях.
+        Используется для учета поступления товаров и сверки с поставщиками.
+      parameters:
+        - name: receipt_id
+          label: "ID приходного ордера"
+          type: number
+          required: true
+          description: "Введите ID приходного ордера"
+      sections:
+        - title: "Шапка приходного ордера"
+          columns:
+            - { field: warehouse_id, label: "ID склада", type: number, format: integer }
+            - { field: counterparty_id, label: "ID контрагента", type: number, format: integer }
+            - { field: receipt_date, label: "Дата поступления", type: date }
+            - { field: document_id, label: "№ документа", type: string }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { draft: "info", posted: "success", cancelled: "danger" } }
+        - title: "Позиции приходного ордера"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: lot_id, label: "ID партии", type: number, format: integer }
+            - { field: location_id, label: "ID ячейки", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: decimal }
+            - { field: unit_cost, label: "Цена за ед.", type: number, format: currency }
+        - title: "Итого по ордеру"
+          columns:
+            - { field: total_amount, label: "Общая сумма", type: number, format: currency }
+      summary:
+        - field: quantity
+          label: "Итого количество"
+          aggregation: SUM
+        - field: unit_cost
+          label: "Итого стоимость"
+          aggregation: SUM
+      query_ref: Q-WMS-R01
+      linked_operations:
+        - OP-WMS-10  # Создание приходного ордера
+        - OP-WMS-11  # Проведение приходного ордера
+        - OP-WMS-13  # Размещение на складе
+      export:
+        formats: [pdf, print]
+        template: "receipt_order"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-03: Накладная на перемещение
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-03
+      report: "Накладная на перемещение"
+      description: >
+        Документ о перемещении материалов между складами или ячейками.
+        Содержит информацию о складах-отправителе и получателе,
+        дате перемещения и позициях.
+      parameters:
+        - name: transfer_id
+          label: "ID накладной перемещения"
+          type: number
+          required: true
+          description: "Введите ID накладной перемещения"
+      sections:
+        - title: "Шапка накладной перемещения"
+          columns:
+            - { field: from_warehouse_id, label: "Склад-отправитель", type: number, format: integer }
+            - { field: to_warehouse_id, label: "Склад-получатель", type: number, format: integer }
+            - { field: transfer_date, label: "Дата перемещения", type: date }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { draft: "info", posted: "success", cancelled: "danger" } }
+        - title: "Позиции перемещения"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: decimal }
+      summary:
+        - field: quantity
+          label: "Итого количество"
+          aggregation: SUM
+      query_ref: Q-WMS-R03
+      linked_operations:
+        - OP-WMS-18  # Создание перемещения
+        - OP-WMS-19  # Подтверждение перемещения
+        - OP-WMS-21  # Проведение перемещения
+      export:
+        formats: [pdf, print]
+        template: "transfer_order"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-04: Акт на списание
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-04
+      report: "Акт на списание"
+      description: >
+        Документ о списании материалов со склада. Содержит информацию
+        о складе, причине списания и позициях.
+        Используется для учета потерь и выбытия материалов.
+      parameters:
+        - name: writeoff_id
+          label: "ID акта списания"
+          type: number
+          required: true
+          description: "Введите ID акта списания"
+      sections:
+        - title: "Шапка акта списания"
+          columns:
+            - { field: warehouse_id, label: "ID склада", type: number, format: integer }
+            - { field: writeoff_date, label: "Дата списания", type: date }
+            - { field: reason, label: "Причина", type: string }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { draft: "info", posted: "success", cancelled: "danger" } }
+        - title: "Позиции списания"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: decimal }
+      summary:
+        - field: quantity
+          label: "Итого количество"
+          aggregation: SUM
+      query_ref: Q-WMS-R04
+      linked_operations:
+        - OP-WMS-23  # Создание списания
+        - OP-WMS-24  # Подтверждение списания
+        - OP-WMS-25  # Проведение списания
+      export:
+        formats: [pdf, print]
+        template: "writeoff_act"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-06: Инвентаризационная ведомость
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-06
+      report: "Инвентаризационная ведомость"
+      description: >
+        Документ, фиксирующий результаты инвентаризации.
+        Сравнивает системное количество с фактически подсчитанным
+        и показывает расхождения (variance).
+      parameters:
+        - name: snapshot_id
+          label: "ID снимка инвентаризации"
+          type: number
+          required: true
+          description: "Введите ID снимка инвентаризации"
+      sections:
+        - title: "Инвентаризационная ведомость"
+          columns:
+            - { field: snapshot_item_id, label: "ID позиции", type: number, format: integer }
+            - { field: material_name, label: "Материал", type: string }
+            - { field: location_id, label: "ID ячейки", type: number, format: integer }
+            - { field: quantity, label: "Системное количество", type: number, format: decimal }
+            - { field: counted_quantity, label: "Подсчитано", type: number, format: decimal }
+            - { field: variance_quantity, label: "Отклонение", type: number, format: decimal, color: status }
+      query_ref: Q-WMS-R06
+      linked_operations:
+        - OP-WMS-27  # Создание инвентаризации
+        - OP-WMS-28  # Внесение подсчета
+        - OP-WMS-30  # Утверждение инвентаризации
+      export:
+        formats: [pdf, print]
+        template: "inventory_sheet"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-07: Реестр партий с истекающим сроком годности
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-07
+      report: "Реестр партий с истекающим сроком годности"
+      description: >
+        Список партий материалов, срок годности которых истекает
+        в ближайшее время. Показывает остатки по каждой партии.
+        Используется для своевременной реализации или перемещения.
+      parameters:
+        - name: days_threshold
+          label: "Горизонт (дней)"
+          type: number
+          required: true
+          default: 30
+          description: "Количество дней до истечения срока"
+      sections:
+        - title: "Истекающие партии"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: lot_number, label: "№ партии", type: string }
+            - { field: expiration_date, label: "Истекает", type: date }
+            - { field: remaining_quantity, label: "Остаток", type: number, format: decimal }
+      query_ref: Q-WMS-R07
+      linked_operations:
+        - OP-WMS-31  # Регистрация партии
+        - OP-WMS-32  # Списание партии
+      export:
+        formats: [pdf, excel, print]
+        template: "expiring_lots"
+
+
+# =====================================================================================
+# РОЛЬ: Заведующий складом
+# =====================================================================================
+- role: "заведующий_складом"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-WMS-02: Ведомость резервирований
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-02
+      report: "Ведомость резервирований"
+      description: >
+        Список всех резервирований материалов за период.
+        Показывает, какие материалы зарезервированы, для каких задач
+        и в каком количестве. Используется для контроля заказов.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Ведомость резервирований"
+          columns:
+            - { field: reservation_id, label: "ID резервирования", type: number, format: integer }
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: task_object_type, label: "Тип объекта", type: string, widget: badge, statusMap: { production_order: "info", sales_order: "success", transfer: "warning" } }
+            - { field: task_object_id, label: "ID объекта", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: decimal }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { reserved: "success", partially_shipped: "warning", shipped: "neutral", cancelled: "danger" } }
+            - { field: reserved_at, label: "Дата резервирования", type: datetime }
+      summary:
+        - field: quantity
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-WMS-R02
+      linked_operations:
+        - OP-WMS-15  # Создание резервирования
+        - OP-WMS-16  # Изменение резервирования
+        - OP-WMS-17  # Отмена резервирования
+      export:
+        formats: [pdf, excel, print]
+        template: "reservation_list"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-04: Акт на списание
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-04
+      report: "Акт на списание"
+      description: >
+        Документ о списании материалов со склада. Содержит информацию
+        о складе, причине списания и позициях.
+      parameters:
+        - name: writeoff_id
+          label: "ID акта списания"
+          type: number
+          required: true
+          description: "Введите ID акта списания"
+      sections:
+        - title: "Шапка акта списания"
+          columns:
+            - { field: warehouse_id, label: "ID склада", type: number, format: integer }
+            - { field: writeoff_date, label: "Дата списания", type: date }
+            - { field: reason, label: "Причина", type: string }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { draft: "info", posted: "success", cancelled: "danger" } }
+        - title: "Позиции списания"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: decimal }
+      summary:
+        - field: quantity
+          label: "Итого количество"
+          aggregation: SUM
+      query_ref: Q-WMS-R04
+      linked_operations:
+        - OP-WMS-23  # Создание списания
+        - OP-WMS-24  # Подтверждение списания
+        - OP-WMS-25  # Проведение списания
+      export:
+        formats: [pdf, print]
+        template: "writeoff_act"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-05: Номенклатурный справочник материалов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-05
+      report: "Номенклатурный справочник материалов"
+      description: >
+        Полный справочник материалов с указанием кода, наименования,
+        единицы измерения, точки перезаказа и текущих остатков.
+        Используется для управления запасами и планирования закупок.
+      parameters:
+        - name: material_group_id
+          label: "Группа материалов"
+          type: select
+          required: false
+          description: "Фильтр по группе материалов"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Номенклатурный справочник"
+          columns:
+            - { field: material_code, label: "Код материала", type: string }
+            - { field: material_name, label: "Наименование", type: string }
+            - { field: unit_id, label: "Ед. измерения", type: string }
+            - { field: min_stock_level, label: "Точка перезаказа", type: number, format: decimal }
+            - { field: current_quantity, label: "Текущий остаток", type: number, format: decimal }
+            - { field: current_value, label: "Текущая стоимость", type: number, format: currency }
+      summary:
+        - field: current_value
+          label: "Итого стоимость"
+          aggregation: SUM
+      query_ref: Q-WMS-R05
+      linked_operations:
+        - OP-WMS-07  # Создание материала
+        - OP-WMS-08  # Редактирование материала
+        - OP-WMS-09  # Определение точки перезаказа
+      export:
+        formats: [pdf, excel, print]
+        template: "material_reference"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-06: Инвентаризационная ведомость
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-06
+      report: "Инвентаризационная ведомость"
+      description: >
+        Документ, фиксирующий результаты инвентаризации.
+        Сравнивает системное количество с фактически подсчитанным.
+      parameters:
+        - name: snapshot_id
+          label: "ID снимка инвентаризации"
+          type: number
+          required: true
+          description: "Введите ID снимка инвентаризации"
+      sections:
+        - title: "Инвентаризационная ведомость"
+          columns:
+            - { field: snapshot_item_id, label: "ID позиции", type: number, format: integer }
+            - { field: material_name, label: "Материал", type: string }
+            - { field: location_id, label: "ID ячейки", type: number, format: integer }
+            - { field: quantity, label: "Системное количество", type: number, format: decimal }
+            - { field: counted_quantity, label: "Подсчитано", type: number, format: decimal }
+            - { field: variance_quantity, label: "Отклонение", type: number, format: decimal, color: status }
+      query_ref: Q-WMS-R06
+      linked_operations:
+        - OP-WMS-27  # Создание инвентаризации
+        - OP-WMS-28  # Внесение подсчета
+        - OP-WMS-30  # Утверждение инвентаризации
+      export:
+        formats: [pdf, print]
+        template: "inventory_sheet"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-07: Реестр партий с истекающим сроком годности
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-07
+      report: "Реестр партий с истекающим сроком годности"
+      description: >
+        Список партий материалов, срок годности которых истекает
+        в ближайшее время. Показывает остатки по каждой партии.
+      parameters:
+        - name: days_threshold
+          label: "Горизонт (дней)"
+          type: number
+          required: true
+          default: 30
+          description: "Количество дней до истечения срока"
+      sections:
+        - title: "Истекающие партии"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: lot_number, label: "№ партии", type: string }
+            - { field: expiration_date, label: "Истекает", type: date }
+            - { field: remaining_quantity, label: "Остаток", type: number, format: decimal }
+      query_ref: Q-WMS-R07
+      linked_operations:
+        - OP-WMS-31  # Регистрация партии
+        - OP-WMS-32  # Списание партии
+      export:
+        formats: [pdf, excel, print]
+        template: "expiring_lots"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-08: Стоимость запасов в разрезе складов и групп
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-08
+      report: "Стоимость запасов в разрезе складов и групп"
+      description: >
+        Анализ стоимости остатков по складам и группам материалов.
+        Показывает, где заморожены деньги компании.
+        Используется для принятия решений о перемещении или распродаже залежалых запасов.
+      parameters:
+        - name: warehouse_id
+          label: "Склад"
+          type: select
+          required: false
+          description: "Фильтр по складу"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Стоимость запасов"
+          columns:
+            - { field: warehouse_name, label: "Склад", type: string }
+            - { field: material_group_name, label: "Группа материалов", type: string }
+            - { field: total_quantity, label: "Количество", type: number, format: decimal }
+            - { field: total_value, label: "Стоимость", type: number, format: currency }
+            - { field: percent_of_total, label: "Доля (%)", type: number, format: percent }
+      summary:
+        - field: total_value
+          label: "Итого стоимость"
+          aggregation: SUM
+      query_ref: Q-WMS-R08
+      linked_operations:
+        - OP-WMS-13  # Размещение на складе
+        - OP-WMS-30  # Утверждение инвентаризации
+      export:
+        formats: [pdf, excel, print]
+        template: "stock_value_analysis"
+
+
+# =====================================================================================
+# РОЛЬ: Менеджер по закупкам
+# =====================================================================================
+- role: "менеджер_по_закупкам"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-WMS-01: Приходный ордер
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-01
+      report: "Приходный ордер"
+      description: >
+        Документ о поступлении материалов на склад. Содержит информацию
+        о складе, контрагенте, дате поступления и позициях.
+      parameters:
+        - name: receipt_id
+          label: "ID приходного ордера"
+          type: number
+          required: true
+          description: "Введите ID приходного ордера"
+      sections:
+        - title: "Шапка приходного ордера"
+          columns:
+            - { field: warehouse_id, label: "ID склада", type: number, format: integer }
+            - { field: counterparty_id, label: "ID контрагента", type: number, format: integer }
+            - { field: receipt_date, label: "Дата поступления", type: date }
+            - { field: document_id, label: "№ документа", type: string }
+            - { field: status, label: "Статус", type: string, widget: status, statusMap: { draft: "info", posted: "success", cancelled: "danger" } }
+        - title: "Позиции приходного ордера"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: lot_id, label: "ID партии", type: number, format: integer }
+            - { field: location_id, label: "ID ячейки", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: decimal }
+            - { field: unit_cost, label: "Цена за ед.", type: number, format: currency }
+        - title: "Итого по ордеру"
+          columns:
+            - { field: total_amount, label: "Общая сумма", type: number, format: currency }
+      summary:
+        - field: quantity
+          label: "Итого количество"
+          aggregation: SUM
+        - field: unit_cost
+          label: "Итого стоимость"
+          aggregation: SUM
+      query_ref: Q-WMS-R01
+      linked_operations:
+        - OP-WMS-10  # Создание приходного ордера
+        - OP-WMS-11  # Проведение приходного ордера
+        - OP-WMS-13  # Размещение на складе
+      export:
+        formats: [pdf, print]
+        template: "receipt_order"
+
+    # -------------------------------------------------------------------------------
+    # REP-WMS-05: Номенклатурный справочник материалов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-WMS-05
+      report: "Номенклатурный справочник материалов"
+      description: >
+        Полный справочник материалов с указанием кода, наименования,
+        единицы измерения, точки перезаказа и текущих остатков.
+        Используется для планирования закупок.
+      parameters:
+        - name: material_group_id
+          label: "Группа материалов"
+          type: select
+          required: false
+          description: "Фильтр по группе материалов"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Номенклатурный справочник"
+          columns:
+            - { field: material_code, label: "Код материала", type: string }
+            - { field: material_name, label: "Наименование", type: string }
+            - { field: unit_id, label: "Ед. измерения", type: string }
+            - { field: min_stock_level, label: "Точка перезаказа", type: number, format: decimal }
+            - { field: current_quantity, label: "Текущий остаток", type: number, format: decimal }
+            - { field: current_value, label: "Текущая стоимость", type: number, format: currency }
+      summary:
+        - field: current_value
+          label: "Итого стоимость"
+          aggregation: SUM
+      query_ref: Q-WMS-R05
+      linked_operations:
+        - OP-WMS-07  # Создание материала
+        - OP-WMS-08  # Редактирование материала
+        - OP-WMS-09  # Определение точки перезаказа
+      export:
+        formats: [pdf, excel, print]
+        template: "material_reference"

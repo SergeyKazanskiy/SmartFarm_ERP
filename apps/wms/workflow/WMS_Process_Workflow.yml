@@ -1,0 +1,479 @@
+meta:
+  title: WMS_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов складского учёта с ролями, задачами, переходами
+    между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов (по кодам
+    OP-WMS-01…37). Объединяет через процессы WMS_Business_Queries.sql (SQL),
+    WMS_Business_Roles.yml (поля форм), WMS_Dashboards_Roles.yml (дашборды),
+    WMS_Reports_Roles.yml (отчёты).
+  schema_notes: >
+    Задача (task) соответствует ОДНОМУ экрану/форме — принцип идентичен
+    Production_Process_Workflow.yml / Construction_Process_Workflow.yml.
+
+roles_catalog:
+  warehouse_keeper: Кладовщик
+  warehouse_manager: Заведующий складом
+  purchasing_manager: Менеджер по закупкам
+
+processes:
+
+- id: WMS-01
+  name: Справочники склада
+  description: Ведение складов, ячеек хранения, групп материалов и номенклатурных позиций, включая точку перезаказа.
+  dashboards:
+  - DASH-WMS-01 (Остатки и дефицит)
+  reports:
+  - REP-WMS-05 (Номенклатурный справочник материалов)
+  tasks:
+
+  - id: TASK-WMS-01-01
+    name: Ведение складов
+    role: warehouse_manager
+    has_form: true
+    form_ref: [OP-WMS-01, OP-WMS-02]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-01
+        description: Создание склада
+      on_update:
+        query_code: OP-WMS-02
+        description: Изменение параметров склада
+    transitions:
+    - target_task: TASK-WMS-01-02
+      condition: Склад создан, можно формировать ячейки хранения
+      on_event: [on_insert, on_update]
+
+  - id: TASK-WMS-01-02
+    name: Ведение ячеек хранения
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-03, OP-WMS-04]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-03
+        description: Создание ячейки хранения
+      on_update:
+        query_code: OP-WMS-04
+        description: Изменение параметров ячейки хранения
+    transitions: []
+
+  - id: TASK-WMS-01-03
+    name: Ведение групп материалов
+    role: warehouse_manager
+    has_form: true
+    form_ref: [OP-WMS-05, OP-WMS-06]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-05
+        description: Создание группы материалов
+      on_update:
+        query_code: OP-WMS-06
+        description: Переименование группы материалов
+    transitions:
+    - target_task: TASK-WMS-01-04
+      condition: Группа создана, можно заводить номенклатуру
+      on_event: [on_insert, on_update]
+
+  - id: TASK-WMS-01-04
+    name: Ведение номенклатуры материалов
+    role: warehouse_manager
+    has_form: true
+    form_ref: [OP-WMS-07, OP-WMS-08]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-07
+        description: Создание материала (номенклатурной позиции)
+      on_update:
+        query_code: OP-WMS-08
+        description: Изменение параметров материала
+    transitions:
+    - target_task: TASK-WMS-01-05
+      condition: Материал заведён, можно задать точку перезаказа
+      on_event: [on_insert, on_update]
+    - target_task: TASK-WMS-02-01
+      condition: Материал заведён, можно оформлять приход
+      on_event: [on_insert, on_update]
+
+  - id: TASK-WMS-01-05
+    name: Изменение точки перезаказа
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-WMS-09]
+    sql_queries:
+      on_update:
+        query_code: OP-WMS-09
+        description: Изменение точки перезаказа (минимального остатка)
+    transitions: []
+
+- id: WMS-02
+  name: Приход материалов
+  description: Оформление, наполнение и проведение приходных документов от поставщиков.
+  dashboards:
+  - DASH-WMS-02 (Приход и обеспечение)
+  reports:
+  - REP-WMS-01 (Приходный ордер)
+  tasks:
+
+  - id: TASK-WMS-02-01
+    name: Создание приходного документа
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-10]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-10
+        description: Создание приходного документа
+    transitions:
+    - target_task: TASK-WMS-02-02
+      condition: Документ создан в статусе draft, можно добавлять позиции
+      on_event: [on_insert]
+
+  - id: TASK-WMS-02-02
+    name: Ведение позиций приходного документа
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-11, OP-WMS-12]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-11
+        description: Добавление позиции приходного документа
+      on_update:
+        query_code: OP-WMS-12
+        description: Изменение позиции приходного документа
+    transitions:
+    - target_task: TASK-WMS-02-03
+      condition: Позиции внесены, документ готов к проведению
+      on_event: [on_insert, on_update]
+
+  - id: TASK-WMS-02-03
+    name: Проведение / отмена проведения приходного документа
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-13, OP-WMS-14]
+    sql_queries:
+      on_post:
+        query_code: OP-WMS-13
+        description: Проведение приходного документа
+      on_unpost:
+        query_code: OP-WMS-14
+        description: Отмена проведения приходного документа
+    transitions:
+    - target_task: END_PROCESS
+      condition: Материал зачислен на остатки склада, доступен для резервирования другими модулями
+      on_event: [on_post]
+
+- id: WMS-03
+  name: Резервирование и выдача материалов
+  description: Резервирование материала под задачи других модулей (Construction/Production/ТОиР), выдача или снятие резерва.
+  dashboards:
+  - DASH-WMS-01 (Остатки и дефицит)
+  reports:
+  - REP-WMS-02 (Ведомость резервирований)
+  tasks:
+
+  - id: TASK-WMS-03-01
+    name: Резервирование материала под задачу
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-15]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-15
+        description: Резервирование материала под задачу
+    transitions:
+    - target_task: TASK-WMS-03-02
+      condition: Резерв создан, материал будет выдан при готовности
+      on_event: [on_insert]
+    - target_task: TASK-WMS-03-03
+      condition: Резерв создан, но задача отменена ещё до выдачи
+      on_event: [on_insert]
+
+  - id: TASK-WMS-03-02
+    name: Выдача материала по резервированию
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-16]
+    sql_queries:
+      on_issue:
+        query_code: OP-WMS-16
+        description: Выдача материала по резервированию
+    transitions:
+    - target_task: END_PROCESS
+      condition: Материал выдан, остаток склада уменьшен
+      on_event: [on_issue]
+
+  - id: TASK-WMS-03-03
+    name: Снятие резерва без выдачи
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-17]
+    sql_queries:
+      on_release:
+        query_code: OP-WMS-17
+        description: Снятие резерва без выдачи
+    transitions:
+    - target_task: END_PROCESS
+      condition: Резерв снят, материал снова доступен для других задач
+      on_event: [on_release]
+
+- id: WMS-04
+  name: Перемещение между складами
+  description: Оформление и проведение внутренних перемещений материалов между складами предприятия.
+  dashboards:
+  - DASH-WMS-03 (Движение материалов)
+  reports:
+  - REP-WMS-03 (Накладная на перемещение)
+  tasks:
+
+  - id: TASK-WMS-04-01
+    name: Создание документа перемещения
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-18]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-18
+        description: Создание документа перемещения
+    transitions:
+    - target_task: TASK-WMS-04-02
+      condition: Документ создан в статусе draft, можно добавлять позиции
+      on_event: [on_insert]
+
+  - id: TASK-WMS-04-02
+    name: Ведение позиций перемещения
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-19, OP-WMS-20]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-19
+        description: Добавление позиции перемещения
+      on_update:
+        query_code: OP-WMS-20
+        description: Изменение количества в позиции перемещения
+    transitions:
+    - target_task: TASK-WMS-04-03
+      condition: Позиции внесены, документ готов к проведению
+      on_event: [on_insert, on_update]
+
+  - id: TASK-WMS-04-03
+    name: Проведение / отмена проведения документа перемещения
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-21, OP-WMS-22]
+    sql_queries:
+      on_post:
+        query_code: OP-WMS-21
+        description: Проведение документа перемещения
+      on_unpost:
+        query_code: OP-WMS-22
+        description: Отмена проведения документа перемещения
+    transitions:
+    - target_task: END_PROCESS
+      condition: Остаток списан со склада-источника и зачислен на склад-получатель
+      on_event: [on_post]
+
+- id: WMS-05
+  name: Списание материалов
+  description: Оформление, проведение и утверждение списания материалов (порча, недостача, брак).
+  dashboards:
+  - DASH-WMS-03 (Движение материалов)
+  reports:
+  - REP-WMS-04 (Акт на списание)
+  tasks:
+
+  - id: TASK-WMS-05-01
+    name: Создание документа списания
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-23]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-23
+        description: Создание документа списания
+    transitions:
+    - target_task: TASK-WMS-05-02
+      condition: Документ создан в статусе draft, можно добавлять позиции
+      on_event: [on_insert]
+
+  - id: TASK-WMS-05-02
+    name: Добавление позиции списания
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-24]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-24
+        description: Добавление позиции списания
+    transitions:
+    - target_task: TASK-WMS-05-03
+      condition: Позиции внесены, документ готов к проведению заведующим складом
+      on_event: [on_insert]
+
+  - id: TASK-WMS-05-03
+    name: Проведение / отмена проведения документа списания
+    role: [warehouse_keeper, warehouse_manager]
+    has_form: true
+    form_ref: [OP-WMS-25, OP-WMS-26]
+    sql_queries:
+      on_post:
+        query_code: OP-WMS-25
+        description: Проведение документа списания
+      on_unpost:
+        query_code: OP-WMS-26
+        description: Отмена проведения документа списания
+    transitions:
+    - target_task: END_PROCESS
+      condition: Остаток списан со склада
+      on_event: [on_post]
+
+- id: WMS-06
+  name: Инвентаризация
+  description: Периодическая сверка фактических остатков склада с системными данными и проведение выявленных расхождений.
+  dashboards:
+  - DASH-WMS-01 (Остатки и дефицит)
+  reports:
+  - REP-WMS-06 (Инвентаризационная ведомость)
+  tasks:
+
+  - id: TASK-WMS-06-01
+    name: Создание инвентаризации
+    role: warehouse_manager
+    has_form: true
+    form_ref: [OP-WMS-27]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-27
+        description: Создание инвентаризации (снимок системных остатков)
+    transitions:
+    - target_task: TASK-WMS-06-02
+      condition: Снимок сформирован в статусе draft, комиссия вносит фактические данные
+      on_event: [on_insert]
+
+  - id: TASK-WMS-06-02
+    name: Внесение фактически пересчитанного количества
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-28]
+    sql_queries:
+      on_record:
+        query_code: OP-WMS-28
+        description: Внесение фактически пересчитанного количества по позиции
+    transitions:
+    - target_task: TASK-WMS-06-03
+      condition: Все позиции пересчитаны
+      on_event: [on_record]
+
+  - id: TASK-WMS-06-03
+    name: Завершение пересчёта
+    role: warehouse_manager
+    has_form: true
+    form_ref: [OP-WMS-29]
+    sql_queries:
+      on_finish:
+        query_code: OP-WMS-29
+        description: Завершение пересчёта (перевод инвентаризации в статус counted)
+    transitions:
+    - target_task: TASK-WMS-06-04
+      condition: Пересчёт завершён, можно рассматривать расхождения к утверждению
+      on_event: [on_finish]
+
+  - id: TASK-WMS-06-04
+    name: Утверждение инвентаризации
+    role: warehouse_manager
+    has_form: true
+    form_ref: [OP-WMS-30]
+    sql_queries:
+      on_approve:
+        query_code: OP-WMS-30
+        description: Утверждение инвентаризации (проведение расхождений)
+    transitions:
+    - target_task: END_PROCESS
+      condition: 'Расхождения проведены: недостачи списаны, излишки оприходованы'
+      on_event: [on_approve]
+
+- id: WMS-07
+  name: Партии, серийные номера, тара
+  description: Вспомогательный учёт партий (сроки годности), серийных номеров и тары/контейнеров.
+  dashboards: []
+  reports:
+  - REP-WMS-07 (Реестр партий с истекающим сроком годности)
+  tasks:
+
+  - id: TASK-WMS-07-01
+    name: Ведение партий материала
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-31, OP-WMS-32]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-31
+        description: Создание партии материала
+      on_update:
+        query_code: OP-WMS-32
+        description: Изменение срока годности партии
+    transitions: []
+
+  - id: TASK-WMS-07-02
+    name: Регистрация серийного номера материала
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-33]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-33
+        description: Регистрация серийного номера материала
+    transitions: []
+
+  - id: TASK-WMS-07-03
+    name: Ведение типов тары
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-34]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-34
+        description: Создание типа тары/контейнера
+    transitions:
+    - target_task: TASK-WMS-07-04
+      condition: Тип тары создан, можно регистрировать конкретную тару
+      on_event: [on_insert]
+
+  - id: TASK-WMS-07-04
+    name: Регистрация и наполнение тары
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-WMS-35, OP-WMS-36, OP-WMS-37]
+    sql_queries:
+      on_insert:
+        query_code: OP-WMS-35
+        description: Регистрация тары/контейнера
+      on_add_item:
+        query_code: OP-WMS-36
+        description: Размещение остатка в тару
+      on_remove_item:
+        query_code: OP-WMS-37
+        description: Изъятие остатка из тары
+    transitions: []
+
+bpmn_diagrams:
+- id: BPMN-WMS-01
+  name: Мастер-данные и обеспечение
+  description: Справочники склада и приход материалов от поставщиков.
+  process_ids:
+  - WMS-01
+  - WMS-02
+- id: BPMN-WMS-02
+  name: Движение материалов
+  description: Резервирование/выдача, перемещение между складами и списание.
+  process_ids:
+  - WMS-03
+  - WMS-04
+  - WMS-05
+- id: BPMN-WMS-03
+  name: Контроль остатков
+  description: Инвентаризация и вспомогательный учёт партий, серийных номеров и тары.
+  process_ids:
+  - WMS-06
+  - WMS-07

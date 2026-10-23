@@ -17,6 +17,7 @@ WORKFLOW_DIRS = {
     "HR": Path("apps/hr/workflow"),
     "TASK": Path("apps/tasks/workflow"),
     "CP": Path("apps/cp/workflow"),
+    "WMS": Path("apps/wms/workflow"), 
 }
 
 # Business_Roles — по одному на модуль (по имени файла)
@@ -24,6 +25,7 @@ BUSINESS_ROLES_BY_MODULE = {
     "HR": "HR_Business_Roles.yml",
     "TASK": "TASK_Business_Roles.yml",
     "CP": "CP_Business_Roles.yml",          # ← добавили
+    "WMS": "WMS_Business_Roles.yml",
 }
 
 

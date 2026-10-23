@@ -1,0 +1,122 @@
+Проверка Части 2
+
+1. Провести приход с пересчётом скользящего среднего.
+
+python
+from decimal import Decimal
+from apps.companies.models import Company
+from apps.wms.models import Inventory
+from apps.wms.services import (
+    MaterialService, StorageLocationService, WarehouseService,
+    GoodsReceiptService, GoodsReceiptLineService, WarehouseTypeService,
+)
+
+company = Company.objects.first()
+
+wt = WarehouseTypeService.create(company_id=company.id, data={"name": "Склад"})
+wh = WarehouseService.save(company_id=company.id, data={
+    "name": "Центральный", "warehouse_type_id": wt.id,
+})
+loc = StorageLocationService.save(company_id=company.id, data={
+    "warehouse_id": wh.id, "location_code": "A-01-01",
+})
+mat = MaterialService.save(company_id=company.id, data={
+    "material_code": "PCB-001", "name": "Печатная плата",
+})
+
+# Первый приход: 1000 шт × 145
+gr1 = GoodsReceiptService.create(company_id=company.id, data={
+    "warehouse_id": wh.id, "receipt_date": "2026-06-01T10:00:00Z",
+})
+GoodsReceiptLineService.create(company_id=company.id, data={
+    "receipt_id": gr1.id, "material_id": mat.id,
+    "location_id": loc.id, "quantity": 1000, "unit_cost": 145,
+})
+GoodsReceiptService.post(company_id=company.id, receipt_id=gr1.id)
+
+inv = Inventory.objects.get(company_id=company.id, material_id=mat.id)
+print("After 1st receipt: qty=", inv.quantity, "cost=", inv.unit_cost)
+# qty=1000, cost=145.0000
+
+# Второй приход: 500 шт × 160
+gr2 = GoodsReceiptService.create(company_id=company.id, data={
+    "warehouse_id": wh.id, "receipt_date": "2026-06-10T10:00:00Z",
+})
+GoodsReceiptLineService.create(company_id=company.id, data={
+    "receipt_id": gr2.id, "material_id": mat.id,
+    "location_id": loc.id, "quantity": 500, "unit_cost": 160,
+})
+GoodsReceiptService.post(company_id=company.id, receipt_id=gr2.id)
+
+inv.refresh_from_db()
+print("After 2nd receipt: qty=", inv.quantity, "cost=", inv.unit_cost)
+# qty=1500, cost = (1000×145 + 500×160) / 1500 = 150.0000
+2. Резервирование и выдача.
+
+python
+from apps.wms.services import MaterialReservationService
+res = MaterialReservationService.reserve(company_id=company.id, data={
+    "material_id": mat.id, "warehouse_id": wh.id, "quantity": 100,
+})
+res = MaterialReservationService.issue(
+    company_id=company.id, reservation_id=res.id,
+)
+print("After issue: status=", res.status)
+inv.refresh_from_db()
+print("Inventory after issue:", inv.quantity)  # 1400
+3. Инвентаризация.
+
+python
+from apps.wms.services import InventorySnapshotService, InventorySnapshotItemService
+snap = InventorySnapshotService.create(company_id=company.id, data={
+    "warehouse_id": wh.id,
+})
+print("Snapshot items:", snap.items.count())  # 1
+
+item = snap.items.first()
+InventorySnapshotItemService.record_count(
+    company_id=company.id, snapshot_item_id=item.id,
+    counted_quantity=1390,  # недостача 10
+)
+InventorySnapshotService.finish_counting(
+    company_id=company.id, snapshot_id=snap.id,
+)
+InventorySnapshotService.approve(
+    company_id=company.id, snapshot_id=snap.id,
+)
+inv.refresh_from_db()
+print("After inventory:", inv.quantity)  # 1390
+4. Прогнать воркер.
+
+bash
+python manage.py process_events --once
+5. Cross-module: отгрузка Sales → списание WMS.
+
+python
+from apps.sales.services import CustomerService, OrderService, OrderLineService, ShipmentService, ShipmentLineService
+from apps.cp.models import Counterparty, CounterpartyType
+from apps.sales.models import Customer
+
+cp_type = CounterpartyType.objects.create(company=company, code="CPT-X", name="Клиент")
+cp = Counterparty.objects.create(company=company, code="CP-X", name="X", counterparty_type=cp_type)
+cust = CustomerService.save(company_id=company.id, data={"counterparty_id": cp.id})
+order = OrderService.create(company_id=company.id, data={
+    "order_number": "SO-WMS", "customer_id": cust.id, "order_date": "2026-07-01",
+})
+line = OrderLineService.create(company_id=company.id, data={
+    "order_id": order.id, "material_id": mat.id,  # тот же material_id
+    "quantity": 50, "unit_price": 5500,
+})
+OrderService.confirm(company_id=company.id, order_id=order.id)
+sh = ShipmentService.create(company_id=company.id, data={
+    "shipment_number": "SH-WMS", "order_id": order.id,
+    "shipment_date": "2026-08-10",
+})
+ShipmentLineService.create(company_id=company.id, data={
+    "shipment_id": sh.id, "order_line_id": line.id, "quantity": 50,
+})
+# Прогон воркера → Inventory.quantity уменьшится на 50
+# call_command("process_events", "--once")
+
+inv.refresh_from_db()
+print("After shipment:", inv.quantity)  # было 1390, стало 1340

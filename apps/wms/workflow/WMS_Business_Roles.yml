@@ -1,0 +1,782 @@
+# =====================================================================================
+# WMS — каталог форм для бизнес-операций
+# Источник: WMS_Business_Queries.sql (37 операций OP-WMS-01…37, схема v1.2).
+# Структура полностью аналогична Production_Business_Roles.yml / Construction_Business_Roles.yml.
+# =====================================================================================
+
+process: WMS-01
+process_name: "Справочники склада"
+role: "warehouse_keeper"
+operations:
+
+  - op_code: OP-WMS-01
+    name: "Создание склада"
+    table: wms_warehouse
+    type: insert
+    role: "warehouse_manager"
+    event: "WMS.warehouse.create"
+    button: "Создать склад"
+    fields:
+      - field: warehouse_name
+        label: "Название склада"
+        type: text
+        required: true
+      - field: warehouse_type_id
+        label: "Тип склада"
+        type: select
+        required: false
+        source: { table: wms_warehouse_type, value_field: warehouse_type_id, label_field: warehouse_type_name }
+      - field: address_id
+        label: "Адрес"
+        type: select
+        required: false
+        source: { table: dict_address, value_field: address_id, label_field: address_id }
+
+  - op_code: OP-WMS-02
+    name: "Изменение параметров склада"
+    table: wms_warehouse
+    type: update
+    role: "warehouse_manager"
+    event: "WMS.warehouse.update"
+    button: "Сохранить"
+    fields:
+      - field: warehouse_id
+        label: "Склад"
+        type: select
+        required: true
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: warehouse_name
+        label: "Название склада"
+        type: text
+        required: true
+      - field: warehouse_type_id
+        label: "Тип склада"
+        type: select
+        required: false
+        source: { table: wms_warehouse_type, value_field: warehouse_type_id, label_field: warehouse_type_name }
+      - field: address_id
+        label: "Адрес"
+        type: select
+        required: false
+        source: { table: dict_address, value_field: address_id, label_field: address_id }
+
+  - op_code: OP-WMS-03
+    name: "Создание ячейки хранения"
+    table: wms_storage_location
+    type: insert
+    event: "WMS.storageLocation.create"
+    button: "Создать ячейку"
+    fields:
+      - field: warehouse_id
+        label: "Склад"
+        type: select
+        required: true
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: location_code
+        label: "Код ячейки"
+        type: text
+        required: true
+      - field: location_type
+        label: "Тип ячейки"
+        type: text
+        required: false
+
+  - op_code: OP-WMS-04
+    name: "Изменение параметров ячейки хранения"
+    table: wms_storage_location
+    type: update
+    event: "WMS.storageLocation.update"
+    button: "Сохранить"
+    fields:
+      - field: location_id
+        label: "Ячейка"
+        type: select
+        required: true
+        source: { table: wms_storage_location, value_field: location_id, label_field: location_code }
+      - field: location_code
+        label: "Код ячейки"
+        type: text
+        required: true
+      - field: location_type
+        label: "Тип ячейки"
+        type: text
+        required: false
+
+  - op_code: OP-WMS-05
+    name: "Создание группы материалов"
+    table: wms_material_group
+    type: insert
+    event: "WMS.materialGroup.create"
+    button: "Создать группу"
+    fields:
+      - field: material_group_name
+        label: "Название группы"
+        type: text
+        required: true
+      - field: parent_id
+        label: "Родительская группа"
+        type: select
+        required: false
+        source: { table: wms_material_group, value_field: material_group_id, label_field: material_group_name }
+
+  - op_code: OP-WMS-06
+    name: "Переименование группы материалов"
+    table: wms_material_group
+    type: update
+    event: "WMS.materialGroup.rename"
+    button: "Сохранить"
+    fields:
+      - field: material_group_id
+        label: "Группа материалов"
+        type: select
+        required: true
+        source: { table: wms_material_group, value_field: material_group_id, label_field: material_group_name }
+      - field: material_group_name
+        label: "Новое название"
+        type: text
+        required: true
+
+  - op_code: OP-WMS-07
+    name: "Создание материала (номенклатурной позиции)"
+    table: wms_material
+    type: insert
+    event: "WMS.material.create"
+    button: "Создать материал"
+    fields:
+      - field: material_group_id
+        label: "Группа материалов"
+        type: select
+        required: false
+        source: { table: wms_material_group, value_field: material_group_id, label_field: material_group_name }
+      - field: material_code
+        label: "Код материала"
+        type: text
+        required: true
+      - field: material_name
+        label: "Название материала"
+        type: text
+        required: true
+      - field: unit_id
+        label: "Единица учёта"
+        type: select
+        required: false
+        source: { table: dict_unit, value_field: unit_id, label_field: unit_name }
+      - field: barcode
+        label: "Штрихкод"
+        type: text
+        required: false
+      - field: min_stock_level
+        label: "Минимальный остаток (точка перезаказа)"
+        type: number
+        required: false
+
+  - op_code: OP-WMS-08
+    name: "Изменение параметров материала"
+    table: wms_material
+    type: update
+    event: "WMS.material.update"
+    button: "Сохранить"
+    fields:
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: material_group_id
+        label: "Группа материалов"
+        type: select
+        required: false
+        source: { table: wms_material_group, value_field: material_group_id, label_field: material_group_name }
+      - field: material_name
+        label: "Название материала"
+        type: text
+        required: true
+      - field: unit_id
+        label: "Единица учёта"
+        type: select
+        required: false
+        source: { table: dict_unit, value_field: unit_id, label_field: unit_name }
+      - field: barcode
+        label: "Штрихкод"
+        type: text
+        required: false
+
+  - op_code: OP-WMS-09
+    name: "Изменение точки перезаказа"
+    table: wms_material
+    type: update
+    role: "purchasing_manager"
+    event: "WMS.material.updateReorderPoint"
+    button: "Сохранить точку перезаказа"
+    fields:
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: min_stock_level
+        label: "Минимальный остаток"
+        type: number
+        required: true
+
+---
+process: WMS-02
+process_name: "Приход материалов"
+role: "warehouse_keeper"
+statuses: [draft, posted]
+operations:
+
+  - op_code: OP-WMS-10
+    name: "Создание приходного документа"
+    table: wms_goods_receipt
+    type: insert
+    event: "WMS.goodsReceipt.create"
+    button: "Создать приход"
+    fields:
+      - field: warehouse_id
+        label: "Склад-получатель"
+        type: select
+        required: true
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: counterparty_id
+        label: "Поставщик"
+        type: select
+        required: false
+        source: { table: dict_counterparty, value_field: counterparty_id, label_field: counterparty_name }
+      - field: receipt_date
+        label: "Дата поступления"
+        type: datetime
+        required: true
+      - field: document_id
+        label: "Сопроводительный документ (накладная)"
+        type: select
+        required: false
+        source: { table: doc_document, value_field: document_id, label_field: document_number }
+
+  - op_code: OP-WMS-11
+    name: "Добавление позиции приходного документа"
+    table: wms_goods_receipt_line
+    type: insert
+    event: "WMS.goodsReceiptLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: receipt_id
+        label: "Приходный документ"
+        type: select
+        required: true
+        source: { table: wms_goods_receipt, value_field: receipt_id, label_field: receipt_id }
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: lot_id
+        label: "Партия (если требуется)"
+        type: select
+        required: false
+        source: { table: wms_material_lot, value_field: lot_id, label_field: lot_number }
+      - field: location_id
+        label: "Ячейка размещения"
+        type: select
+        required: false
+        source: { table: wms_storage_location, value_field: location_id, label_field: location_code }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_cost
+        label: "Себестоимость единицы"
+        type: number
+        required: false
+
+  - op_code: OP-WMS-12
+    name: "Изменение позиции приходного документа"
+    table: wms_goods_receipt_line
+    type: update
+    event: "WMS.goodsReceiptLine.update"
+    button: "Сохранить"
+    precondition: "receipt.status = draft"
+    fields:
+      - field: receipt_line_id
+        label: "Позиция прихода"
+        type: select
+        required: true
+        source: { table: wms_goods_receipt_line, value_field: receipt_line_id, label_field: receipt_line_id }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_cost
+        label: "Себестоимость единицы"
+        type: number
+        required: false
+      - field: location_id
+        label: "Ячейка размещения"
+        type: select
+        required: false
+        source: { table: wms_storage_location, value_field: location_id, label_field: location_code }
+
+  - op_code: OP-WMS-13
+    name: "Проведение приходного документа"
+    table: wms_goods_receipt
+    type: update
+    event: "WMS.goodsReceipt.post"
+    button: "Провести приход"
+    precondition: "status = draft"
+    fields:
+      - field: receipt_id
+        label: "Приходный документ"
+        type: select
+        required: true
+        source: { table: wms_goods_receipt, value_field: receipt_id, label_field: receipt_id }
+
+  - op_code: OP-WMS-14
+    name: "Отмена проведения приходного документа"
+    table: wms_goods_receipt
+    type: update
+    event: "WMS.goodsReceipt.unpost"
+    button: "Отменить проведение"
+    precondition: "status = posted"
+    fields:
+      - field: receipt_id
+        label: "Приходный документ"
+        type: select
+        required: true
+        source: { table: wms_goods_receipt, value_field: receipt_id, label_field: receipt_id }
+
+---
+process: WMS-03
+process_name: "Резервирование и выдача материалов"
+role: "warehouse_keeper"
+statuses: [reserved, issued, released]
+operations:
+
+  - op_code: OP-WMS-15
+    name: "Резервирование материала под задачу"
+    table: wms_material_reservation
+    type: insert
+    event: "WMS.material.reserve"
+    button: "Зарезервировать материал"
+    note: "Обычно вызывается автоматически другими модулями (Construction/Production/ТОиР) через Capability, но доступна и ручная форма для внутренних нужд склада."
+    fields:
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: warehouse_id
+        label: "Склад"
+        type: select
+        required: false
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: task_object_type
+        label: "Тип объекта-заказчика"
+        type: text
+        required: false
+      - field: task_object_id
+        label: "Идентификатор задачи/действия"
+        type: text
+        required: false
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+
+  - op_code: OP-WMS-16
+    name: "Выдача материала по резервированию"
+    table: wms_material_reservation
+    type: update
+    event: "WMS.material.issue"
+    button: "Выдать материал"
+    precondition: "status = reserved"
+    fields:
+      - field: reservation_id
+        label: "Резервирование"
+        type: select
+        required: true
+        source: { table: wms_material_reservation, value_field: reservation_id, label_field: reservation_id }
+
+  - op_code: OP-WMS-17
+    name: "Снятие резерва без выдачи"
+    table: wms_material_reservation
+    type: update
+    event: "WMS.material.release"
+    button: "Снять резерв"
+    precondition: "status = reserved"
+    fields:
+      - field: reservation_id
+        label: "Резервирование"
+        type: select
+        required: true
+        source: { table: wms_material_reservation, value_field: reservation_id, label_field: reservation_id }
+
+---
+process: WMS-04
+process_name: "Перемещение между складами"
+role: "warehouse_keeper"
+statuses: [draft, posted]
+operations:
+
+  - op_code: OP-WMS-18
+    name: "Создание документа перемещения"
+    table: wms_transfer
+    type: insert
+    event: "WMS.transfer.create"
+    button: "Создать перемещение"
+    fields:
+      - field: from_warehouse_id
+        label: "Склад-источник"
+        type: select
+        required: true
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: to_warehouse_id
+        label: "Склад-получатель"
+        type: select
+        required: true
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: transfer_date
+        label: "Дата перемещения"
+        type: datetime
+        required: true
+
+  - op_code: OP-WMS-19
+    name: "Добавление позиции перемещения"
+    table: wms_transfer_line
+    type: insert
+    event: "WMS.transferLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: transfer_id
+        label: "Документ перемещения"
+        type: select
+        required: true
+        source: { table: wms_transfer, value_field: transfer_id, label_field: transfer_id }
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+
+  - op_code: OP-WMS-20
+    name: "Изменение количества в позиции перемещения"
+    table: wms_transfer_line
+    type: update
+    event: "WMS.transferLine.update"
+    button: "Сохранить"
+    precondition: "transfer.status = draft"
+    fields:
+      - field: transfer_line_id
+        label: "Позиция перемещения"
+        type: select
+        required: true
+        source: { table: wms_transfer_line, value_field: transfer_line_id, label_field: transfer_line_id }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+
+  - op_code: OP-WMS-21
+    name: "Проведение документа перемещения"
+    table: wms_transfer
+    type: update
+    event: "WMS.transfer.post"
+    button: "Провести перемещение"
+    precondition: "status = draft"
+    fields:
+      - field: transfer_id
+        label: "Документ перемещения"
+        type: select
+        required: true
+        source: { table: wms_transfer, value_field: transfer_id, label_field: transfer_id }
+
+  - op_code: OP-WMS-22
+    name: "Отмена проведения документа перемещения"
+    table: wms_transfer
+    type: update
+    event: "WMS.transfer.unpost"
+    button: "Отменить проведение"
+    precondition: "status = posted"
+    fields:
+      - field: transfer_id
+        label: "Документ перемещения"
+        type: select
+        required: true
+        source: { table: wms_transfer, value_field: transfer_id, label_field: transfer_id }
+
+---
+process: WMS-05
+process_name: "Списание материалов"
+role: "warehouse_keeper"
+statuses: [draft, posted]
+operations:
+
+  - op_code: OP-WMS-23
+    name: "Создание документа списания"
+    table: wms_writeoff
+    type: insert
+    event: "WMS.writeoff.create"
+    button: "Создать списание"
+    fields:
+      - field: warehouse_id
+        label: "Склад"
+        type: select
+        required: true
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: writeoff_date
+        label: "Дата списания"
+        type: datetime
+        required: true
+      - field: reason
+        label: "Причина списания"
+        type: textarea
+        required: true
+
+  - op_code: OP-WMS-24
+    name: "Добавление позиции списания"
+    table: wms_writeoff_line
+    type: insert
+    event: "WMS.writeoffLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: writeoff_id
+        label: "Документ списания"
+        type: select
+        required: true
+        source: { table: wms_writeoff, value_field: writeoff_id, label_field: writeoff_id }
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: quantity
+        label: "Списываемое количество"
+        type: number
+        required: true
+
+  - op_code: OP-WMS-25
+    name: "Проведение документа списания"
+    table: wms_writeoff
+    type: update
+    role: ["warehouse_keeper", "warehouse_manager"]
+    event: "WMS.writeoff.post"
+    button: "Провести списание"
+    precondition: "status = draft"
+    fields:
+      - field: writeoff_id
+        label: "Документ списания"
+        type: select
+        required: true
+        source: { table: wms_writeoff, value_field: writeoff_id, label_field: writeoff_id }
+
+  - op_code: OP-WMS-26
+    name: "Отмена проведения документа списания"
+    table: wms_writeoff
+    type: update
+    event: "WMS.writeoff.unpost"
+    button: "Отменить проведение"
+    precondition: "status = posted"
+    fields:
+      - field: writeoff_id
+        label: "Документ списания"
+        type: select
+        required: true
+        source: { table: wms_writeoff, value_field: writeoff_id, label_field: writeoff_id }
+
+---
+process: WMS-06
+process_name: "Инвентаризация"
+role: "warehouse_keeper"
+statuses: [draft, counted, approved]
+operations:
+
+  - op_code: OP-WMS-27
+    name: "Создание инвентаризации"
+    table: wms_inventory_snapshot
+    type: insert
+    role: "warehouse_manager"
+    event: "WMS.inventorySnapshot.create"
+    button: "Начать инвентаризацию"
+    note: "Позиции формируются автоматически по текущим остаткам склада (INSERT ... SELECT из wms_inventory), отдельной формы на каждую позицию нет."
+    fields:
+      - field: warehouse_id
+        label: "Склад"
+        type: select
+        required: true
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+
+  - op_code: OP-WMS-28
+    name: "Внесение фактически пересчитанного количества"
+    table: wms_inventory_snapshot_item
+    type: update
+    event: "WMS.inventorySnapshotItem.recordCount"
+    button: "Сохранить факт"
+    precondition: "snapshot.status_id in (draft, counted)"
+    fields:
+      - field: snapshot_item_id
+        label: "Позиция инвентаризации"
+        type: select
+        required: true
+        source: { table: wms_inventory_snapshot_item, value_field: snapshot_item_id, label_field: snapshot_item_id }
+      - field: counted_quantity
+        label: "Фактическое количество"
+        type: number
+        required: true
+
+  - op_code: OP-WMS-29
+    name: "Завершение пересчёта"
+    table: wms_inventory_snapshot
+    type: update
+    role: "warehouse_manager"
+    event: "WMS.inventorySnapshot.finishCounting"
+    button: "Завершить пересчёт"
+    precondition: "status_id = draft"
+    fields:
+      - field: snapshot_id
+        label: "Инвентаризация"
+        type: select
+        required: true
+        source: { table: wms_inventory_snapshot, value_field: snapshot_id, label_field: snapshot_id }
+
+  - op_code: OP-WMS-30
+    name: "Утверждение инвентаризации"
+    table: wms_inventory_snapshot
+    type: update
+    role: "warehouse_manager"
+    event: "WMS.inventorySnapshot.approve"
+    button: "Утвердить и провести расхождения"
+    precondition: "status_id = counted"
+    fields:
+      - field: snapshot_id
+        label: "Инвентаризация"
+        type: select
+        required: true
+        source: { table: wms_inventory_snapshot, value_field: snapshot_id, label_field: snapshot_id }
+
+---
+process: WMS-07
+process_name: "Партии, серийные номера, тара"
+role: "warehouse_keeper"
+operations:
+
+  - op_code: OP-WMS-31
+    name: "Создание партии материала"
+    table: wms_material_lot
+    type: insert
+    event: "WMS.materialLot.create"
+    button: "Создать партию"
+    fields:
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: lot_number
+        label: "Номер партии"
+        type: text
+        required: true
+      - field: manufacture_date
+        label: "Дата изготовления"
+        type: date
+        required: false
+      - field: expiration_date
+        label: "Срок годности"
+        type: date
+        required: false
+
+  - op_code: OP-WMS-32
+    name: "Изменение срока годности партии"
+    table: wms_material_lot
+    type: update
+    event: "WMS.materialLot.updateExpiration"
+    button: "Сохранить"
+    fields:
+      - field: lot_id
+        label: "Партия"
+        type: select
+        required: true
+        source: { table: wms_material_lot, value_field: lot_id, label_field: lot_number }
+      - field: expiration_date
+        label: "Срок годности"
+        type: date
+        required: true
+
+  - op_code: OP-WMS-33
+    name: "Регистрация серийного номера материала"
+    table: wms_serial_number
+    type: insert
+    event: "WMS.serialNumber.create"
+    button: "Зарегистрировать серийный номер"
+    fields:
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: serial_number
+        label: "Серийный номер"
+        type: text
+        required: true
+
+  - op_code: OP-WMS-34
+    name: "Создание типа тары/контейнера"
+    table: wms_container_type
+    type: insert
+    event: "WMS.containerType.create"
+    button: "Создать тип тары"
+    fields:
+      - field: container_type_name
+        label: "Название типа тары"
+        type: text
+        required: true
+
+  - op_code: OP-WMS-35
+    name: "Регистрация тары/контейнера"
+    table: wms_container
+    type: insert
+    event: "WMS.container.create"
+    button: "Зарегистрировать тару"
+    fields:
+      - field: container_type_id
+        label: "Тип тары"
+        type: select
+        required: false
+        source: { table: wms_container_type, value_field: container_type_id, label_field: container_type_name }
+      - field: container_code
+        label: "Код тары"
+        type: text
+        required: true
+
+  - op_code: OP-WMS-36
+    name: "Размещение остатка в тару"
+    table: wms_container_item
+    type: insert
+    event: "WMS.containerItem.add"
+    button: "Разместить в тару"
+    fields:
+      - field: container_id
+        label: "Тара"
+        type: select
+        required: true
+        source: { table: wms_container, value_field: container_id, label_field: container_code }
+      - field: inventory_id
+        label: "Остаток"
+        type: select
+        required: true
+        source: { table: wms_inventory, value_field: inventory_id, label_field: inventory_id }
+
+  - op_code: OP-WMS-37
+    name: "Изъятие остатка из тары"
+    table: wms_container_item
+    type: delete
+    event: "WMS.containerItem.remove"
+    button: "Изъять из тары"
+    fields:
+      - field: container_item_id
+        label: "Содержимое тары"
+        type: select
+        required: true
+        source: { table: wms_container_item, value_field: container_item_id, label_field: container_item_id }

@@ -5,4 +5,8 @@
 #         "dashboards": Path("apps/cp/workflow/CP_Dashboards_Roles.yml"),
 #         "reports": Path("apps/cp/workflow/CP_Reports_Roles.yml"),
 #     },
+# "WMS": {                                          # ← добавили
+#         "dashboards": Path("apps/wms/workflow/WMS_Dashboards_Roles.yml"),
+#         "reports": Path("apps/wms/workflow/WMS_Reports_Roles.yml"),
+#     },
 # }

@@ -1,0 +1,35 @@
+# 1. Убедиться, что базовые модули загружены
+python manage.py demo_cp --company=1
+python manage.py demo_sales --company=1
+python manage.py process_events --once
+
+# 2. Workflow WMS
+python manage.py load_workflow --company=1 --module=WMS
+# Ожидаете: created=17, updated=0, transitions=?
+
+# 3. Demo-данные WMS
+python manage.py demo_wms --company=1 \
+  --file=apps/wms/workflow/WMS_test_data.json
+# Ожидаете:
+#   warehouse_type: 3
+#   warehouse: 2
+#   storage_location: 5
+#   material_group: 4
+#   material: 6
+#   material_lot: 3
+#   inventory: 6
+#   goods_receipt: 1
+#   goods_receipt_line: 2
+
+# 4. Обработка событий
+python manage.py process_events --once
+
+# 5. Проверка задач
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+for t in TaskTask.objects.filter(definition__module='WMS')[:20]:
+    print(t.id, t.definition.code, t.assigned_role, t.status)
+"
+
+# 6. Тесты
+pytest apps/wms/tests/ -v
