@@ -1,0 +1,347 @@
+# =====================================================================================
+# PM_Scenarios.yml — Сценарии взаимодействия модуля управления проектами (PM)
+# с другими модулями ERP
+# =====================================================================================
+
+meta:
+  title: PM_Scenarios_Definition
+  version: "1.0"
+  description: >
+    Описание сквозных сценариев взаимодействия модуля управления проектами (PM)
+    с другими модулями ERP: APS, Task Management, HR, Finance, CP.
+
+scenario_types:
+  - type: full_cycle
+    description: Полный жизненный цикл проекта
+  - type: integration
+    description: Интеграционное взаимодействие между модулями
+  - type: exception
+    description: Обработка исключительных ситуаций
+
+# =====================================================================================
+# СЦЕНАРИЙ PM-01: ПОЛНЫЙ ЦИКЛ ПРОЕКТА (ОТ ORCHESTRATOR ДО ЗАВЕРШЕНИЯ)
+# =====================================================================================
+- scenario_id: SCENARIO-PM-001
+  name: "Полный цикл проекта (от Orchestrator до завершения)"
+  description: >
+    Полный жизненный цикл проекта:
+    - Получение производственного пакета от Orchestrator (PM)
+    - Создание проекта, этапов, задач (PM)
+    - Назначение ресурсных потребностей (PM → APS)
+    - Планирование ресурсов (APS)
+    - Выполнение задач (Task Management)
+    - Мониторинг выполнения (PM → APS → Task Management)
+    - Формирование отчёта для Orchestrator (PM)
+    - Завершение проекта (PM)
+  type: full_cycle
+  priority: critical
+
+  lanes:
+    - lane_id: ORCHESTRATOR
+      lane_name: "Orchestrator — Внешняя система"
+      module: External
+    - lane_id: PM
+      lane_name: "PM — Управление проектами"
+      module: PM
+    - lane_id: APS
+      lane_name: "APS — Планирование"
+      module: APS
+    - lane_id: TASK
+      lane_name: "Task Management — Задачи"
+      module: Task
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: FINANCE
+      lane_name: "Finance — Финансы"
+      module: Finance
+
+  steps:
+    - step_id: FC-01
+      lane: ORCHESTRATOR
+      task: "Передача производственного пакета"
+      description: "Orchestrator передаёт производственный пакет в PM"
+      trigger: "Новый проект во внешней системе"
+      system_action: "Создание pm_project с orchestrator_id"
+      ui_notification: "Производственный пакет получен"
+
+    - step_id: FC-02
+      lane: PM
+      task: "Создание проекта"
+      process_ref: [PM-01, TASK-PM-01-01]
+      operation_ref: OP-PM-01
+      description: "Создание проекта на основе пакета от Orchestrator"
+      system_action: "pm_project.status = 'planning'"
+      ui_notification: "Проект создан"
+
+    - step_id: FC-03
+      lane: PM
+      task: "Создание этапов и вех"
+      process_ref: [PM-02, TASK-PM-02-01]
+      operation_ref: OP-PM-08
+      description: "Создание этапов и вех проекта"
+      system_action: "pm_phase.status = 'planned'"
+      ui_notification: "Этапы и вехи созданы"
+
+    - step_id: FC-04
+      lane: PM
+      task: "Создание задач"
+      process_ref: [PM-03, TASK-PM-03-01]
+      operation_ref: OP-PM-13
+      description: "Создание задач проекта"
+      system_action: "pm_task.status = 'planned'"
+      ui_notification: "Задачи созданы"
+
+    - step_id: FC-05
+      lane: PM
+      task: "Назначение ресурсных потребностей"
+      process_ref: [PM-04, TASK-PM-04-01]
+      operation_ref: OP-PM-20
+      description: "Назначение ресурсных потребностей для задач"
+      system_action: "pm_resource_need.sent_to_aps = false"
+      ui_notification: "Ресурсные потребности созданы"
+
+    - step_id: FC-06
+      lane: PM
+      task: "Отправка потребностей в APS"
+      process_ref: [PM-04, TASK-PM-04-03]
+      operation_ref: OP-PM-22
+      description: "Отправка ресурсных потребностей в APS"
+      system_action: "pm_resource_need.sent_to_aps = true"
+      ui_notification: "Потребности отправлены в APS"
+
+    - step_id: FC-07
+      lane: APS
+      task: "Планирование ресурсов"
+      description: "APS выполняет планирование ресурсов"
+      system_action: "aps_plan_item = создан"
+      ui_notification: "Планирование выполнено"
+
+    - step_id: FC-08
+      lane: TASK
+      task: "Выполнение задач"
+      description: "Task Management выполняет задачи"
+      system_action: "task_task.status = 'in_progress'"
+      ui_notification: "Задачи выполняются"
+
+    - step_id: FC-09
+      lane: PM
+      task: "Мониторинг выполнения"
+      description: "PM отслеживает статусы выполнения"
+      system_action: "pm_task.completion_percent = обновлён"
+      ui_notification: "Мониторинг выполняется"
+
+    - step_id: FC-10
+      lane: PM
+      task: "Формирование отчёта для Orchestrator"
+      process_ref: [PM-07, TASK-PM-07-01]
+      operation_ref: OP-PM-34
+      description: "Формирование агрегированного отчёта"
+      system_action: "pm_report.sent_to_orchestrator = false"
+      ui_notification: "Отчёт сформирован"
+
+    - step_id: FC-11
+      lane: PM
+      task: "Отправка отчёта в Orchestrator"
+      process_ref: [PM-07, TASK-PM-07-02]
+      operation_ref: OP-PM-35
+      description: "Отправка отчёта в Orchestrator"
+      system_action: "pm_report.sent_to_orchestrator = true"
+      ui_notification: "Отчёт отправлен"
+
+    - step_id: FC-12
+      lane: PM
+      task: "Завершение проекта"
+      process_ref: [PM-01, TASK-PM-01-05]
+      operation_ref: OP-PM-05
+      description: "Завершение проекта"
+      system_action: "pm_project.status = 'completed'"
+      ui_notification: "Проект завершён"
+
+    - step_id: FC-END
+      lane: PM
+      task: "Завершение сценария"
+      description: "Проект полностью выполнен. Отчёт отправлен."
+      system_action: "core_audit_log запись о завершении проекта"
+      ui_notification: "Проект завершён"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ PM-02: ИЗМЕНЕНИЕ ОБЪЁМА РАБОТ (ЗАПРОС НА ИЗМЕНЕНИЕ)
+# =====================================================================================
+- scenario_id: SCENARIO-PM-002
+  name: "Изменение объёма работ (запрос на изменение)"
+  description: >
+    Обработка запроса на изменение объёма работ:
+    - Создание запроса на изменение (PM)
+    - Оценка влияния (PM)
+    - Утверждение запроса (PM → CEO)
+    - Корректировка бюджета (PM → Finance)
+    - Корректировка ресурсных потребностей (PM → APS)
+    - Обновление плана (APS)
+  type: exception
+  priority: high
+
+  lanes:
+    - lane_id: PM
+      lane_name: "PM — Управление проектами"
+      module: PM
+    - lane_id: CEO
+      lane_name: "CEO — Утверждение"
+      module: External
+    - lane_id: FINANCE
+      lane_name: "Finance — Финансы"
+      module: Finance
+    - lane_id: APS
+      lane_name: "APS — Планирование"
+      module: APS
+
+  steps:
+    - step_id: CR-01
+      lane: PM
+      task: "Создание запроса на изменение"
+      process_ref: [PM-06, TASK-PM-06-03]
+      operation_ref: OP-PM-31
+      description: "Создание запроса на изменение объёма работ"
+      trigger: "Запрос от заказчика / изменение требований"
+      system_action: "pm_change_request.status = 'draft'"
+      ui_notification: "Запрос на изменение создан"
+
+    - step_id: CR-02
+      lane: PM
+      task: "Оценка влияния"
+      description: "Оценка влияния на сроки, бюджет и ресурсы"
+      system_action: "pm_change_request.impact_description = заполнено"
+      ui_notification: "Оценка влияния выполнена"
+
+    - step_id: CR-03
+      lane: CEO
+      task: "Утверждение запроса"
+      process_ref: [PM-06, TASK-PM-06-04]
+      operation_ref: OP-PM-32
+      description: "Утверждение запроса на изменение"
+      system_action: "pm_change_request.status = 'approved'"
+      ui_notification: "Запрос утверждён"
+
+    - step_id: CR-04
+      lane: FINANCE
+      task: "Корректировка бюджета"
+      description: "Корректировка бюджета проекта"
+      system_action: "pm_budget.total_planned_amount = скорректированная_сумма"
+      ui_notification: "Бюджет скорректирован"
+
+    - step_id: CR-05
+      lane: PM
+      task: "Корректировка ресурсных потребностей"
+      process_ref: [PM-04, TASK-PM-04-02]
+      operation_ref: OP-PM-21
+      description: "Корректировка ресурсных потребностей"
+      system_action: "pm_resource_need.quantity = новое_количество"
+      ui_notification: "Ресурсные потребности скорректированы"
+
+    - step_id: CR-06
+      lane: APS
+      task: "Обновление плана"
+      description: "Обновление плана в APS с учётом изменений"
+      system_action: "aps_plan_item = обновлён"
+      ui_notification: "План обновлён"
+
+    - step_id: CR-END
+      lane: PM
+      task: "Завершение сценария"
+      description: "Изменение утверждено и внедрено"
+      system_action: "pm_change_request.status = 'implemented'"
+      ui_notification: "Изменение внедрено"
+
+
+# =====================================================================================
+# СЦЕНАРИЙ PM-03: УПРАВЛЕНИЕ РИСКАМИ
+# =====================================================================================
+- scenario_id: SCENARIO-PM-003
+  name: "Управление рисками"
+  description: >
+    Полный цикл управления рисками:
+    - Идентификация риска (PM)
+    - Оценка риска (PM)
+    - Разработка плана смягчения (PM)
+    - Мониторинг риска (PM)
+    - Закрытие риска (PM)
+  type: integration
+  priority: medium
+
+  lanes:
+    - lane_id: PM
+      lane_name: "PM — Управление проектами"
+      module: PM
+    - lane_id: HR
+      lane_name: "HR — Персонал"
+      module: HR
+    - lane_id: FINANCE
+      lane_name: "Finance — Финансы"
+      module: Finance
+
+  steps:
+    - step_id: RSK-01
+      lane: PM
+      task: "Идентификация риска"
+      process_ref: [PM-06, TASK-PM-06-01]
+      operation_ref: OP-PM-29
+      description: "Идентификация нового риска"
+      trigger: "Изменение условий / новый фактор риска"
+      system_action: "pm_risk.status = 'identified'"
+      ui_notification: "Риск идентифицирован"
+
+    - step_id: RSK-02
+      lane: PM
+      task: "Оценка риска"
+      process_ref: [PM-06, TASK-PM-06-02]
+      operation_ref: OP-PM-30
+      description: "Оценка вероятности и влияния риска"
+      system_action: "pm_risk.severity = probability * impact"
+      ui_notification: "Риск оценён"
+
+    - step_id: RSK-03
+      lane: PM
+      task: "Разработка плана смягчения"
+      process_ref: [PM-06, TASK-PM-06-02]
+      operation_ref: OP-PM-30
+      description: "Разработка плана смягчения риска"
+      system_action: "pm_risk.mitigation_plan = заполнен"
+      ui_notification: "План смягчения разработан"
+
+    - step_id: RSK-04
+      lane: HR
+      task: "Назначение владельца риска"
+      description: "Назначение ответственного за риск"
+      system_action: "pm_risk.owner_employee_id = назначен"
+      ui_notification: "Владелец риска назначен"
+
+    - step_id: RSK-05
+      lane: FINANCE
+      task: "Резервирование средств"
+      description: "Резервирование средств на покрытие риска"
+      system_action: "pm_budget_item.planned_amount = добавлен_резерв"
+      ui_notification: "Средства зарезервированы"
+
+    - step_id: RSK-06
+      lane: PM
+      task: "Мониторинг риска"
+      description: "Мониторинг риска и обновление статуса"
+      system_action: "pm_risk.status = 'assessed'"
+      ui_notification: "Мониторинг выполняется"
+
+    - step_id: RSK-07
+      lane: PM
+      task: "Закрытие риска"
+      process_ref: [PM-06, TASK-PM-06-02]
+      operation_ref: OP-PM-30
+      description: "Закрытие риска (реализован или митигирован)"
+      system_action: "pm_risk.status = 'closed'"
+      ui_notification: "Риск закрыт"
+
+    - step_id: RSK-END
+      lane: PM
+      task: "Завершение сценария"
+      description: "Управление риском завершено"
+      system_action: "core_audit_log запись о риске"
+      ui_notification: "Управление риском завершено"

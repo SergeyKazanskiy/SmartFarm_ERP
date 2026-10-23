@@ -1,0 +1,478 @@
+{
+    "module": "PM",
+    "description": "Тестовые данные для модуля PM (Управление проектами)",
+    "tables": {
+      "pm_project": [
+        {
+          "project_id": "PROJ-001",
+          "project_name": "Производство телевизоров SmartTV X-100",
+          "project_code": "TV-2026-001",
+          "description": "Проект по производству 100 телевизоров модели SmartTV X-100",
+          "orchestrator_id": "ORCH-001",
+          "customer_id": "CP-001",
+          "project_manager_employee_id": "EMP-001",
+          "planned_start_date": "2026-06-01",
+          "planned_end_date": "2026-07-31",
+          "actual_start_date": "2026-06-01",
+          "actual_end_date": null,
+          "status_id": "active",
+          "priority": 1,
+          "created_by_employee_id": "EMP-001",
+          "created_at": "2026-05-15 10:00:00",
+          "updated_at": "2026-05-15 10:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "project_id": "PROJ-002",
+          "project_name": "Разработка нового продукта SmartTV X-200",
+          "project_code": "RND-2026-001",
+          "description": "Исследование и разработка новой модели телевизора",
+          "orchestrator_id": null,
+          "customer_id": null,
+          "project_manager_employee_id": "EMP-002",
+          "planned_start_date": "2026-07-01",
+          "planned_end_date": "2026-12-31",
+          "actual_start_date": null,
+          "actual_end_date": null,
+          "status_id": "planning",
+          "priority": 2,
+          "created_by_employee_id": "EMP-002",
+          "created_at": "2026-06-15 14:00:00",
+          "updated_at": "2026-06-15 14:00:00",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_phase": [
+        {
+          "phase_id": "PHASE-001",
+          "project_id": "PROJ-001",
+          "parent_phase_id": null,
+          "phase_name": "Подготовка производства",
+          "phase_order": 1,
+          "planned_start_date": "2026-06-01",
+          "planned_end_date": "2026-06-15",
+          "actual_start_date": "2026-06-01",
+          "actual_end_date": "2026-06-14",
+          "status_id": "completed",
+          "completion_percent": 100,
+          "company_id": "COMP-001"
+        },
+        {
+          "phase_id": "PHASE-002",
+          "project_id": "PROJ-001",
+          "parent_phase_id": null,
+          "phase_name": "Производство",
+          "phase_order": 2,
+          "planned_start_date": "2026-06-16",
+          "planned_end_date": "2026-07-20",
+          "actual_start_date": "2026-06-16",
+          "actual_end_date": null,
+          "status_id": "in_progress",
+          "completion_percent": 60,
+          "company_id": "COMP-001"
+        },
+        {
+          "phase_id": "PHASE-003",
+          "project_id": "PROJ-001",
+          "parent_phase_id": null,
+          "phase_name": "Контроль качества и отгрузка",
+          "phase_order": 3,
+          "planned_start_date": "2026-07-21",
+          "planned_end_date": "2026-07-31",
+          "actual_start_date": null,
+          "actual_end_date": null,
+          "status_id": "planned",
+          "completion_percent": 0,
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_milestone": [
+        {
+          "milestone_id": "MIL-001",
+          "project_id": "PROJ-001",
+          "milestone_name": "Готовность производственной линии",
+          "milestone_date": "2026-06-15",
+          "is_achieved": true,
+          "achieved_date": "2026-06-14",
+          "description": "Линия готова к запуску",
+          "company_id": "COMP-001"
+        },
+        {
+          "milestone_id": "MIL-002",
+          "project_id": "PROJ-001",
+          "milestone_name": "Выпуск первой партии (50 шт.)",
+          "milestone_date": "2026-07-05",
+          "is_achieved": false,
+          "achieved_date": null,
+          "description": "Первая партия готова",
+          "company_id": "COMP-001"
+        },
+        {
+          "milestone_id": "MIL-003",
+          "project_id": "PROJ-001",
+          "milestone_name": "Полная готовность заказа",
+          "milestone_date": "2026-07-31",
+          "is_achieved": false,
+          "achieved_date": null,
+          "description": "Все телевизоры готовы к отгрузке",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_task": [
+        {
+          "task_id": "TASK-001",
+          "project_id": "PROJ-001",
+          "phase_id": "PHASE-001",
+          "parent_task_id": null,
+          "task_name": "Закупка материалов",
+          "description": "Закупка всех необходимых материалов для производства",
+          "planned_start_date": "2026-06-01",
+          "planned_end_date": "2026-06-10",
+          "actual_start_date": "2026-06-01",
+          "actual_end_date": "2026-06-09",
+          "status_id": "completed",
+          "completion_percent": 100,
+          "priority": 1,
+          "assignee_employee_id": "EMP-010",
+          "company_id": "COMP-001"
+        },
+        {
+          "task_id": "TASK-002",
+          "project_id": "PROJ-001",
+          "phase_id": "PHASE-002",
+          "parent_task_id": null,
+          "task_name": "Настройка оборудования",
+          "description": "Настройка и калибровка производственного оборудования",
+          "planned_start_date": "2026-06-16",
+          "planned_end_date": "2026-06-20",
+          "actual_start_date": "2026-06-16",
+          "actual_end_date": "2026-06-19",
+          "status_id": "completed",
+          "completion_percent": 100,
+          "priority": 1,
+          "assignee_employee_id": "EMP-005",
+          "company_id": "COMP-001"
+        },
+        {
+          "task_id": "TASK-003",
+          "project_id": "PROJ-001",
+          "phase_id": "PHASE-002",
+          "parent_task_id": null,
+          "task_name": "Производство первой партии (50 шт.)",
+          "description": "Производство первой партии телевизоров",
+          "planned_start_date": "2026-06-21",
+          "planned_end_date": "2026-07-05",
+          "actual_start_date": "2026-06-21",
+          "actual_end_date": null,
+          "status_id": "in_progress",
+          "completion_percent": 80,
+          "priority": 1,
+          "assignee_employee_id": "EMP-007",
+          "company_id": "COMP-001"
+        },
+        {
+          "task_id": "TASK-004",
+          "project_id": "PROJ-001",
+          "phase_id": "PHASE-002",
+          "parent_task_id": null,
+          "task_name": "Производство второй партии (50 шт.)",
+          "description": "Производство второй партии телевизоров",
+          "planned_start_date": "2026-07-06",
+          "planned_end_date": "2026-07-20",
+          "actual_start_date": null,
+          "actual_end_date": null,
+          "status_id": "planned",
+          "completion_percent": 0,
+          "priority": 2,
+          "assignee_employee_id": "EMP-008",
+          "company_id": "COMP-001"
+        },
+        {
+          "task_id": "TASK-005",
+          "project_id": "PROJ-001",
+          "phase_id": "PHASE-003",
+          "parent_task_id": null,
+          "task_name": "Контроль качества",
+          "description": "Проверка качества всех произведённых телевизоров",
+          "planned_start_date": "2026-07-21",
+          "planned_end_date": "2026-07-25",
+          "actual_start_date": null,
+          "actual_end_date": null,
+          "status_id": "planned",
+          "completion_percent": 0,
+          "priority": 1,
+          "assignee_employee_id": "EMP-003",
+          "company_id": "COMP-001"
+        },
+        {
+          "task_id": "TASK-006",
+          "project_id": "PROJ-001",
+          "phase_id": "PHASE-003",
+          "parent_task_id": null,
+          "task_name": "Упаковка и отгрузка",
+          "description": "Упаковка и отгрузка клиенту",
+          "planned_start_date": "2026-07-26",
+          "planned_end_date": "2026-07-31",
+          "actual_start_date": null,
+          "actual_end_date": null,
+          "status_id": "planned",
+          "completion_percent": 0,
+          "priority": 2,
+          "assignee_employee_id": "EMP-009",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_task_dependency": [
+        {
+          "dependency_id": "DEP-001",
+          "predecessor_task_id": "TASK-001",
+          "successor_task_id": "TASK-002",
+          "dependency_type": "FS",
+          "lag_days": 0,
+          "company_id": "COMP-001"
+        },
+        {
+          "dependency_id": "DEP-002",
+          "predecessor_task_id": "TASK-002",
+          "successor_task_id": "TASK-003",
+          "dependency_type": "FS",
+          "lag_days": 0,
+          "company_id": "COMP-001"
+        },
+        {
+          "dependency_id": "DEP-003",
+          "predecessor_task_id": "TASK-003",
+          "successor_task_id": "TASK-004",
+          "dependency_type": "FS",
+          "lag_days": 1,
+          "company_id": "COMP-001"
+        },
+        {
+          "dependency_id": "DEP-004",
+          "predecessor_task_id": "TASK-004",
+          "successor_task_id": "TASK-005",
+          "dependency_type": "FS",
+          "lag_days": 0,
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_resource_need": [
+        {
+          "resource_need_id": "RN-001",
+          "task_id": "TASK-001",
+          "resource_type": "employee",
+          "role_id": "POS-010",
+          "skill_id": null,
+          "quantity": 1,
+          "unit_id": "UNIT-001",
+          "hours_per_day": 8,
+          "days_required": 10,
+          "priority": 1,
+          "sent_to_aps": true,
+          "sent_to_aps_at": "2026-05-20 09:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "resource_need_id": "RN-002",
+          "task_id": "TASK-003",
+          "resource_type": "asset",
+          "role_id": null,
+          "skill_id": null,
+          "quantity": 1,
+          "unit_id": "UNIT-001",
+          "hours_per_day": 16,
+          "days_required": 15,
+          "priority": 1,
+          "sent_to_aps": true,
+          "sent_to_aps_at": "2026-05-20 09:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "resource_need_id": "RN-003",
+          "task_id": "TASK-003",
+          "resource_type": "employee",
+          "role_id": "POS-005",
+          "skill_id": null,
+          "quantity": 2,
+          "unit_id": "UNIT-001",
+          "hours_per_day": 8,
+          "days_required": 15,
+          "priority": 1,
+          "sent_to_aps": true,
+          "sent_to_aps_at": "2026-05-20 09:00:00",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_budget": [
+        {
+          "budget_id": "BUD-001",
+          "project_id": "PROJ-001",
+          "budget_name": "Бюджет производства телевизоров",
+          "total_planned_amount": 500000.00,
+          "total_actual_amount": 320000.00,
+          "currency_id": "CUR-001",
+          "status_id": "approved",
+          "approved_by_employee_id": "EMP-001",
+          "approved_at": "2026-05-20 12:00:00",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_budget_item": [
+        {
+          "budget_item_id": "BI-001",
+          "budget_id": "BUD-001",
+          "category": "labor",
+          "planned_amount": 150000.00,
+          "actual_amount": 120000.00,
+          "description": "Оплата труда",
+          "company_id": "COMP-001"
+        },
+        {
+          "budget_item_id": "BI-002",
+          "budget_id": "BUD-001",
+          "category": "materials",
+          "planned_amount": 250000.00,
+          "actual_amount": 150000.00,
+          "description": "Материалы для производства",
+          "company_id": "COMP-001"
+        },
+        {
+          "budget_item_id": "BI-003",
+          "budget_id": "BUD-001",
+          "category": "equipment",
+          "planned_amount": 50000.00,
+          "actual_amount": 30000.00,
+          "description": "Амортизация оборудования",
+          "company_id": "COMP-001"
+        },
+        {
+          "budget_item_id": "BI-004",
+          "budget_id": "BUD-001",
+          "category": "services",
+          "planned_amount": 50000.00,
+          "actual_amount": 20000.00,
+          "description": "Услуги подрядчиков",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_risk": [
+        {
+          "risk_id": "RISK-001",
+          "project_id": "PROJ-001",
+          "risk_name": "Задержка поставки материалов",
+          "description": "Поставщик может не уложиться в сроки",
+          "probability": 30,
+          "impact": 8,
+          "severity": 240,
+          "mitigation_plan": "Заключение договора с резервным поставщиком",
+          "status_id": "assessed",
+          "owner_employee_id": "EMP-010",
+          "company_id": "COMP-001"
+        },
+        {
+          "risk_id": "RISK-002",
+          "project_id": "PROJ-001",
+          "risk_name": "Поломка оборудования",
+          "description": "Возможная поломка станков во время производства",
+          "probability": 20,
+          "impact": 9,
+          "severity": 180,
+          "mitigation_plan": "План ППР и наличие запасных частей",
+          "status_id": "mitigated",
+          "owner_employee_id": "EMP-001",
+          "company_id": "COMP-001"
+        },
+        {
+          "risk_id": "RISK-003",
+          "project_id": "PROJ-001",
+          "risk_name": "Брак продукции",
+          "description": "Возможный брак при производстве",
+          "probability": 15,
+          "impact": 7,
+          "severity": 105,
+          "mitigation_plan": "Усиленный контроль качества",
+          "status_id": "identified",
+          "owner_employee_id": "EMP-003",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_change_request": [
+        {
+          "change_request_id": "CR-001",
+          "project_id": "PROJ-001",
+          "title": "Увеличение объёма заказа до 150 шт.",
+          "description": "Клиент запросил дополнительно 50 телевизоров",
+          "change_type": "scope",
+          "impact_description": "Увеличение сроков на 2 недели, дополнительные материалы на 150 000 грн",
+          "status_id": "implemented",
+          "requested_by_employee_id": "EMP-010",
+          "approved_by_employee_id": "EMP-001",
+          "requested_at": "2026-06-10 10:00:00",
+          "approved_at": "2026-06-12 14:00:00",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_status_history": [
+        {
+          "history_id": "HIST-001",
+          "project_id": "PROJ-001",
+          "status_from": "planning",
+          "status_to": "active",
+          "changed_by_employee_id": "EMP-001",
+          "changed_at": "2026-06-01 08:00:00",
+          "comment": "Проект запущен",
+          "company_id": "COMP-001"
+        },
+        {
+          "history_id": "HIST-002",
+          "project_id": "PROJ-001",
+          "status_from": "active",
+          "status_to": "on_hold",
+          "changed_by_employee_id": "EMP-001",
+          "changed_at": "2026-06-10 15:00:00",
+          "comment": "Ожидание поставки материалов",
+          "company_id": "COMP-001"
+        },
+        {
+          "history_id": "HIST-003",
+          "project_id": "PROJ-001",
+          "status_from": "on_hold",
+          "status_to": "active",
+          "changed_by_employee_id": "EMP-001",
+          "changed_at": "2026-06-12 09:00:00",
+          "comment": "Материалы получены, продолжение работ",
+          "company_id": "COMP-001"
+        }
+      ],
+      "pm_report": [
+        {
+          "report_id": "REP-001",
+          "project_id": "PROJ-001",
+          "report_date": "2026-07-01 17:00:00",
+          "report_type": "weekly",
+          "summary": "Выполнено 60% работ. Производство первой партии завершено на 80%.",
+          "status_summary_json": {
+            "completed": 2,
+            "in_progress": 1,
+            "planned": 3
+          },
+          "budget_summary_json": {
+            "planned": 500000,
+            "actual": 320000,
+            "variance": 180000
+          },
+          "schedule_summary_json": {
+            "on_track": true,
+            "days_delay": 0
+          },
+          "risks_summary_json": {
+            "active": 2,
+            "closed": 1
+          },
+          "sent_to_orchestrator": false,
+          "sent_to_orchestrator_at": null,
+          "company_id": "COMP-001"
+        }
+      ]
+    }
+  }

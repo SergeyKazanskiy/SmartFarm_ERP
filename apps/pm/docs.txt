@@ -1,0 +1,38 @@
+# 1. Убедиться, что CP и CRM уже загружены
+python manage.py demo_cp --company=1
+python manage.py demo_crm --company=1
+python manage.py process_events --once
+
+# 2. Workflow PM
+python manage.py load_workflow --company=1 --module=PM
+# Ожидаете: created=31, updated=0, transitions=?
+
+# 3. Demo-данные PM
+python manage.py demo_pm --company=1 \
+  --file=apps/pm/workflow/PM_test_data.json
+# Ожидаете:
+#   project: 2
+#   phase: 3
+#   milestone: 3
+#   task: 6
+#   task_dependency: 4
+#   resource_need: 3
+#   budget: 1
+#   budget_item: 4
+#   risk: 3
+#   change_request: 1
+#   status_history: 3
+#   report: 1
+
+# 4. Обработка событий
+python manage.py process_events --once
+
+# 5. Проверка задач
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+for t in TaskTask.objects.filter(definition__module='PM')[:20]:
+    print(t.id, t.definition.code, t.assigned_role, t.status)
+"
+
+# 6. Тесты
+pytest apps/pm/tests/ -v

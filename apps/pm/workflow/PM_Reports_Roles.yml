@@ -1,0 +1,321 @@
+# =====================================================================================
+# PM — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на PM_Schema.json
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Руководитель проекта
+# =====================================================================================
+- role: "project_manager"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PM-01: Карточка проекта
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-01
+      report: "Карточка проекта"
+      description: >
+        Полная информация о проекте: название, код, описание,
+        заказчик, руководитель, плановые даты, статус и приоритет.
+        Используется для контроля и отчетности по проекту.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Карточка проекта"
+          columns:
+            - { field: project_name, label: "Название", type: string }
+            - { field: project_code, label: "Код", type: string }
+            - { field: description, label: "Описание", type: string }
+            - { field: customer_id, label: "ID заказчика", type: number, format: integer }
+            - { field: project_manager_employee_id, label: "Руководитель", type: number, format: integer }
+            - { field: planned_start_date, label: "План старт", type: date }
+            - { field: planned_end_date, label: "План финиш", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { planning: "info", active: "success", on_hold: "warning", completed: "neutral", cancelled: "danger" } }
+            - { field: priority, label: "Приоритет", type: string, widget: status, statusMap: { high: "danger", medium: "warning", low: "info" } }
+      query_ref: Q-PM-R01
+      linked_operations:
+        - OP-PM-01  # Создание проекта
+        - OP-PM-02  # Редактирование проекта
+      export:
+        formats: [pdf, print]
+        template: "project_card"
+
+    # -------------------------------------------------------------------------------
+    # REP-PM-02: Дорожная карта проекта
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-02
+      report: "Дорожная карта проекта"
+      description: >
+        План-график этапов проекта с указанием дат, статуса
+        и процента выполнения. Используется для контроля графика.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Дорожная карта"
+          columns:
+            - { field: phase_name, label: "Этап", type: string, sortable: true }
+            - { field: planned_start_date, label: "План старт", type: date }
+            - { field: planned_end_date, label: "План финиш", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { planned: "info", in_progress: "warning", completed: "success", on_hold: "danger" } }
+            - { field: completion_percent, label: "Выполнение (%)", type: number, format: percent, widget: progress, max: 100 }
+      query_ref: Q-PM-R02
+      linked_operations:
+        - OP-PM-08  # Создание этапа
+        - OP-PM-09  # Изменение этапа
+        - OP-PM-10  # Завершение этапа
+      export:
+        formats: [pdf, print]
+        template: "roadmap"
+
+    # -------------------------------------------------------------------------------
+    # REP-PM-03: Детализация задач
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-03
+      report: "Детализация задач"
+      description: >
+        Полный список всех задач проекта с указанием этапа,
+        исполнителя, плановых дат, статуса и процента выполнения.
+        Используется для контроля исполнения задач.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Детализация задач"
+          columns:
+            - { field: task_name, label: "Задача", type: string, sortable: true }
+            - { field: phase_name, label: "Этап", type: string }
+            - { field: assignee_employee_id, label: "Исполнитель", type: number, format: integer }
+            - { field: planned_start_date, label: "План старт", type: date }
+            - { field: planned_end_date, label: "План финиш", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { planned: "info", in_progress: "warning", completed: "success", on_hold: "danger" } }
+            - { field: completion_percent, label: "Выполнение (%)", type: number, format: percent, widget: progress, max: 100 }
+      query_ref: Q-PM-R03
+      linked_operations:
+        - OP-PM-13  # Создание задачи
+        - OP-PM-14  # Назначение задачи
+        - OP-PM-15  # Изменение задачи
+        - OP-PM-16  # Завершение задачи
+      export:
+        formats: [pdf, excel, print]
+        template: "task_details"
+
+    # -------------------------------------------------------------------------------
+    # REP-PM-04: Бюджет проекта
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-04
+      report: "Бюджет проекта"
+      description: >
+        Детальный бюджет проекта с разбивкой по категориям.
+        Показывает плановые и фактические суммы, отклонения.
+        Используется для финансового контроля проекта.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Бюджет проекта"
+          columns:
+            - { field: category, label: "Категория", type: string, sortable: true }
+            - { field: planned_amount, label: "План", type: number, format: currency }
+            - { field: actual_amount, label: "Факт", type: number, format: currency }
+            - { field: variance, label: "Отклонение", type: number, format: currency, color: status }
+      summary:
+        - field: planned_amount
+          label: "Итого план"
+          aggregation: SUM
+        - field: actual_amount
+          label: "Итого факт"
+          aggregation: SUM
+        - field: variance
+          label: "Итого отклонение"
+          aggregation: SUM
+      query_ref: Q-PM-R04
+      linked_operations:
+        - OP-PM-24  # Создание бюджета
+        - OP-PM-26  # Корректировка бюджета
+        - OP-PM-28  # Анализ бюджета
+      export:
+        formats: [pdf, excel, print]
+        template: "budget"
+
+    # -------------------------------------------------------------------------------
+    # REP-PM-05: Реестр рисков
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-05
+      report: "Реестр рисков"
+      description: >
+        Полный список рисков проекта с оценкой вероятности,
+        влияния, критичности, планом mitigation и статусом.
+        Используется для управления рисками.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Реестр рисков"
+          columns:
+            - { field: risk_name, label: "Риск", type: string, sortable: true }
+            - { field: probability, label: "Вероятность (%)", type: number, format: integer }
+            - { field: impact, label: "Влияние", type: number, format: integer }
+            - { field: severity, label: "Критичность", type: string, widget: status, statusMap: { critical: "danger", high: "danger", medium: "warning", low: "info" } }
+            - { field: mitigation_plan, label: "План mitigation", type: string }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { identified: "info", active: "warning", mitigated: "success", closed: "neutral" } }
+            - { field: owner_employee_id, label: "Ответственный", type: number, format: integer }
+      query_ref: Q-PM-R05
+      linked_operations:
+        - OP-PM-29  # Идентификация риска
+        - OP-PM-30  # Изменение риска
+      export:
+        formats: [pdf, excel, print]
+        template: "risk_register"
+
+
+# =====================================================================================
+# РОЛЬ: CEO
+# =====================================================================================
+- role: "ceo"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PM-01: Карточка проекта
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-01
+      report: "Карточка проекта"
+      description: >
+        Полная информация о проекте: название, код, описание,
+        заказчик, руководитель, плановые даты, статус и приоритет.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Карточка проекта"
+          columns:
+            - { field: project_name, label: "Название", type: string }
+            - { field: project_code, label: "Код", type: string }
+            - { field: description, label: "Описание", type: string }
+            - { field: customer_id, label: "ID заказчика", type: number, format: integer }
+            - { field: project_manager_employee_id, label: "Руководитель", type: number, format: integer }
+            - { field: planned_start_date, label: "План старт", type: date }
+            - { field: planned_end_date, label: "План финиш", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { planning: "info", active: "success", on_hold: "warning", completed: "neutral", cancelled: "danger" } }
+            - { field: priority, label: "Приоритет", type: string, widget: status, statusMap: { high: "danger", medium: "warning", low: "info" } }
+      query_ref: Q-PM-R01
+      linked_operations:
+        - OP-PM-01  # Создание проекта
+        - OP-PM-02  # Редактирование проекта
+      export:
+        formats: [pdf, print]
+        template: "project_card"
+
+    # -------------------------------------------------------------------------------
+    # REP-PM-06: Отчёт для Orchestrator
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-06
+      report: "Отчёт для Orchestrator"
+      description: >
+        Сводный отчет для системы Orchestrator с агрегированной информацией
+        по статусу, бюджету, графику и рискам проекта.
+        Используется для автоматизированной отчетности на уровне компании.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+        - name: report_type
+          label: "Тип отчета"
+          type: select
+          required: true
+          description: "Выберите тип отчета"
+          options:
+            - { label: "Еженедельный", value: "weekly" }
+            - { label: "Ежемесячный", value: "monthly" }
+            - { label: "Итоговый", value: "final" }
+      sections:
+        - title: "Отчёт для Orchestrator"
+          columns:
+            - { field: report_date, label: "Дата", type: datetime }
+            - { field: summary, label: "Резюме", type: string }
+            - { field: status_summary_json, label: "Статус", type: string }
+            - { field: budget_summary_json, label: "Бюджет", type: string }
+            - { field: schedule_summary_json, label: "График", type: string }
+            - { field: risks_summary_json, label: "Риски", type: string }
+      query_ref: Q-PM-R06
+      linked_operations:
+        - OP-PM-34  # Формирование отчета
+        - OP-PM-35  # Отправка в Orchestrator
+      export:
+        formats: [pdf, print]
+        template: "orchestrator_report"
+
+
+# =====================================================================================
+# РОЛЬ: Финансовый контролер
+# =====================================================================================
+- role: "financial_controller"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PM-04: Бюджет проекта
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PM-04
+      report: "Бюджет проекта"
+      description: >
+        Детальный бюджет проекта с разбивкой по категориям.
+        Показывает плановые и фактические суммы, отклонения.
+        Используется для финансового контроля проекта.
+      parameters:
+        - name: project_id
+          label: "Проект"
+          type: select
+          required: true
+          description: "Выберите проект"
+          options: []  # Заполняется динамически из БД
+      sections:
+        - title: "Бюджет проекта"
+          columns:
+            - { field: category, label: "Категория", type: string, sortable: true }
+            - { field: planned_amount, label: "План", type: number, format: currency }
+            - { field: actual_amount, label: "Факт", type: number, format: currency }
+            - { field: variance, label: "Отклонение", type: number, format: currency, color: status }
+      summary:
+        - field: planned_amount
+          label: "Итого план"
+          aggregation: SUM
+        - field: actual_amount
+          label: "Итого факт"
+          aggregation: SUM
+        - field: variance
+          label: "Итого отклонение"
+          aggregation: SUM
+      query_ref: Q-PM-R04
+      linked_operations:
+        - OP-PM-24  # Создание бюджета
+        - OP-PM-26  # Корректировка бюджета
+        - OP-PM-28  # Анализ бюджета
+      export:
+        formats: [pdf, excel, print]
+        template: "budget"

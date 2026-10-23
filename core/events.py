@@ -84,3 +84,43 @@ class CPEvents:
     BLACKLIST_REMOVE = "CP.blacklist.remove"
     ATTACHMENT_CREATE = "CP.attachment.create"
     ATTACHMENT_DELETE = "CP.attachment.delete"
+
+class PMEvents:
+    """События PM-модуля (из PM_Business_Roles.yml)."""
+    # Проекты
+    PROJECT_SAVE = "PM.project.save"
+    PROJECT_UPDATE_STATUS = "PM.project.updateStatus"
+    PROJECT_ASSIGN_MANAGER = "PM.project.assignManager"
+    PROJECT_COMPLETE = "PM.project.complete"
+    PROJECT_CANCEL = "PM.project.cancel"
+
+    # Этапы
+    PHASE_SAVE = "PM.phase.save"
+    PHASE_COMPLETE = "PM.phase.complete"
+
+    # Вехи
+    MILESTONE_SAVE = "PM.milestone.save"
+
+    # Задачи
+    TASK_SAVE = "PM.task.save"
+    TASK_UPDATE_STATUS = "PM.task.updateStatus"
+    TASK_ASSIGN = "PM.task.assign"
+    TASK_COMPLETE = "PM.task.complete"
+    TASK_DEPENDENCY_SAVE = "PM.taskDependency.save"
+
+    # Ресурсные потребности
+    RESOURCE_NEED_SAVE = "PM.resourceNeed.save"
+    RESOURCE_NEED_SEND_TO_APS = "PM.resourceNeed.sendToAPS"
+
+    # Бюджет
+    BUDGET_SAVE = "PM.budget.save"
+    BUDGET_ITEM_SAVE = "PM.budgetItem.save"
+
+    # Риски и изменения
+    RISK_SAVE = "PM.risk.save"
+    CHANGE_REQUEST_SAVE = "PM.changeRequest.save"
+
+    # Отчётность
+    STATUS_HISTORY_CREATE = "PM.statusHistory.create"
+    REPORT_CREATE = "PM.report.create"
+    REPORT_SEND_TO_ORCHESTRATOR = "PM.report.sendToOrchestrator"

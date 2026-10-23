@@ -1,0 +1,804 @@
+# =====================================================================================
+# PM — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на PM_Schema.json
+# =====================================================================================
+
+- role: "project_manager"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PM-01: Проекты и статусы
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-01
+      dashboard: "Проекты и статусы"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-projects"
+          type: "kpi"
+          title: "Ключевые показатели проектов"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные проекты"
+              subtitle: "в работе"
+              dataSource: "Q-PM-01-01"
+              field: "active_projects"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-01, OP-PM-03]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Проекты в работе"
+              subtitle: "активные"
+              dataSource: "Q-PM-01-02"
+              field: "in_progress_projects"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-03]
+
+        - id: "sec-analytics-projects"
+          type: "analytics"
+          title: "Аналитика проектов"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение проектов по статусам"
+              subtitle: "текущее состояние"
+              dataSource: "Q-PM-01-03"
+              chartType: "pie"
+              category: "status_id"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "project_count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-01, OP-PM-03]
+
+        - id: "sec-detailed-projects"
+          type: "analytics"
+          title: "Все проекты"
+          widgets:
+            - widget_id: W01-04
+              type: Table
+              title: "Все проекты"
+              subtitle: "реестр проектов"
+              dataSource: "Q-PM-01-04"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "project_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "project_name"
+                  title: "Проект"
+                  width: 200
+                  sortable: true
+                - field: "project_code"
+                  title: "Код"
+                  width: 100
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "planning": "info"
+                      "active": "success"
+                      "on_hold": "warning"
+                      "completed": "neutral"
+                      "cancelled": "danger"
+                - field: "planned_start_date"
+                  title: "План старт"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "planned_end_date"
+                  title: "План финиш"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "priority"
+                  title: "Приоритет"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "high": "danger"
+                      "medium": "warning"
+                      "low": "info"
+              grid: { w: 8 }
+              linked_operations: [OP-PM-01, OP-PM-02]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PM-02: Этапы и вехи
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-02
+      dashboard: "Этапы и вехи"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-phases"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Этапов в работе"
+              subtitle: "активные этапы"
+              dataSource: "Q-PM-02-01"
+              field: "phases_in_progress"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-08, OP-PM-09]
+              
+            - widget_id: W02-02
+              type: Indicator
+              title: "Достигнутые вехи"
+              subtitle: "выполненные"
+              dataSource: "Q-PM-02-02"
+              field: "achieved_milestones"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-11, OP-PM-12]
+
+        - id: "sec-detailed-phases"
+          type: "analytics"
+          title: "Этапы проекта"
+          widgets:
+            - widget_id: W02-03
+              type: Table
+              title: "Этапы проекта"
+              subtitle: "все этапы"
+              dataSource: "Q-PM-02-03"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "phase_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "phase_name"
+                  title: "Этап"
+                  width: 200
+                  sortable: true
+                - field: "project_id"
+                  title: "ID проекта"
+                  width: 100
+                  align: "center"
+                - field: "planned_start_date"
+                  title: "План старт"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "planned_end_date"
+                  title: "План финиш"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "planned": "info"
+                      "in_progress": "warning"
+                      "completed": "success"
+                      "on_hold": "danger"
+                - field: "completion_percent"
+                  title: "Выполнение (%)"
+                  width: 120
+                  widget:
+                    type: "progress"
+                    max: 100
+              grid: { w: 8 }
+              linked_operations: [OP-PM-08, OP-PM-09]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PM-03: Задачи проекта
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-03
+      dashboard: "Задачи проекта"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-tasks"
+          type: "kpi"
+          title: "Ключевые показатели задач"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Всего задач"
+              subtitle: "по проекту"
+              dataSource: "Q-PM-03-01"
+              field: "total_tasks"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-PM-13]
+              
+            - widget_id: W03-02
+              type: Indicator
+              title: "Задач в работе"
+              subtitle: "активные"
+              dataSource: "Q-PM-03-02"
+              field: "tasks_in_progress"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-PM-13, OP-PM-15]
+              
+            - widget_id: W03-03
+              type: Indicator
+              title: "Просроченных задач"
+              subtitle: "требуют внимания"
+              dataSource: "Q-PM-03-03"
+              field: "overdue_tasks"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 3
+                  value2: 5
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 5
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 3 }
+              linked_operations: [OP-PM-13, OP-PM-17]
+
+        - id: "sec-alerts-tasks"
+          type: "alerts"
+          title: "Риски срыва сроков"
+          widgets:
+            - widget_id: W03-04
+              type: Table
+              title: "Задачи с риском срыва сроков"
+              subtitle: "ближайшие 7 дней"
+              dataSource: "Q-PM-03-04"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "task_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "task_name"
+                  title: "Задача"
+                  width: 200
+                  sortable: true
+                - field: "assignee_employee_id"
+                  title: "Исполнитель"
+                  width: 100
+                  align: "center"
+                - field: "planned_end_date"
+                  title: "План финиш"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "completion_percent"
+                  title: "Выполнение (%)"
+                  width: 120
+                  widget:
+                    type: "progress"
+                    max: 100
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "planned": "info"
+                      "in_progress": "warning"
+                      "on_hold": "danger"
+              grid: { w: 8 }
+              linked_operations: [OP-PM-13, OP-PM-14, OP-PM-15]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PM-04: Ресурсные потребности
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-04
+      dashboard: "Ресурсные потребности"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-resources"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Потребностей в ресурсах"
+              subtitle: "всего"
+              dataSource: "Q-PM-04-01"
+              field: "total_needs"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-20]
+              
+            - widget_id: W04-02
+              type: Indicator
+              title: "Отправлено в APS"
+              subtitle: "передано в планирование"
+              dataSource: "Q-PM-04-02"
+              field: "sent_to_aps"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-20, OP-PM-22]
+
+        - id: "sec-detailed-resources"
+          type: "analytics"
+          title: "Ресурсные потребности"
+          widgets:
+            - widget_id: W04-03
+              type: Table
+              title: "Ресурсные потребности"
+              subtitle: "детализация"
+              dataSource: "Q-PM-04-03"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "resource_need_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "task_id"
+                  title: "ID задачи"
+                  width: 100
+                  align: "center"
+                - field: "resource_type"
+                  title: "Тип ресурса"
+                  width: 120
+                - field: "quantity"
+                  title: "Количество"
+                  width: 100
+                  align: "right"
+                - field: "hours_per_day"
+                  title: "Часов/день"
+                  width: 100
+                  align: "right"
+                - field: "days_required"
+                  title: "Дней"
+                  width: 80
+                  align: "right"
+                - field: "priority"
+                  title: "Приоритет"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "high": "danger"
+                      "medium": "warning"
+                      "low": "info"
+                - field: "sent_to_aps"
+                  title: "В APS"
+                  width: 80
+                  type: boolean
+              grid: { w: 12 }
+              linked_operations: [OP-PM-20, OP-PM-21]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PM-05: Бюджет проекта
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-05
+      dashboard: "Бюджет проекта"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-budget"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W05-01
+              type: Indicator
+              title: "Общий бюджет"
+              subtitle: "проекта"
+              dataSource: "Q-PM-05-01"
+              field: "total_budget"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-24]
+
+        - id: "sec-analytics-budget"
+          type: "analytics"
+          title: "Аналитика бюджета"
+          widgets:
+            - widget_id: W05-02
+              type: Chart
+              title: "Бюджет по проектам"
+              subtitle: "план vs факт"
+              dataSource: "Q-PM-05-02"
+              chartType: "bar"
+              category: "project_id"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_planned_amount"
+                  label: "План"
+                  color: "#60a5fa"
+                - field: "total_actual_amount"
+                  label: "Факт"
+                  color: "#f59e0b"
+              grid: { w: 6 }
+              linked_operations: [OP-PM-24, OP-PM-26]
+
+        - id: "sec-detailed-budget"
+          type: "analytics"
+          title: "Детали бюджета"
+          widgets:
+            - widget_id: W05-03
+              type: Table
+              title: "Бюджет проекта"
+              subtitle: "по статьям"
+              dataSource: "Q-PM-05-03"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "budget_item_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "category"
+                  title: "Категория"
+                  width: 200
+                  sortable: true
+                - field: "planned_amount"
+                  title: "План"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "actual_amount"
+                  title: "Факт"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "variance"
+                  title: "Отклонение"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                  color: status
+              summary:
+                - field: planned_amount
+                  label: "Итого план"
+                  aggregation: SUM
+                - field: actual_amount
+                  label: "Итого факт"
+                  aggregation: SUM
+                - field: variance
+                  label: "Итого отклонение"
+                  aggregation: SUM
+              grid: { w: 6 }
+              linked_operations: [OP-PM-24, OP-PM-26, OP-PM-28]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PM-06: Риски и изменения
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-06
+      dashboard: "Риски и изменения"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-risks"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W06-01
+              type: Indicator
+              title: "Активных рисков"
+              subtitle: "требуют контроля"
+              dataSource: "Q-PM-06-01"
+              field: "active_risks"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 3
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 4
+                  value2: 8
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 8
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-29]
+
+        - id: "sec-detailed-risks"
+          type: "alerts"
+          title: "Риски и изменения"
+          widgets:
+            - widget_id: W06-02
+              type: Table
+              title: "Риски проекта"
+              subtitle: "активные риски"
+              dataSource: "Q-PM-06-02"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "risk_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "risk_name"
+                  title: "Риск"
+                  width: 200
+                  sortable: true
+                - field: "probability"
+                  title: "Вероятность (%)"
+                  width: 100
+                  align: "right"
+                - field: "impact"
+                  title: "Влияние"
+                  width: 100
+                  align: "right"
+                - field: "severity"
+                  title: "Критичность"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "critical": "danger"
+                      "high": "danger"
+                      "medium": "warning"
+                      "low": "info"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "identified": "info"
+                      "active": "warning"
+                      "mitigated": "success"
+                      "closed": "neutral"
+                - field: "owner_employee_id"
+                  title: "Ответственный"
+                  width: 100
+                  align: "center"
+              grid: { w: 6 }
+              linked_operations: [OP-PM-29, OP-PM-30]
+              
+            - widget_id: W06-03
+              type: Table
+              title: "Запросы на изменение"
+              subtitle: "активные запросы"
+              dataSource: "Q-PM-06-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "change_request_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "title"
+                  title: "Заголовок"
+                  width: 200
+                  sortable: true
+                - field: "change_type"
+                  title: "Тип"
+                  width: 120
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "draft": "info"
+                      "submitted": "warning"
+                      "approved": "success"
+                      "rejected": "danger"
+                      "implemented": "neutral"
+                - field: "requested_by_employee_id"
+                  title: "Запросил"
+                  width: 100
+                  align: "center"
+                - field: "requested_at"
+                  title: "Дата"
+                  width: 120
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 6 }
+              linked_operations: [OP-PM-31, OP-PM-32]
+
+
+# =====================================================================================
+# РОЛЬ: CEO
+# =====================================================================================
+- role: "ceo"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PM-01: Проекты и статусы (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-01
+      dashboard: "Проекты и статусы"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-ceo"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные проекты"
+              dataSource: "Q-PM-01-01"
+              field: "active_projects"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-01, OP-PM-03]
+
+        - id: "sec-analytics-ceo"
+          type: "analytics"
+          title: "Аналитика"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение проектов по статусам"
+              dataSource: "Q-PM-01-03"
+              chartType: "pie"
+              category: "status_id"
+              showLegend: true
+              height: 320
+              series:
+                - field: "project_count"
+                  label: "Количество"
+              grid: { w: 6 }
+              linked_operations: [OP-PM-01, OP-PM-03]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PM-05: Бюджет проекта (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-05
+      dashboard: "Бюджет проекта"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-budget-ceo"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W05-01
+              type: Indicator
+              title: "Общий бюджет"
+              dataSource: "Q-PM-05-01"
+              field: "total_budget"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-24]
+
+
+# =====================================================================================
+# РОЛЬ: Финансовый контролер
+# =====================================================================================
+- role: "financial_controller"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PM-05: Бюджет проекта (расширенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PM-05
+      dashboard: "Бюджет проекта"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-budget-fc"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W05-01
+              type: Indicator
+              title: "Общий бюджет"
+              dataSource: "Q-PM-05-01"
+              field: "total_budget"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-PM-24]
+
+        - id: "sec-analytics-budget-fc"
+          type: "analytics"
+          title: "Аналитика бюджета"
+          widgets:
+            - widget_id: W05-02
+              type: Chart
+              title: "Бюджет по проектам"
+              dataSource: "Q-PM-05-02"
+              chartType: "bar"
+              category: "project_id"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_planned_amount"
+                  label: "План"
+                  color: "#60a5fa"
+                - field: "total_actual_amount"
+                  label: "Факт"
+                  color: "#f59e0b"
+              grid: { w: 6 }
+              linked_operations: [OP-PM-24, OP-PM-26]
+
+        - id: "sec-detailed-budget-fc"
+          type: "analytics"
+          title: "Детали бюджета"
+          widgets:
+            - widget_id: W05-04
+              type: Table
+              title: "Отклонения бюджета (план-факт)"
+              subtitle: "анализ отклонений"
+              dataSource: "Q-PM-05-04"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "category"
+                  title: "Категория"
+                  width: 200
+                  sortable: true
+                - field: "total_planned"
+                  title: "План"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "total_actual"
+                  title: "Факт"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "variance"
+                  title: "Отклонение"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                  color: status
+              summary:
+                - field: total_planned
+                  label: "Итого план"
+                  aggregation: SUM
+                - field: total_actual
+                  label: "Итого факт"
+                  aggregation: SUM
+                - field: variance
+                  label: "Итого отклонение"
+                  aggregation: SUM
+              grid: { w: 6 }
+              linked_operations: [OP-PM-26, OP-PM-28]

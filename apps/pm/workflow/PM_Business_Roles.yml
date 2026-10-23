@@ -1,0 +1,689 @@
+# =====================================================================================
+# PM — каталог форм для бизнес-операций
+# =====================================================================================
+
+process: PM-01
+process_name: "Проекты"
+role: "project_manager"
+operations:
+
+  - op_code: [OP-PM-01, OP-PM-02]
+    name: "Создание и редактирование проекта"
+    table: pm_project
+    type: [insert, update]
+    event: "PM.project.save"
+    button: "Сохранить проект"
+    fields:
+      - field: project_id
+        label: "Проект (пусто для нового)"
+        type: select
+        required: false
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: project_name
+        label: "Название проекта"
+        type: text
+        required: true
+      - field: project_code
+        label: "Код проекта"
+        type: text
+        required: false
+      - field: description
+        label: "Описание"
+        type: textarea
+        required: false
+      - field: orchestrator_id
+        label: "Идентификатор из Orchestrator"
+        type: text
+        required: false
+      - field: customer_id
+        label: "Заказчик"
+        type: select
+        required: false
+        source: { table: cp_counterparty, value_field: counterparty_id, label_field: name }
+      - field: project_manager_employee_id
+        label: "Руководитель проекта"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: planned_start_date
+        label: "Плановая дата начала"
+        type: date
+        required: false
+      - field: planned_end_date
+        label: "Плановая дата окончания"
+        type: date
+        required: false
+      - field: priority
+        label: "Приоритет (1 — самый высокий)"
+        type: number
+        required: false
+
+  - op_code: OP-PM-03
+    name: "Изменение статуса проекта"
+    table: pm_project
+    type: update
+    event: "PM.project.updateStatus"
+    button: "Изменить статус"
+    fields:
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: status_id
+        label: "Статус"
+        type: select
+        required: true
+        options: [planning, active, on_hold, completed, cancelled]
+
+  - op_code: OP-PM-04
+    name: "Назначение руководителя проекта"
+    table: pm_project
+    type: update
+    event: "PM.project.assignManager"
+    button: "Назначить руководителя"
+    fields:
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: project_manager_employee_id
+        label: "Руководитель проекта"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-PM-05
+    name: "Завершение проекта"
+    table: pm_project
+    type: update
+    event: "PM.project.complete"
+    button: "Завершить проект"
+    precondition: "status_id = active"
+    fields:
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+
+  - op_code: OP-PM-06
+    name: "Отмена проекта"
+    table: pm_project
+    type: update
+    event: "PM.project.cancel"
+    button: "Отменить проект"
+    precondition: "status_id in (planning, active)"
+    fields:
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+
+---
+process: PM-02
+process_name: "Этапы и вехи"
+role: "project_manager"
+operations:
+
+  - op_code: [OP-PM-08, OP-PM-09]
+    name: "Ведение этапов"
+    table: pm_phase
+    type: [insert, update]
+    event: "PM.phase.save"
+    button: "Сохранить этап"
+    fields:
+      - field: phase_id
+        label: "Этап (пусто для нового)"
+        type: select
+        required: false
+        source: { table: pm_phase, value_field: phase_id, label_field: phase_name }
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: parent_phase_id
+        label: "Родительский этап"
+        type: select
+        required: false
+        source: { table: pm_phase, value_field: phase_id, label_field: phase_name }
+      - field: phase_name
+        label: "Название этапа"
+        type: text
+        required: true
+      - field: phase_order
+        label: "Порядок этапа"
+        type: number
+        required: false
+      - field: planned_start_date
+        label: "Плановое начало"
+        type: date
+        required: false
+      - field: planned_end_date
+        label: "Плановое окончание"
+        type: date
+        required: false
+      - field: status_id
+        label: "Статус"
+        type: select
+        required: false
+        options: [planned, in_progress, completed, on_hold]
+      - field: completion_percent
+        label: "Процент завершения"
+        type: number
+        required: false
+
+  - op_code: OP-PM-10
+    name: "Завершение этапа"
+    table: pm_phase
+    type: update
+    event: "PM.phase.complete"
+    button: "Завершить этап"
+    precondition: "status_id = in_progress"
+    fields:
+      - field: phase_id
+        label: "Этап"
+        type: select
+        required: true
+        source: { table: pm_phase, value_field: phase_id, label_field: phase_name }
+
+  - op_code: [OP-PM-11, OP-PM-12]
+    name: "Ведение вех"
+    table: pm_milestone
+    type: [insert, update]
+    event: "PM.milestone.save"
+    button: "Сохранить веху"
+    fields:
+      - field: milestone_id
+        label: "Веха (пусто для новой)"
+        type: select
+        required: false
+        source: { table: pm_milestone, value_field: milestone_id, label_field: milestone_name }
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: milestone_name
+        label: "Название вехи"
+        type: text
+        required: true
+      - field: milestone_date
+        label: "Дата вехи"
+        type: date
+        required: true
+      - field: description
+        label: "Описание"
+        type: textarea
+        required: false
+
+---
+process: PM-03
+process_name: "Задачи и зависимости"
+role: "project_manager"
+operations:
+
+  - op_code: [OP-PM-13, OP-PM-14]
+    name: "Ведение задач"
+    table: pm_task
+    type: [insert, update]
+    event: "PM.task.save"
+    button: "Сохранить задачу"
+    fields:
+      - field: task_id
+        label: "Задача (пусто для новой)"
+        type: select
+        required: false
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: phase_id
+        label: "Этап"
+        type: select
+        required: false
+        source: { table: pm_phase, value_field: phase_id, label_field: phase_name }
+      - field: parent_task_id
+        label: "Родительская задача"
+        type: select
+        required: false
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+      - field: task_name
+        label: "Название задачи"
+        type: text
+        required: true
+      - field: description
+        label: "Описание"
+        type: textarea
+        required: false
+      - field: planned_start_date
+        label: "Плановое начало"
+        type: date
+        required: false
+      - field: planned_end_date
+        label: "Плановое окончание"
+        type: date
+        required: false
+      - field: priority
+        label: "Приоритет"
+        type: number
+        required: false
+      - field: assignee_employee_id
+        label: "Исполнитель"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-PM-15
+    name: "Изменение статуса задачи"
+    table: pm_task
+    type: update
+    event: "PM.task.updateStatus"
+    button: "Изменить статус"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+      - field: status_id
+        label: "Статус"
+        type: select
+        required: true
+        options: [planned, in_progress, completed, on_hold, cancelled]
+      - field: completion_percent
+        label: "Процент завершения"
+        type: number
+        required: false
+
+  - op_code: OP-PM-16
+    name: "Назначение исполнителя"
+    table: pm_task
+    type: update
+    event: "PM.task.assign"
+    button: "Назначить исполнителя"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+      - field: assignee_employee_id
+        label: "Исполнитель"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-PM-17
+    name: "Завершение задачи"
+    table: pm_task
+    type: update
+    event: "PM.task.complete"
+    button: "Завершить задачу"
+    precondition: "status_id = in_progress"
+    fields:
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+
+  - op_code: [OP-PM-18, OP-PM-19]
+    name: "Ведение зависимостей"
+    table: pm_task_dependency
+    type: [insert, delete]
+    event: "PM.taskDependency.save"
+    button: "Добавить зависимость"
+    fields:
+      - field: dependency_id
+        label: "Зависимость (пусто для новой)"
+        type: select
+        required: false
+        source: { table: pm_task_dependency, value_field: dependency_id, label_field: dependency_id }
+      - field: predecessor_task_id
+        label: "Задача-предшественник"
+        type: select
+        required: true
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+      - field: successor_task_id
+        label: "Задача-последователь"
+        type: select
+        required: true
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+      - field: dependency_type
+        label: "Тип связи"
+        type: select
+        required: true
+        options: [FS, SS, FF, SF]
+      - field: lag_days
+        label: "Лаг в днях"
+        type: number
+        required: false
+
+---
+process: PM-04
+process_name: "Ресурсные потребности"
+role: "planner"
+operations:
+
+  - op_code: [OP-PM-20, OP-PM-21, OP-PM-23]
+    name: "Ведение ресурсных потребностей"
+    table: pm_resource_need
+    type: [insert, update, delete]
+    event: "PM.resourceNeed.save"
+    button: "Сохранить потребность"
+    fields:
+      - field: resource_need_id
+        label: "Потребность (пусто для новой)"
+        type: select
+        required: false
+        source: { table: pm_resource_need, value_field: resource_need_id, label_field: resource_need_id }
+      - field: task_id
+        label: "Задача"
+        type: select
+        required: true
+        source: { table: pm_task, value_field: task_id, label_field: task_name }
+      - field: resource_type
+        label: "Тип ресурса"
+        type: select
+        required: true
+        options: [employee, asset, vehicle, material]
+      - field: role_id
+        label: "Роль (для сотрудников)"
+        type: select
+        required: false
+        source: { table: hr_position, value_field: position_id, label_field: position_name }
+      - field: skill_id
+        label: "Навык"
+        type: select
+        required: false
+        source: { table: hr_skill, value_field: skill_id, label_field: skill_name }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_id
+        label: "Единица измерения"
+        type: select
+        required: false
+        source: { table: dict_unit, value_field: unit_id, label_field: unit_name }
+      - field: hours_per_day
+        label: "Часов в день"
+        type: number
+        required: false
+      - field: days_required
+        label: "Требуемое количество дней"
+        type: number
+        required: false
+      - field: priority
+        label: "Приоритет"
+        type: number
+        required: false
+
+  - op_code: OP-PM-22
+    name: "Отправка потребности в APS"
+    table: pm_resource_need
+    type: update
+    event: "PM.resourceNeed.sendToAPS"
+    button: "Отправить в APS"
+    fields:
+      - field: resource_need_id
+        label: "Потребность"
+        type: select
+        required: true
+        source: { table: pm_resource_need, value_field: resource_need_id, label_field: resource_need_id }
+
+---
+process: PM-05
+process_name: "Бюджет"
+role: "financial_controller"
+operations:
+
+  - op_code: [OP-PM-24, OP-PM-25]
+    name: "Ведение бюджета"
+    table: pm_budget
+    type: [insert, update]
+    event: "PM.budget.save"
+    button: "Сохранить бюджет"
+    fields:
+      - field: budget_id
+        label: "Бюджет (пусто для нового)"
+        type: select
+        required: false
+        source: { table: pm_budget, value_field: budget_id, label_field: budget_name }
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: budget_name
+        label: "Название бюджета"
+        type: text
+        required: false
+      - field: total_planned_amount
+        label: "Общая плановая сумма"
+        type: number
+        required: false
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+
+  - op_code: [OP-PM-26, OP-PM-27, OP-PM-28]
+    name: "Ведение статей бюджета"
+    table: pm_budget_item
+    type: [insert, update]
+    event: "PM.budgetItem.save"
+    button: "Сохранить статью"
+    fields:
+      - field: budget_item_id
+        label: "Статья (пусто для новой)"
+        type: select
+        required: false
+        source: { table: pm_budget_item, value_field: budget_item_id, label_field: budget_item_id }
+      - field: budget_id
+        label: "Бюджет"
+        type: select
+        required: true
+        source: { table: pm_budget, value_field: budget_id, label_field: budget_name }
+      - field: category
+        label: "Категория"
+        type: select
+        required: true
+        options: [labor, materials, equipment, services, other]
+      - field: planned_amount
+        label: "Плановая сумма"
+        type: number
+        required: true
+      - field: actual_amount
+        label: "Фактическая сумма"
+        type: number
+        required: false
+      - field: description
+        label: "Описание"
+        type: text
+        required: false
+
+---
+process: PM-06
+process_name: "Риски и изменения"
+role: "project_manager"
+operations:
+
+  - op_code: [OP-PM-29, OP-PM-30]
+    name: "Ведение рисков"
+    table: pm_risk
+    type: [insert, update]
+    event: "PM.risk.save"
+    button: "Сохранить риск"
+    fields:
+      - field: risk_id
+        label: "Риск (пусто для нового)"
+        type: select
+        required: false
+        source: { table: pm_risk, value_field: risk_id, label_field: risk_name }
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: risk_name
+        label: "Название риска"
+        type: text
+        required: true
+      - field: description
+        label: "Описание"
+        type: textarea
+        required: false
+      - field: probability
+        label: "Вероятность (0-100%)"
+        type: number
+        required: false
+      - field: impact
+        label: "Влияние (1-10)"
+        type: number
+        required: false
+      - field: mitigation_plan
+        label: "План смягчения"
+        type: textarea
+        required: false
+      - field: status_id
+        label: "Статус риска"
+        type: select
+        required: false
+        options: [identified, assessed, mitigated, closed]
+      - field: owner_employee_id
+        label: "Владелец риска"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: [OP-PM-31, OP-PM-32]
+    name: "Ведение запросов на изменение"
+    table: pm_change_request
+    type: [insert, update]
+    event: "PM.changeRequest.save"
+    button: "Создать запрос"
+    fields:
+      - field: change_request_id
+        label: "Запрос (пусто для нового)"
+        type: select
+        required: false
+        source: { table: pm_change_request, value_field: change_request_id, label_field: title }
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: title
+        label: "Заголовок"
+        type: text
+        required: true
+      - field: description
+        label: "Описание изменения"
+        type: textarea
+        required: false
+      - field: change_type
+        label: "Тип изменения"
+        type: select
+        required: true
+        options: [scope, schedule, budget, resources]
+      - field: impact_description
+        label: "Описание влияния"
+        type: textarea
+        required: false
+      - field: status_id
+        label: "Статус запроса"
+        type: select
+        required: false
+        options: [draft, submitted, approved, rejected, implemented]
+
+---
+process: PM-07
+process_name: "Отчёты"
+role: "analyst"
+operations:
+
+  - op_code: OP-PM-33
+    name: "Добавление записи в историю статусов"
+    table: pm_status_history
+    type: insert
+    event: "PM.statusHistory.create"
+    button: "Зафиксировать изменение статуса"
+    fields:
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: status_from
+        label: "Предыдущий статус"
+        type: select
+        required: false
+        options: [planning, active, on_hold, completed, cancelled]
+      - field: status_to
+        label: "Новый статус"
+        type: select
+        required: true
+        options: [planning, active, on_hold, completed, cancelled]
+      - field: comment
+        label: "Комментарий"
+        type: textarea
+        required: false
+
+  - op_code: OP-PM-34
+    name: "Создание отчёта для Orchestrator"
+    table: pm_report
+    type: insert
+    event: "PM.report.create"
+    button: "Создать отчёт"
+    fields:
+      - field: project_id
+        label: "Проект"
+        type: select
+        required: true
+        source: { table: pm_project, value_field: project_id, label_field: project_name }
+      - field: report_type
+        label: "Тип отчёта"
+        type: select
+        required: true
+        options: [daily, weekly, monthly, milestone]
+      - field: summary
+        label: "Сводка"
+        type: textarea
+        required: false
+      - field: status_summary_json
+        label: "Сводка по статусам"
+        type: json
+        required: false
+      - field: budget_summary_json
+        label: "Сводка по бюджету"
+        type: json
+        required: false
+      - field: schedule_summary_json
+        label: "Сводка по графику"
+        type: json
+        required: false
+      - field: risks_summary_json
+        label: "Сводка по рискам"
+        type: json
+        required: false
+
+  - op_code: OP-PM-35
+    name: "Отправка отчёта в Orchestrator"
+    table: pm_report
+    type: update
+    event: "PM.report.sendToOrchestrator"
+    button: "Отправить в Orchestrator"
+    fields:
+      - field: report_id
+        label: "Отчёт"
+        type: select
+        required: true
+        source: { table: pm_report, value_field: report_id, label_field: report_id }

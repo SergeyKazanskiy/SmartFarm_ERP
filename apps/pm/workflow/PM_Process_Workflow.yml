@@ -1,0 +1,430 @@
+meta:
+  title: PM_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов управления проектами с ролями, задачами,
+    переходами между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов.
+
+roles_catalog:
+  project_manager: Руководитель проекта
+  planner: Плановик
+  financial_controller: Финансовый контролёр
+  analyst: Аналитик
+  ceo: Генеральный директор
+
+processes:
+
+- id: PM-01
+  name: Проекты
+  description: Создание, редактирование и жизненный цикл проектов.
+  dashboards:
+  - DASH-PM-01 (Проекты и статусы)
+  reports:
+  - REP-PM-01 (Карточка проекта)
+  tasks:
+  - id: TASK-PM-01-01
+    name: Создание проекта
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-01]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-01
+    transitions:
+    - target_task: TASK-PM-02-01
+      condition: Проект создан, можно добавлять этапы
+      on_event: [on_insert]
+
+  - id: TASK-PM-01-02
+    name: Редактирование проекта
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-02]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-02
+    transitions: []
+
+  - id: TASK-PM-01-03
+    name: Изменение статуса проекта
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-03]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-03
+    transitions: []
+
+  - id: TASK-PM-01-04
+    name: Назначение руководителя проекта
+    role: ceo
+    has_form: true
+    form_ref: [OP-PM-04]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-04
+    transitions: []
+
+  - id: TASK-PM-01-05
+    name: Завершение проекта
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-05]
+    sql_queries:
+      on_complete:
+        query_code: OP-PM-05
+    transitions:
+    - target_task: END_PROCESS
+      condition: Проект завершён
+      on_event: [on_complete]
+
+  - id: TASK-PM-01-06
+    name: Отмена проекта
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-06]
+    sql_queries:
+      on_cancel:
+        query_code: OP-PM-06
+    transitions:
+    - target_task: END_PROCESS
+      condition: Проект отменён
+      on_event: [on_cancel]
+
+- id: PM-02
+  name: Этапы и вехи
+  description: Управление этапами и вехами проекта.
+  dashboards:
+  - DASH-PM-02 (Этапы и вехи)
+  reports:
+  - REP-PM-02 (Дорожная карта проекта)
+  tasks:
+  - id: TASK-PM-02-01
+    name: Создание этапа
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-08]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-08
+    transitions:
+    - target_task: TASK-PM-02-02
+      condition: Этап создан, можно добавлять задачи
+      on_event: [on_insert]
+
+  - id: TASK-PM-02-02
+    name: Редактирование этапа
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-09]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-09
+    transitions: []
+
+  - id: TASK-PM-02-03
+    name: Завершение этапа
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-10]
+    sql_queries:
+      on_complete:
+        query_code: OP-PM-10
+    transitions: []
+
+  - id: TASK-PM-02-04
+    name: Создание вехи
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-11]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-11
+    transitions: []
+
+  - id: TASK-PM-02-05
+    name: Достижение вехи
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-12]
+    sql_queries:
+      on_achieve:
+        query_code: OP-PM-12
+    transitions: []
+
+- id: PM-03
+  name: Задачи и зависимости
+  description: Управление задачами и зависимостями между ними.
+  dashboards:
+  - DASH-PM-03 (Задачи проекта)
+  reports:
+  - REP-PM-03 (Детализация задач)
+  tasks:
+  - id: TASK-PM-03-01
+    name: Создание задачи
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-13]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-13
+    transitions:
+    - target_task: TASK-PM-04-01
+      condition: Задача создана, можно добавлять ресурсные потребности
+      on_event: [on_insert]
+
+  - id: TASK-PM-03-02
+    name: Редактирование задачи
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-14]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-14
+    transitions: []
+
+  - id: TASK-PM-03-03
+    name: Изменение статуса задачи
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-15]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-15
+    transitions: []
+
+  - id: TASK-PM-03-04
+    name: Назначение исполнителя
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-16]
+    sql_queries:
+      on_assign:
+        query_code: OP-PM-16
+    transitions: []
+
+  - id: TASK-PM-03-05
+    name: Завершение задачи
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-17]
+    sql_queries:
+      on_complete:
+        query_code: OP-PM-17
+    transitions: []
+
+  - id: TASK-PM-03-06
+    name: Добавление зависимости
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-18]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-18
+    transitions: []
+
+  - id: TASK-PM-03-07
+    name: Удаление зависимости
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-19]
+    sql_queries:
+      on_delete:
+        query_code: OP-PM-19
+    transitions: []
+
+- id: PM-04
+  name: Ресурсные потребности
+  description: Управление ресурсными потребностями для передачи в APS.
+  dashboards:
+  - DASH-PM-04 (Ресурсные потребности)
+  reports: []
+  tasks:
+  - id: TASK-PM-04-01
+    name: Добавление ресурсной потребности
+    role: planner
+    has_form: true
+    form_ref: [OP-PM-20]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-20
+    transitions:
+    - target_task: TASK-PM-04-02
+      condition: Потребность добавлена, можно отправить в APS
+      on_event: [on_insert]
+
+  - id: TASK-PM-04-02
+    name: Редактирование ресурсной потребности
+    role: planner
+    has_form: true
+    form_ref: [OP-PM-21]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-21
+    transitions: []
+
+  - id: TASK-PM-04-03
+    name: Отправка потребности в APS
+    role: planner
+    has_form: true
+    form_ref: [OP-PM-22]
+    sql_queries:
+      on_send:
+        query_code: OP-PM-22
+    transitions: []
+
+- id: PM-05
+  name: Бюджет
+  description: Управление бюджетом проекта.
+  dashboards:
+  - DASH-PM-05 (Бюджет проекта)
+  reports:
+  - REP-PM-04 (Бюджет проекта)
+  tasks:
+  - id: TASK-PM-05-01
+    name: Создание бюджета
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-PM-24]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-24
+    transitions:
+    - target_task: TASK-PM-05-02
+      condition: Бюджет создан, можно добавлять статьи
+      on_event: [on_insert]
+
+  - id: TASK-PM-05-02
+    name: Добавление статьи бюджета
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-PM-26]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-26
+    transitions:
+    - target_task: TASK-PM-05-03
+      condition: Статьи добавлены, бюджет готов к утверждению
+      on_event: [on_insert]
+
+  - id: TASK-PM-05-03
+    name: Утверждение бюджета
+    role: ceo
+    has_form: true
+    form_ref: [OP-PM-25]
+    sql_queries:
+      on_approve:
+        query_code: OP-PM-25
+    transitions: []
+
+  - id: TASK-PM-05-04
+    name: Обновление фактических затрат
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-PM-28]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-28
+    transitions: []
+
+- id: PM-06
+  name: Риски и изменения
+  description: Управление рисками и запросами на изменение.
+  dashboards:
+  - DASH-PM-06 (Риски и изменения)
+  reports:
+  - REP-PM-05 (Реестр рисков)
+  tasks:
+  - id: TASK-PM-06-01
+    name: Добавление риска
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-29]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-29
+    transitions: []
+
+  - id: TASK-PM-06-02
+    name: Редактирование риска
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-30]
+    sql_queries:
+      on_update:
+        query_code: OP-PM-30
+    transitions: []
+
+  - id: TASK-PM-06-03
+    name: Создание запроса на изменение
+    role: project_manager
+    has_form: true
+    form_ref: [OP-PM-31]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-31
+    transitions:
+    - target_task: TASK-PM-06-04
+      condition: Запрос создан, требуется утверждение
+      on_event: [on_insert]
+
+  - id: TASK-PM-06-04
+    name: Утверждение изменения
+    role: ceo
+    has_form: true
+    form_ref: [OP-PM-32]
+    sql_queries:
+      on_approve:
+        query_code: OP-PM-32
+    transitions: []
+
+- id: PM-07
+  name: Отчёты
+  description: Формирование отчётов для Orchestrator.
+  dashboards: []
+  reports:
+  - REP-PM-06 (Отчёт для Orchestrator)
+  tasks:
+  - id: TASK-PM-07-01
+    name: Создание отчёта
+    role: analyst
+    has_form: true
+    form_ref: [OP-PM-34]
+    sql_queries:
+      on_insert:
+        query_code: OP-PM-34
+    transitions:
+    - target_task: TASK-PM-07-02
+      condition: Отчёт создан, можно отправлять
+      on_event: [on_insert]
+
+  - id: TASK-PM-07-02
+    name: Отправка отчёта в Orchestrator
+    role: analyst
+    has_form: true
+    form_ref: [OP-PM-35]
+    sql_queries:
+      on_send:
+        query_code: OP-PM-35
+    transitions: []
+
+bpmn_diagrams:
+- id: BPMN-PM-01
+  name: Управление проектами
+  description: Полный жизненный цикл проекта от создания до завершения.
+  process_ids:
+  - PM-01
+  - PM-02
+  - PM-03
+- id: BPMN-PM-02
+  name: Ресурсы и финансы
+  description: Управление ресурсными потребностями и бюджетом.
+  process_ids:
+  - PM-04
+  - PM-05
+- id: BPMN-PM-03
+  name: Риски и отчётность
+  description: Управление рисками и формирование отчётности.
+  process_ids:
+  - PM-06
+  - PM-07
