@@ -1,0 +1,33 @@
+# 1. Миграция под расширение SOURCE_TYPE_CHOICES
+python manage.py makemigrations tasks
+python manage.py migrate
+
+# 2. Убедиться, что workflow PM уже загружен
+python manage.py load_workflow --company=1 --module=PM
+
+# 3. Прогнать тесты
+pytest apps/pm/tests/test_workflow.py -v
+pytest apps/cp/tests/test_workflow.py -v
+
+# 4. Ручная проверка на свежих данных
+python manage.py demo_pm --company=1
+python manage.py process_events --once
+
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+from apps.pm.models import Project
+p = Project.objects.get(code='PROJ-001')
+print('Project id:', p.id)
+for t in TaskTask.objects.filter(company_id=1, source_id=p.id).order_by('id'):
+    print(t.id, t.definition.code, t.assigned_role, t.source_type, t.source_id, t.status)
+"
+
+
+Ожидаемый вывод:
+
+text
+Project id: 1
+12 TASK-PM-01-01 project_manager pm 1 created
+13 TASK-PM-02-01 project_manager pm 1 created
+14 TASK-PM-03-01 project_manager pm 1 created
+15 TASK-PM-04-01 planner          pm 1 created

@@ -138,6 +138,24 @@ class TaskTask(CompanyScopedModel):
         ("hr", _("HR")),
     ]
 
+    SOURCE_TYPE_CHOICES = [
+        ("manual", _("Manual")),
+        ("aps", _("APS")),
+        ("pm", _("PM")),
+        ("hr", _("HR")),
+        ("cp", _("CP")),
+        ("crm", _("CRM")),
+        ("task", _("Task")),
+        ("wms", _("WMS")),
+        ("fin", _("Finance")),
+        ("os", _("OS")),
+        ("toip", _("TOIP")),
+        ("production", _("Production")),
+        ("sales", _("Sales")),
+        ("fleet", _("Fleet")),
+        ("construction", _("Construction")),
+    ]
+
     id = models.BigAutoField(primary_key=True)
     # Ссылка на определение (если задача создана из workflow)
     definition = models.ForeignKey(
