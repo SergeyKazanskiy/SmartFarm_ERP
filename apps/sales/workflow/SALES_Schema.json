@@ -1,0 +1,757 @@
+{
+    "module": {
+      "name": "Sales — продажи и коммерческая деятельность",
+      "version": "1.0",
+      "scope": "Управление продажами: коммерческие предложения, заказы клиентов, отгрузки, возвраты, ценообразование, работа с клиентами. Интегрируется с WMS (отгрузка готовой продукции), Production (заказы на производство), Finance (выставление счетов, оплаты).",
+      "notes": [
+        "sales_customer — справочник клиентов (контрагенты с доп. полями)",
+        "sales_opportunity — воронка продаж (лиды → переговоры → закрыто)",
+        "sales_quote — коммерческое предложение клиенту",
+        "sales_order — заказ клиента (входной заказ)",
+        "sales_order_line — позиции заказа (товар, цена, количество)",
+        "sales_shipment — отгрузка товара клиенту (интеграция с WMS)",
+        "sales_shipment_line — позиции отгрузки",
+        "sales_return — возврат товара от клиента",
+        "sales_return_line — позиции возврата",
+        "sales_invoice — счет на оплату (интеграция с Finance)",
+        "sales_price_list — прайс-листы и цены",
+        "sales_price_list_line — цены на товары в прайс-листе"
+      ]
+    },
+    "tables": [
+      {
+        "name": "sales_customer",
+        "description": "Справочник клиентов с коммерческими параметрами.",
+        "columns": [
+          {
+            "name": "customer_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ клиента."
+          },
+          {
+            "name": "counterparty_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Контрагент (ссылка на dict_counterparty)."
+          },
+          {
+            "name": "customer_category",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Категория клиента: VIP / regular / wholesale / retail."
+          },
+          {
+            "name": "credit_limit",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Кредитный лимит."
+          },
+          {
+            "name": "payment_terms",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Условия оплаты (например, 'net30', 'prepayment')."
+          },
+          {
+            "name": "default_price_list_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Прайс-лист по умолчанию для клиента."
+          },
+          {
+            "name": "sales_manager_employee_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Менеджер по продажам (ссылка на hr_employee)."
+          },
+          {
+            "name": "is_active",
+            "type": "boolean",
+            "nullable": "YES",
+            "description": "Активен ли клиент."
+          }
+        ]
+      },
+      {
+        "name": "sales_opportunity",
+        "description": "Воронка продаж — лид/возможность.",
+        "columns": [
+          {
+            "name": "opportunity_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ возможности."
+          },
+          {
+            "name": "customer_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Клиент (если известен)."
+          },
+          {
+            "name": "opportunity_name",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Название возможности."
+          },
+          {
+            "name": "stage_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Стадия воронки: lead / negotiation / proposal / closed_won / closed_lost."
+          },
+          {
+            "name": "expected_value",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Ожидаемая сумма сделки."
+          },
+          {
+            "name": "probability_percent",
+            "type": "integer",
+            "nullable": "YES",
+            "description": "Вероятность закрытия (%): 0-100."
+          },
+          {
+            "name": "expected_close_date",
+            "type": "date",
+            "nullable": "YES",
+            "description": "Ожидаемая дата закрытия."
+          },
+          {
+            "name": "created_by_employee_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Кто создал возможность."
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp without time zone",
+            "nullable": "YES",
+            "description": "Дата создания."
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone",
+            "nullable": "YES",
+            "description": "Дата последнего обновления."
+          }
+        ]
+      },
+      {
+        "name": "sales_price_list",
+        "description": "Прайс-лист (список цен).",
+        "columns": [
+          {
+            "name": "price_list_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ прайс-листа."
+          },
+          {
+            "name": "price_list_name",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Название прайс-листа."
+          },
+          {
+            "name": "currency_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Валюта."
+          },
+          {
+            "name": "valid_from",
+            "type": "date",
+            "nullable": "YES",
+            "description": "Дата начала действия."
+          },
+          {
+            "name": "valid_to",
+            "type": "date",
+            "nullable": "YES",
+            "description": "Дата окончания действия."
+          },
+          {
+            "name": "is_default",
+            "type": "boolean",
+            "nullable": "YES",
+            "description": "Прайс-лист по умолчанию."
+          }
+        ]
+      },
+      {
+        "name": "sales_price_list_line",
+        "description": "Цена товара в прайс-листе.",
+        "columns": [
+          {
+            "name": "price_line_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ позиции прайс-листа."
+          },
+          {
+            "name": "price_list_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Прайс-лист."
+          },
+          {
+            "name": "material_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Товар (ссылка на wms_material)."
+          },
+          {
+            "name": "unit_price",
+            "type": "numeric(15,4)",
+            "nullable": "NO",
+            "description": "Цена за единицу."
+          },
+          {
+            "name": "min_quantity",
+            "type": "numeric(15,6)",
+            "nullable": "YES",
+            "description": "Минимальное количество для цены (оптовая скидка)."
+          }
+        ]
+      },
+      {
+        "name": "sales_quote",
+        "description": "Коммерческое предложение клиенту.",
+        "columns": [
+          {
+            "name": "quote_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ предложения."
+          },
+          {
+            "name": "quote_number",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Номер предложения."
+          },
+          {
+            "name": "customer_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Клиент."
+          },
+          {
+            "name": "opportunity_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Возможность, по которой создано предложение."
+          },
+          {
+            "name": "quote_date",
+            "type": "date",
+            "nullable": "NO",
+            "description": "Дата предложения."
+          },
+          {
+            "name": "valid_until",
+            "type": "date",
+            "nullable": "YES",
+            "description": "Срок действия предложения."
+          },
+          {
+            "name": "total_amount",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Общая сумма предложения."
+          },
+          {
+            "name": "status_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "draft / sent / accepted / rejected / expired."
+          },
+          {
+            "name": "created_by_employee_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Кто создал предложение."
+          }
+        ]
+      },
+      {
+        "name": "sales_quote_line",
+        "description": "Позиция коммерческого предложения.",
+        "columns": [
+          {
+            "name": "quote_line_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ позиции."
+          },
+          {
+            "name": "quote_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Предложение."
+          },
+          {
+            "name": "material_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Товар."
+          },
+          {
+            "name": "quantity",
+            "type": "numeric(15,6)",
+            "nullable": "NO",
+            "description": "Количество."
+          },
+          {
+            "name": "unit_price",
+            "type": "numeric(15,4)",
+            "nullable": "NO",
+            "description": "Цена за единицу."
+          },
+          {
+            "name": "discount_percent",
+            "type": "numeric(5,2)",
+            "nullable": "YES",
+            "description": "Скидка в %."
+          },
+          {
+            "name": "total_price",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Итоговая цена (quantity * unit_price * (1 - discount_percent/100))."
+          }
+        ]
+      },
+      {
+        "name": "sales_order",
+        "description": "Заказ клиента (входной заказ).",
+        "columns": [
+          {
+            "name": "order_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ заказа."
+          },
+          {
+            "name": "order_number",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Номер заказа."
+          },
+          {
+            "name": "customer_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Клиент."
+          },
+          {
+            "name": "quote_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Коммерческое предложение, на основании которого создан заказ."
+          },
+          {
+            "name": "order_date",
+            "type": "date",
+            "nullable": "NO",
+            "description": "Дата заказа."
+          },
+          {
+            "name": "order_type",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Тип заказа: regular / urgent / sample."
+          },
+          {
+            "name": "status_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "draft / confirmed / in_production / ready_to_ship / partially_shipped / shipped / completed / cancelled."
+          },
+          {
+            "name": "total_amount",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Общая сумма заказа."
+          },
+          {
+            "name": "currency_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Валюта."
+          },
+          {
+            "name": "expected_ship_date",
+            "type": "date",
+            "nullable": "YES",
+            "description": "Ожидаемая дата отгрузки."
+          },
+          {
+            "name": "actual_ship_date",
+            "type": "date",
+            "nullable": "YES",
+            "description": "Фактическая дата отгрузки."
+          },
+          {
+            "name": "delivery_address_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Адрес доставки (ссылка на dict_address)."
+          },
+          {
+            "name": "created_by_employee_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Менеджер, создавший заказ."
+          },
+          {
+            "name": "production_order_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Заказ на производство (ссылка на prod_production_order), если товар производится."
+          }
+        ]
+      },
+      {
+        "name": "sales_order_line",
+        "description": "Позиция заказа клиента.",
+        "columns": [
+          {
+            "name": "order_line_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ позиции."
+          },
+          {
+            "name": "order_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Заказ."
+          },
+          {
+            "name": "material_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Товар."
+          },
+          {
+            "name": "quantity",
+            "type": "numeric(15,6)",
+            "nullable": "NO",
+            "description": "Заказанное количество."
+          },
+          {
+            "name": "unit_price",
+            "type": "numeric(15,4)",
+            "nullable": "NO",
+            "description": "Цена за единицу."
+          },
+          {
+            "name": "discount_percent",
+            "type": "numeric(5,2)",
+            "nullable": "YES",
+            "description": "Скидка в %."
+          },
+          {
+            "name": "total_price",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Итоговая цена."
+          },
+          {
+            "name": "shipped_quantity",
+            "type": "numeric(15,6)",
+            "nullable": "YES",
+            "description": "Отгруженное количество."
+          }
+        ]
+      },
+      {
+        "name": "sales_shipment",
+        "description": "Отгрузка товара клиенту.",
+        "columns": [
+          {
+            "name": "shipment_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ отгрузки."
+          },
+          {
+            "name": "shipment_number",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Номер отгрузки."
+          },
+          {
+            "name": "order_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Заказ клиента."
+          },
+          {
+            "name": "warehouse_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Склад, с которого отгружается товар."
+          },
+          {
+            "name": "shipment_date",
+            "type": "date",
+            "nullable": "NO",
+            "description": "Дата отгрузки."
+          },
+          {
+            "name": "status_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "planned / in_progress / shipped / delivered."
+          },
+          {
+            "name": "tracking_number",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Трекинг-номер (для доставки)."
+          },
+          {
+            "name": "shipping_method_id",
+            "type": "character varying",
+            "nullable": "YES",
+            "description": "Способ доставки (ссылка на dict_shipping_method)."
+          }
+        ]
+      },
+      {
+        "name": "sales_shipment_line",
+        "description": "Позиция отгрузки.",
+        "columns": [
+          {
+            "name": "shipment_line_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ позиции."
+          },
+          {
+            "name": "shipment_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Отгрузка."
+          },
+          {
+            "name": "order_line_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Позиция заказа."
+          },
+          {
+            "name": "quantity",
+            "type": "numeric(15,6)",
+            "nullable": "NO",
+            "description": "Отгружаемое количество."
+          }
+        ]
+      },
+      {
+        "name": "sales_return",
+        "description": "Возврат товара от клиента.",
+        "columns": [
+          {
+            "name": "return_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ возврата."
+          },
+          {
+            "name": "return_number",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Номер возврата."
+          },
+          {
+            "name": "order_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Заказ клиента."
+          },
+          {
+            "name": "return_date",
+            "type": "date",
+            "nullable": "NO",
+            "description": "Дата возврата."
+          },
+          {
+            "name": "reason",
+            "type": "text",
+            "nullable": "YES",
+            "description": "Причина возврата."
+          },
+          {
+            "name": "status_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "draft / approved / received / rejected."
+          }
+        ]
+      },
+      {
+        "name": "sales_return_line",
+        "description": "Позиция возврата.",
+        "columns": [
+          {
+            "name": "return_line_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ позиции."
+          },
+          {
+            "name": "return_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Возврат."
+          },
+          {
+            "name": "order_line_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Позиция заказа."
+          },
+          {
+            "name": "quantity",
+            "type": "numeric(15,6)",
+            "nullable": "NO",
+            "description": "Возвращаемое количество."
+          }
+        ]
+      },
+      {
+        "name": "sales_invoice",
+        "description": "Счет на оплату клиенту (интеграция с Finance).",
+        "columns": [
+          {
+            "name": "invoice_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Первичный ключ счета."
+          },
+          {
+            "name": "invoice_number",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Номер счета."
+          },
+          {
+            "name": "order_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "Заказ клиента."
+          },
+          {
+            "name": "invoice_date",
+            "type": "date",
+            "nullable": "NO",
+            "description": "Дата счета."
+          },
+          {
+            "name": "due_date",
+            "type": "date",
+            "nullable": "YES",
+            "description": "Дата оплаты (срок)."
+          },
+          {
+            "name": "total_amount",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Общая сумма."
+          },
+          {
+            "name": "status_id",
+            "type": "character varying",
+            "nullable": "NO",
+            "description": "draft / sent / paid / overdue / cancelled."
+          },
+          {
+            "name": "paid_amount",
+            "type": "numeric(15,4)",
+            "nullable": "YES",
+            "description": "Оплаченная сумма."
+          }
+        ]
+      }
+    ],
+    "connections": [
+      {
+        "fromTable": "sales_customer",
+        "fromColumn": "customer_id",
+        "toTable": "sales_opportunity",
+        "toColumn": "customer_id"
+      },
+      {
+        "fromTable": "sales_price_list",
+        "fromColumn": "price_list_id",
+        "toTable": "sales_price_list_line",
+        "toColumn": "price_list_id"
+      },
+      {
+        "fromTable": "sales_customer",
+        "fromColumn": "default_price_list_id",
+        "toTable": "sales_price_list",
+        "toColumn": "price_list_id"
+      },
+      {
+        "fromTable": "sales_quote",
+        "fromColumn": "quote_id",
+        "toTable": "sales_quote_line",
+        "toColumn": "quote_id"
+      },
+      {
+        "fromTable": "sales_order",
+        "fromColumn": "order_id",
+        "toTable": "sales_order_line",
+        "toColumn": "order_id"
+      },
+      {
+        "fromTable": "sales_order",
+        "fromColumn": "order_id",
+        "toTable": "sales_shipment",
+        "toColumn": "order_id"
+      },
+      {
+        "fromTable": "sales_shipment",
+        "fromColumn": "shipment_id",
+        "toTable": "sales_shipment_line",
+        "toColumn": "shipment_id"
+      },
+      {
+        "fromTable": "sales_order",
+        "fromColumn": "order_id",
+        "toTable": "sales_return",
+        "toColumn": "order_id"
+      },
+      {
+        "fromTable": "sales_return",
+        "fromColumn": "return_id",
+        "toTable": "sales_return_line",
+        "toColumn": "return_id"
+      },
+      {
+        "fromTable": "sales_order",
+        "fromColumn": "order_id",
+        "toTable": "sales_invoice",
+        "toColumn": "order_id"
+      },
+      {
+        "fromTable": "sales_opportunity",
+        "fromColumn": "opportunity_id",
+        "toTable": "sales_quote",
+        "toColumn": "opportunity_id"
+      },
+      {
+        "fromTable": "sales_quote",
+        "fromColumn": "quote_id",
+        "toTable": "sales_order",
+        "toColumn": "quote_id"
+      }
+    ]
+  }

@@ -1,0 +1,282 @@
+# =====================================================================================
+# Sales — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на Sales_Schema.json
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Менеджер по продажам
+# =====================================================================================
+- role: "менеджер_по_продажам"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-SALES-01: Отчёт по воронке продаж
+    # -------------------------------------------------------------------------------
+    - report_code: REP-SALES-01
+      report: "Отчёт по воронке продаж"
+      description: >
+        Детальный анализ воронки продаж за период: количество сделок,
+        ожидаемая сумма и средняя вероятность по каждой стадии.
+        Используется для прогнозирования выручки и выявления узких мест.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Воронка продаж"
+          columns:
+            - { field: stage_id, label: "Стадия", type: string, widget: status, statusMap: { lead: "info", negotiation: "warning", proposal: "info", closed_won: "success", closed_lost: "danger" } }
+            - { field: opportunities_count, label: "Количество сделок", type: number, format: integer }
+            - { field: expected_value, label: "Ожидаемая сумма", type: number, format: currency }
+            - { field: avg_probability, label: "Ср. вероятность (%)", type: number, format: percent }
+      summary:
+        - field: opportunities_count
+          label: "Итого"
+          aggregation: SUM
+        - field: expected_value
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-SALES-R01
+      linked_operations:
+        - OP-SALES-07  # Создание возможности
+        - OP-SALES-08  # Изменение стадии
+      export:
+        formats: [pdf, excel, print]
+        template: "sales_funnel"
+
+    # -------------------------------------------------------------------------------
+    # REP-SALES-02: Коммерческое предложение
+    # -------------------------------------------------------------------------------
+    - report_code: REP-SALES-02
+      report: "Коммерческое предложение"
+      description: >
+        Официальный документ с перечнем товаров/услуг, их количеством,
+        ценами и скидками. Используется для отправки клиенту.
+      parameters:
+        - name: quote_id
+          label: "ID коммерческого предложения"
+          type: number
+          required: true
+          description: "Введите ID коммерческого предложения"
+      sections:
+        - title: "Позиции коммерческого предложения"
+          columns:
+            - { field: material_id, label: "ID товара", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: integer }
+            - { field: unit_price, label: "Цена за ед.", type: number, format: currency }
+            - { field: discount_percent, label: "Скидка (%)", type: number, format: percent }
+            - { field: total_price, label: "Сумма", type: number, format: currency }
+        - title: "Итого"
+          columns:
+            - { field: total_amount, label: "Общая сумма", type: number, format: currency }
+      summary:
+        - field: total_price
+          label: "Итого по предложению"
+          aggregation: SUM
+      query_ref: Q-SALES-R02
+      linked_operations:
+        - OP-SALES-09  # Создание коммерческого предложения
+        - OP-SALES-10  # Отправка коммерческого предложения
+      export:
+        formats: [pdf, print]
+        template: "commercial_offer"
+
+    # -------------------------------------------------------------------------------
+    # REP-SALES-03: Заказ клиента
+    # -------------------------------------------------------------------------------
+    - report_code: REP-SALES-03
+      report: "Заказ клиента"
+      description: >
+        Документ, фиксирующий заказ клиента: перечень товаров,
+        их количество, цена и статус отгрузки.
+      parameters:
+        - name: order_id
+          label: "ID заказа"
+          type: number
+          required: true
+          description: "Введите ID заказа"
+      sections:
+        - title: "Позиции заказа"
+          columns:
+            - { field: material_id, label: "ID товара", type: number, format: integer }
+            - { field: quantity, label: "Заказано", type: number, format: integer }
+            - { field: unit_price, label: "Цена за ед.", type: number, format: currency }
+            - { field: discount_percent, label: "Скидка (%)", type: number, format: percent }
+            - { field: total_price, label: "Сумма", type: number, format: currency }
+            - { field: shipped_quantity, label: "Отгружено", type: number, format: integer }
+        - title: "Итого"
+          columns:
+            - { field: total_amount, label: "Общая сумма", type: number, format: currency }
+      summary:
+        - field: total_price
+          label: "Итого по заказу"
+          aggregation: SUM
+      query_ref: Q-SALES-R03
+      linked_operations:
+        - OP-SALES-13  # Создание заказа
+        - OP-SALES-14  # Подтверждение заказа
+      export:
+        formats: [pdf, print]
+        template: "customer_order"
+
+
+# =====================================================================================
+# РОЛЬ: Руководитель отдела продаж
+# =====================================================================================
+- role: "руководитель_отдела_продаж"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-SALES-01: Отчёт по воронке продаж
+    # -------------------------------------------------------------------------------
+    - report_code: REP-SALES-01
+      report: "Отчёт по воронке продаж"
+      description: >
+        Детальный анализ воронки продаж за период по всему отделу:
+        количество сделок, ожидаемая сумма и средняя вероятность по каждой стадии.
+        Используется для прогнозирования выручки и выявления узких мест.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Воронка продаж (отдел)"
+          columns:
+            - { field: stage_id, label: "Стадия", type: string, widget: status, statusMap: { lead: "info", negotiation: "warning", proposal: "info", closed_won: "success", closed_lost: "danger" } }
+            - { field: opportunities_count, label: "Количество сделок", type: number, format: integer }
+            - { field: expected_value, label: "Ожидаемая сумма", type: number, format: currency }
+            - { field: avg_probability, label: "Ср. вероятность (%)", type: number, format: percent }
+      summary:
+        - field: opportunities_count
+          label: "Итого по отделу"
+          aggregation: SUM
+        - field: expected_value
+          label: "Итого по отделу"
+          aggregation: SUM
+      query_ref: Q-SALES-R01
+      linked_operations:
+        - OP-SALES-07  # Создание возможности
+        - OP-SALES-08  # Изменение стадии
+      export:
+        formats: [pdf, excel, print]
+        template: "sales_funnel"
+
+    # -------------------------------------------------------------------------------
+    # REP-SALES-04: Отгрузочная ведомость
+    # -------------------------------------------------------------------------------
+    - report_code: REP-SALES-04
+      report: "Отгрузочная ведомость"
+      description: >
+        Документ, фиксирующий отгрузку товаров клиенту:
+        перечень товаров, количество и ссылка на позицию заказа.
+      parameters:
+        - name: shipment_id
+          label: "ID отгрузки"
+          type: number
+          required: true
+          description: "Введите ID отгрузки"
+      sections:
+        - title: "Отгруженные товары"
+          columns:
+            - { field: material_id, label: "ID товара", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: integer }
+            - { field: order_line_id, label: "ID позиции заказа", type: number, format: integer }
+      query_ref: Q-SALES-R04
+      linked_operations:
+        - OP-SALES-19  # Создание отгрузки
+        - OP-SALES-20  # Подтверждение отгрузки
+      export:
+        formats: [pdf, print]
+        template: "shipment_list"
+
+    # -------------------------------------------------------------------------------
+    # REP-SALES-05: Счет на оплату
+    # -------------------------------------------------------------------------------
+    - report_code: REP-SALES-05
+      report: "Счет на оплату"
+      description: >
+        Официальный документ для оплаты клиентом: перечень товаров,
+        их количество, цена, скидки и итоговая сумма.
+      parameters:
+        - name: invoice_id
+          label: "ID счета"
+          type: number
+          required: true
+          description: "Введите ID счета"
+      sections:
+        - title: "Позиции счета"
+          columns:
+            - { field: material_id, label: "ID товара", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: integer }
+            - { field: unit_price, label: "Цена за ед.", type: number, format: currency }
+            - { field: discount_percent, label: "Скидка (%)", type: number, format: percent }
+            - { field: total_price, label: "Сумма", type: number, format: currency }
+        - title: "Итого"
+          columns:
+            - { field: total_amount, label: "Общая сумма к оплате", type: number, format: currency }
+      summary:
+        - field: total_price
+          label: "Итого по счету"
+          aggregation: SUM
+      query_ref: Q-SALES-R05
+      linked_operations:
+        - OP-SALES-29  # Создание счета
+      export:
+        formats: [pdf, print]
+        template: "invoice"
+
+    # -------------------------------------------------------------------------------
+    # REP-SALES-06: Анализ продаж по менеджерам
+    # -------------------------------------------------------------------------------
+    - report_code: REP-SALES-06
+      report: "Анализ продаж по менеджерам"
+      description: >
+        Рейтинг менеджеров по продажам за период: количество заказов,
+        общая выручка и средняя сумма заказа.
+        Используется для оценки эффективности и премирования.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Рейтинг менеджеров"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: personnel_number, label: "Таб. номер", type: string }
+            - { field: total_orders, label: "Кол-во заказов", type: number, format: integer }
+            - { field: total_revenue, label: "Выручка", type: number, format: currency }
+            - { field: avg_order_value, label: "Ср. сумма заказа", type: number, format: currency }
+      summary:
+        - field: total_orders
+          label: "Итого по отделу"
+          aggregation: SUM
+        - field: total_revenue
+          label: "Итого по отделу"
+          aggregation: SUM
+      query_ref: Q-SALES-R06
+      linked_operations:
+        - OP-SALES-13  # Создание заказа
+        - OP-SALES-15  # Подтверждение заказа
+      export:
+        formats: [pdf, excel, print]
+        template: "manager_ranking"

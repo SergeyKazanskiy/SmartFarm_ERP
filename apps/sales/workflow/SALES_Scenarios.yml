@@ -1,0 +1,168 @@
+# ==============================================================================
+# МОДУЛЬ: ПРОДАЖИ И КОММЕРЦИЯ (SALES / SALES & COMMERCIAL)
+# ==============================================================================
+
+module_info:
+  id: "SALES"
+  name: "Продажи и коммерческая деятельность"
+  version: "1.0"
+  description: "Реестр сквозных бизнес-сценариев для модуля Продажи (Sales)"
+  related_modules:
+    - "CRM"
+    - "WMS"
+    - "PROD"
+    - "FIN"
+    - "FLEET"
+
+scenarios:
+  - id: "SCENARIO-SALES-01"
+    title: "Полный цикл оптовой продажи коммерческому клиенту (B2B Order-to-Cash)"
+    description: "Процесс от согласования коммерческого предложения и оформления заказа до резервирования товара, отгрузки, выставления УПД и контроля оплаты."
+    module: "SALES"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "sales_manager"
+      - "credit_controller"
+      - "warehouse_keeper"
+      - "accountant"
+    steps:
+      - step_id: "SALES-01-01"
+        lane: "SALES/CRM"
+        task: "Формирование коммерческого предложения (Quote) и согласование условий"
+        process_ref: "[SALES-01, TASK-SALES-01-02]"
+        operation_ref: "OP-SALES-03"
+        description: "Подготовка КП на основе прайс-листов с учетом индивидуальных скидок и условий кредитного лимита контрагента."
+        depends_on: []
+        trigger: "Квалифицированный лид / Запрос коммерческого предложения"
+        system_action: "sales_quote.status_id = 'sent'"
+        ui_notification: "Коммерческое предложение №... сформировано и отправлено клиенту."
+
+      - step_id: "SALES-01-02"
+        lane: "SALES/FIN"
+        task: "Создание заказа покупателя (Sales Order) и проверка кредитного лимита"
+        process_ref: "[SALES-04, TASK-SALES-04-01]"
+        operation_ref: "OP-SALES-13"
+        description: "Оформление заказа клиента и автоматическая проверка дебиторской задолженности и лимитов просрочки."
+        depends_on:
+          - "SALES-01-01"
+        system_action: "sales_order.status_id = 'credit_check_passed'"
+        ui_notification: "Заказ подтвержден. Кредитный контроль пройден."
+
+      - step_id: "SALES-01-03"
+        lane: "SALES/WMS"
+        task: "Резервирование готовой продукции на складе"
+        process_ref: "[WMS-03, TASK-WMS-03-03]"
+        operation_ref: "OP-WMS-17"
+        description: "Автоматическая постановка товара в жесткий резерв под заказ клиента."
+        depends_on:
+          - "SALES-01-02"
+        system_action: "wms_material_reservation.status = 'reserved'"
+        ui_notification: "Товары по заказу зарезервированы."
+
+      - step_id: "SALES-01-04"
+        lane: "WMS/FLEET"
+        task: "Комплектация и передача в транспортировку"
+        process_ref: "[WMS-03, TASK-WMS-03-05]"
+        operation_ref: "OP-WMS-21"
+        description: "Формирование расходной накладной, сборка заказа на складе и передача логистической службе."
+        depends_on:
+          - "SALES-01-03"
+        system_action: "sales_shipment.status_id = 'shipped', wms_inventory.quantity -= qty"
+        ui_notification: "Заказ отгружен со склада и передан в доставку."
+
+      - step_id: "SALES-01-05"
+        lane: "SALES/FIN"
+        task: "Выставление закрывающих документов (УПД/ТОРГ-12) и счет-фактуры"
+        process_ref: "[FIN-03, TASK-FIN-03-01]"
+        operation_ref: "OP-FIN-11"
+        description: "Автоматическое проведение реализация товаров и услуг, признание выручки и формирование счетов-фактур."
+        depends_on:
+          - "SALES-01-04"
+        system_action: "fin_invoice.status_id = 'issued', fin_gl_entry.type = 'revenue'"
+        ui_notification: "Выставлен комплект закрывающих документов."
+
+      - step_id: "SALES-01-06"
+        lane: "FIN/SALES"
+        task: "Разнесение входящего платежа и закрытие заказа"
+        process_ref: "[FIN-04, TASK-FIN-04-01]"
+        operation_ref: "OP-FIN-15"
+        description: "Получение банковской выписки, связывание платежа с выставленным счетом."
+        depends_on:
+          - "SALES-01-05"
+        system_action: "fin_invoice.status_id = 'paid', sales_order.status_id = 'completed'"
+        ui_notification: "Оплата получена. Заказ полностью закрыт."
+
+      - step_id: "SALES-01-END"
+        lane: "SALES"
+        task: "Завершение цикла продажи"
+        description: "Сделка успешно завершена."
+        depends_on:
+          - "SALES-01-06"
+        system_action: "core_audit_log"
+        ui_notification: "Цикл продажи Order-to-Cash успешно выполнен."
+
+  - id: "SCENARIO-SALES-02"
+    title: "Обработка возврата товара от покупателя (Customer Return)"
+    description: "Сценарий оформления возврата качественного или бракованного товара от клиента, включая складскую приемку, экспертизу и финансовое возмещение."
+    module: "SALES"
+    scenario_type: "full_cycle"
+    priority: "high"
+    roles:
+      - "sales_manager"
+      - "warehouse_keeper"
+      - "quality_inspector"
+      - "accountant"
+    steps:
+      - step_id: "SALES-02-01"
+        lane: "SALES"
+        task: "Регистрация заявки на возврат (Return Order)"
+        process_ref: "[SALES-05, TASK-SALES-05-02]"
+        operation_ref: "OP-SALES-25"
+        description: "Оформление документа возврата с указанием причин и исходной накладной реализации."
+        depends_on: []
+        trigger: "Обращение покупателя / Претензия"
+        system_action: "sales_return.status_id = 'draft'"
+        ui_notification: "Создана заявка на возврат №..."
+
+      - step_id: "SALES-02-02"
+        lane: "SALES/WMS"
+        task: "Согласование и формирование разрешения на возврат (RMA)"
+        process_ref: "[SALES-05, TASK-SALES-05-02]"
+        operation_ref: "OP-SALES-27"
+        description: "Утверждение возврата руководителем продаж и генерация штрихкода приемки для склада."
+        depends_on:
+          - "SALES-02-01"
+        system_action: "sales_return.status_id = 'approved'"
+        ui_notification: "Заявка на возврат утверждена. Ожидается прибытие товара на склад."
+
+      - step_id: "SALES-02-03"
+        lane: "WMS/PROD"
+        task: "Приемка товара на склад и входной контроль качества"
+        process_ref: "[WMS-02, TASK-WMS-02-01]"
+        operation_ref: "OP-WMS-10"
+        description: "Физическая приемка товара в карантинную зону, оценка кондиционности и товарного вида."
+        depends_on:
+          - "SALES-02-02"
+        system_action: "wms_inventory.quantity += returned_qty, wms_quality_check.disposition = 'inspected'"
+        ui_notification: "Возвращенный товар принят и проверен контроллером."
+
+      - step_id: "SALES-02-04"
+        lane: "FIN/SALES"
+        task: "Оформление корректировочной счет-фактуры / Кредит-ноты"
+        process_ref: "[FIN-03, TASK-FIN-03-01]"
+        operation_ref: "OP-FIN-11"
+        description: "Корректировка финансового результата, уменьшение дебиторской задолженности или формирование выплаты средств клиенту."
+        depends_on:
+          - "SALES-02-03"
+        system_action: "fin_invoice.invoice_type = 'credit_note', fin_gl_entry.type = 'revenue_reversal'"
+        ui_notification: "Корректировочные финансовые документы сформированы."
+
+      - step_id: "SALES-02-END"
+        lane: "SALES"
+        task: "Завершение обработки возврата"
+        description: "Товар оприходован или утилизирован, взаиморасчеты скорректированы."
+        depends_on:
+          - "SALES-02-04"
+        system_action: "sales_return.status_id = 'received', core_audit_log"
+        ui_notification: "Сценарий возврата полностью завершен."

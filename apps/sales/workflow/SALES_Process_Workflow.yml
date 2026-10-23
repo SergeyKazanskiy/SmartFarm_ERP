@@ -1,0 +1,220 @@
+meta:
+  title: Sales_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов продаж с ролями, задачами, переходами
+    между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов.
+
+roles_catalog:
+  sales_manager: Менеджер по продажам
+  sales_head: Руководитель отдела продаж
+  warehouse_keeper: Кладовщик
+  director: Директор
+
+processes:
+
+- id: SALES-01
+  name: Справочники клиентов и прайс-листов
+  dashboards:
+  - DASH-SALES-02 (Клиентская база)
+  tasks:
+  - id: TASK-SALES-01-01
+    name: Ведение клиентов
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-SALES-01, OP-SALES-02]
+    sql_queries:
+      on_insert:
+        query_code: OP-SALES-01
+      on_update:
+        query_code: OP-SALES-02
+    transitions: []
+
+  - id: TASK-SALES-01-02
+    name: Ведение прайс-листов
+    role: sales_head
+    has_form: true
+    form_ref: [OP-SALES-03, OP-SALES-04, OP-SALES-05, OP-SALES-06]
+    sql_queries:
+      on_insert:
+        query_code: OP-SALES-03
+      on_add_line:
+        query_code: OP-SALES-04
+      on_update_line:
+        query_code: OP-SALES-05
+      on_deactivate:
+        query_code: OP-SALES-06
+    transitions: []
+
+- id: SALES-02
+  name: Воронка продаж
+  dashboards:
+  - DASH-SALES-01 (Воронка продаж)
+  reports:
+  - REP-SALES-01 (Отчёт по воронке продаж)
+  tasks:
+  - id: TASK-SALES-02-01
+    name: Создание возможности (лид)
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-SALES-07]
+    sql_queries:
+      on_insert:
+        query_code: OP-SALES-07
+    transitions:
+    - target_task: TASK-SALES-02-02
+      condition: Возможность создана, работаем дальше
+      on_event: [on_insert]
+
+  - id: TASK-SALES-02-02
+    name: Ведение стадий возможности
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-SALES-08]
+    sql_queries:
+      on_update:
+        query_code: OP-SALES-08
+    transitions:
+    - target_task: TASK-SALES-03-01
+      condition: Стадия 'proposal' — создаём коммерческое предложение
+      on_event: [on_update]
+
+- id: SALES-03
+  name: Коммерческие предложения
+  dashboards:
+  - DASH-SALES-01 (Воронка продаж)
+  reports:
+  - REP-SALES-02 (Коммерческое предложение)
+  tasks:
+  - id: TASK-SALES-03-01
+    name: Создание и отправка предложения
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-SALES-09, OP-SALES-10, OP-SALES-11]
+    sql_queries:
+      on_create:
+        query_code: OP-SALES-09
+      on_add_line:
+        query_code: OP-SALES-10
+      on_send:
+        query_code: OP-SALES-11
+    transitions:
+    - target_task: TASK-SALES-03-02
+      condition: Предложение принято клиентом
+      on_event: [on_send]
+
+  - id: TASK-SALES-03-02
+    name: Принятие предложения
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-SALES-12]
+    sql_queries:
+      on_accept:
+        query_code: OP-SALES-12
+    transitions:
+    - target_task: TASK-SALES-04-01
+      condition: Предложение принято → создаём заказ
+      on_event: [on_accept]
+
+- id: SALES-04
+  name: Заказы клиентов
+  dashboards:
+  - DASH-SALES-03 (Заказы и отгрузки)
+  - DASH-SALES-04 (Эффективность продаж)
+  reports:
+  - REP-SALES-03 (Заказ клиента)
+  tasks:
+  - id: TASK-SALES-04-01
+    name: Создание заказа клиента
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-SALES-13, OP-SALES-14, OP-SALES-15]
+    sql_queries:
+      on_create:
+        query_code: OP-SALES-13
+      on_add_line:
+        query_code: OP-SALES-14
+      on_confirm:
+        query_code: OP-SALES-15
+    transitions:
+    - target_task: TASK-SALES-04-02
+      condition: Заказ подтверждён → если товар производится, передаём в производство
+      on_event: [on_confirm]
+
+  - id: TASK-SALES-04-02
+    name: Передача в производство
+    role: sales_head
+    has_form: true
+    form_ref: [OP-SALES-16]
+    sql_queries:
+      on_produce:
+        query_code: OP-SALES-16
+    transitions:
+    - target_task: TASK-SALES-05-01
+      condition: Заказ в производстве → ждём отгрузки
+      on_event: [on_produce]
+
+- id: SALES-05
+  name: Отгрузка и доставка
+  dashboards:
+  - DASH-SALES-03 (Заказы и отгрузки)
+  reports:
+  - REP-SALES-04 (Отгрузочная ведомость)
+  tasks:
+  - id: TASK-SALES-05-01
+    name: Создание отгрузки
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-SALES-19, OP-SALES-20, OP-SALES-21]
+    sql_queries:
+      on_create:
+        query_code: OP-SALES-19
+      on_add_line:
+        query_code: OP-SALES-20
+      on_ship:
+        query_code: OP-SALES-21
+    transitions:
+    - target_task: TASK-SALES-05-02
+      condition: Товар отправлен → подтверждаем доставку
+      on_event: [on_ship]
+
+  - id: TASK-SALES-05-02
+    name: Подтверждение доставки
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-SALES-22, OP-SALES-23, OP-SALES-24]
+    sql_queries:
+      on_deliver:
+        query_code: OP-SALES-22
+      on_update_shipped:
+        query_code: OP-SALES-23
+      on_complete_order:
+        query_code: OP-SALES-24
+    transitions:
+    - target_task: TASK-SALES-06-01
+      condition: Заказ завершён → выставляем счет
+      on_event: [on_complete_order]
+
+- id: SALES-06
+  name: Счета и оплаты
+  dashboards:
+  - DASH-SALES-03 (Заказы и отгрузки)
+  reports:
+  - REP-SALES-05 (Счет на оплату)
+  tasks:
+  - id: TASK-SALES-06-01
+    name: Создание и отправка счета
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-SALES-29, OP-SALES-30, OP-SALES-31]
+    sql_queries:
+      on_create:
+        query_code: OP-SALES-29
+      on_send:
+        query_code: OP-SALES-30
+      on_pay:
+        query_code: OP-SALES-31
+    transitions:
+    - target_task: END_PROCESS
+      condition: Счет оплачен, процесс завершён
+      on_event: [on_pay]

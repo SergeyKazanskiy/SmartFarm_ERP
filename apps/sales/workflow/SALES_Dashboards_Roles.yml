@@ -1,0 +1,506 @@
+# =====================================================================================
+# Sales — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# =====================================================================================
+
+- role: "менеджер_по_продажам"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-SALES-01: Воронка продаж
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-SALES-01
+      dashboard: "Воронка продаж"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-pipeline"
+          type: "kpi"
+          title: "Ключевые показатели воронки"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные возможности"
+              subtitle: "текущие сделки в работе"
+              dataSource: "Q-SALES-01-01"
+              field: "active_opportunities"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-SALES-07]
+              
+            - widget_id: W01-03
+              type: Indicator
+              title: "Ожидаемая сумма сделок"
+              subtitle: "weighted pipeline"
+              dataSource: "Q-SALES-01-03"
+              field: "weighted_pipeline"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 1000000
+                  status: "success"
+                  label: "Отличный pipeline"
+                - field: "value"
+                  operator: "between"
+                  value: 500000
+                  value2: 1000000
+                  status: "warning"
+                  label: "Средний pipeline"
+                - field: "value"
+                  operator: "<"
+                  value: 500000
+                  status: "danger"
+                  label: "Требуется пополнение"
+              grid: { w: 4 }
+              linked_operations: [OP-SALES-07, OP-SALES-08]
+
+        - id: "sec-analytics-pipeline"
+          type: "analytics"
+          title: "Аналитика воронки"
+          widgets:
+            - widget_id: W01-02
+              type: Chart
+              title: "Воронка по стадиям"
+              subtitle: "распределение возможностей"
+              dataSource: "Q-SALES-01-02"
+              chartType: "funnel"
+              category: "stage_id"
+              showLegend: true
+              height: 400
+              leftAxis:
+                format: "number"
+              series:
+                - field: "opportunities"
+                  label: "Количество сделок"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-SALES-07, OP-SALES-08]
+
+        - id: "sec-my-opportunities"
+          type: "analytics"
+          title: "Мои активные возможности"
+          widgets:
+            - widget_id: W01-04
+              type: Table
+              title: "Мои активные возможности"
+              subtitle: "список текущих сделок"
+              dataSource: "Q-SALES-01-04"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "opportunity_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "opportunity_name"
+                  title: "Название"
+                  width: 200
+                  sortable: true
+                - field: "customer_id"
+                  title: "ID клиента"
+                  width: 100
+                  align: "center"
+                - field: "stage_id"
+                  title: "Стадия"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "lead": "info"
+                      "negotiation": "warning"
+                      "proposal": "info"
+                      "closed_won": "success"
+                      "closed_lost": "danger"
+                - field: "expected_value"
+                  title: "Ожидаемая сумма"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+                - field: "probability_percent"
+                  title: "Вероятность (%)"
+                  width: 120
+                  align: "right"
+                  widget:
+                    type: "progress"
+                    max: 100
+                - field: "expected_close_date"
+                  title: "План закрытия"
+                  width: 130
+                  formatter: "date"
+                  sortable: true
+              grid: { w: 12 }
+              linked_operations: [OP-SALES-07, OP-SALES-08]
+
+    # -------------------------------------------------------------------------------
+    # DASH-SALES-02: Клиентская база
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-SALES-02
+      dashboard: "Клиентская база"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-customers"
+          type: "kpi"
+          title: "Клиентская база"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Всего клиентов"
+              subtitle: "активные контрагенты"
+              dataSource: "Q-SALES-02-01"
+              field: "total_customers"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-SALES-01]
+
+        - id: "sec-analytics-customers"
+          type: "analytics"
+          title: "Аналитика клиентов"
+          widgets:
+            - widget_id: W02-02
+              type: Chart
+              title: "Распределение клиентов по категориям"
+              subtitle: "структура клиентской базы"
+              dataSource: "Q-SALES-02-02"
+              chartType: "pie"
+              category: "customer_category"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "customer_count"
+                  label: "Количество клиентов"
+              grid: { w: 6 }
+              linked_operations: [OP-SALES-01]
+
+    # -------------------------------------------------------------------------------
+    # DASH-SALES-03: Заказы и отгрузки
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-SALES-03
+      dashboard: "Заказы и отгрузки"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-orders"
+          type: "kpi"
+          title: "Статусы заказов"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Заказы подтверждены"
+              subtitle: "ждут производства"
+              dataSource: "Q-SALES-03-01"
+              field: "confirmed_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-SALES-15, OP-SALES-16]
+              
+            - widget_id: W03-02
+              type: Indicator
+              title: "Заказы в производстве"
+              subtitle: "в процессе изготовления"
+              dataSource: "Q-SALES-03-02"
+              field: "in_production_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-SALES-16]
+              
+            - widget_id: W03-03
+              type: Indicator
+              title: "Заказы к отгрузке"
+              subtitle: "готовы к отправке"
+              dataSource: "Q-SALES-03-03"
+              field: "ready_to_ship_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-SALES-16, OP-SALES-19]
+
+        - id: "sec-analytics-orders"
+          type: "analytics"
+          title: "Аналитика заказов"
+          widgets:
+            - widget_id: W03-05
+              type: Chart
+              title: "Динамика продаж по месяцам"
+              subtitle: "выручка за последние 12 месяцев"
+              dataSource: "Q-SALES-03-05"
+              chartType: "area"
+              category: "month"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_sales"
+                  label: "Выручка"
+                  color: "#34d399"
+              grid: { w: 6 }
+              linked_operations: [OP-SALES-13, OP-SALES-15]
+
+        - id: "sec-detailed-orders"
+          type: "analytics"
+          title: "Детальная информация"
+          widgets:
+            - widget_id: W03-04
+              type: Table
+              title: "Последние заказы"
+              subtitle: "активные заказы по статусам"
+              dataSource: "Q-SALES-03-04"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "order_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "order_number"
+                  title: "№ заказа"
+                  width: 120
+                  sortable: true
+                - field: "customer_id"
+                  title: "ID клиента"
+                  width: 100
+                  align: "center"
+                - field: "total_amount"
+                  title: "Сумма"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+                - field: "order_date"
+                  title: "Дата заказа"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "expected_ship_date"
+                  title: "План отгрузки"
+                  width: 120
+                  formatter: "date"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 130
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "confirmed": "info"
+                      "in_production": "warning"
+                      "ready_to_ship": "success"
+                      "shipped": "success"
+                      "cancelled": "danger"
+              grid: { w: 12 }
+              linked_operations: [OP-SALES-13, OP-SALES-15, OP-SALES-16, OP-SALES-17]
+
+
+# =====================================================================================
+# РОЛЬ: Руководитель отдела продаж
+# =====================================================================================
+- role: "руководитель_отдела_продаж"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-SALES-01: Воронка продаж (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-SALES-01
+      dashboard: "Воронка продаж"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-pipeline-manager"
+          type: "kpi"
+          title: "Ключевые показатели отдела"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные возможности"
+              subtitle: "все сделки в работе"
+              dataSource: "Q-SALES-01-01"
+              field: "active_opportunities"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-SALES-07]
+              
+            - widget_id: W01-03
+              type: Indicator
+              title: "Ожидаемая сумма сделок"
+              subtitle: "weighted pipeline"
+              dataSource: "Q-SALES-01-03"
+              field: "weighted_pipeline"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 3 }
+              linked_operations: [OP-SALES-07, OP-SALES-08]
+
+        - id: "sec-analytics-pipeline-manager"
+          type: "analytics"
+          title: "Аналитика отдела"
+          widgets:
+            - widget_id: W01-02
+              type: Chart
+              title: "Воронка по стадиям"
+              subtitle: "все менеджеры"
+              dataSource: "Q-SALES-01-02"
+              chartType: "funnel"
+              category: "stage_id"
+              showLegend: true
+              height: 400
+              leftAxis:
+                format: "number"
+              series:
+                - field: "opportunities"
+                  label: "Количество сделок"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-SALES-07, OP-SALES-08]
+              
+            - widget_id: W01-05
+              type: Chart
+              title: "Конверсия менеджеров"
+              subtitle: "эффективность работы"
+              dataSource: "Q-SALES-01-05"
+              chartType: "bar"
+              category: "personnel_number"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "percent"
+              series:
+                - field: "conversion_rate"
+                  label: "Конверсия (%)"
+                  color: "#a78bfa"
+              grid: { w: 6 }
+              linked_operations: [OP-SALES-07, OP-SALES-08, OP-SALES-12]
+
+    # -------------------------------------------------------------------------------
+    # DASH-SALES-04: Эффективность продаж (инвестиционный)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-SALES-04
+      dashboard: "Эффективность продаж"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-efficiency"
+          type: "kpi"
+          title: "Ключевые показатели эффективности"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Средний цикл сделки"
+              subtitle: "от лида до закрытия"
+              dataSource: "Q-SALES-04-01"
+              field: "avg_cycle_days"
+              aggregation: "SUM"
+              format: "number"
+              suffix: " дней"
+              higherIsBetter: false
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 30
+                  status: "success"
+                  label: "Быстро"
+                - field: "value"
+                  operator: "between"
+                  value: 30
+                  value2: 60
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: ">"
+                  value: 60
+                  status: "danger"
+                  label: "Долго"
+              grid: { w: 4 }
+              linked_operations: [OP-SALES-07, OP-SALES-12]
+              
+            - widget_id: W04-02
+              type: Indicator
+              title: "Конверсия лидов"
+              subtitle: "лид → заказ"
+              dataSource: "Q-SALES-04-02"
+              field: "conversion_rate"
+              aggregation: "SUM"
+              format: "percent"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 30
+                  status: "success"
+                  label: "Отлично"
+                - field: "value"
+                  operator: "between"
+                  value: 15
+                  value2: 30
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: "<"
+                  value: 15
+                  status: "danger"
+                  label: "Низкая"
+              grid: { w: 4 }
+              linked_operations: [OP-SALES-07, OP-SALES-08, OP-SALES-12, OP-SALES-15]
+
+        - id: "sec-analytics-efficiency"
+          type: "analytics"
+          title: "Рейтинги"
+          widgets:
+            - widget_id: W04-03
+              type: Chart
+              title: "ТОП-5 менеджеров по выручке"
+              subtitle: "за последние 12 месяцев"
+              dataSource: "Q-SALES-04-03"
+              chartType: "bar"
+              category: "personnel_number"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_revenue"
+                  label: "Выручка"
+                  color: "#34d399"
+              grid: { w: 6 }
+              linked_operations: [OP-SALES-13, OP-SALES-15]
+              
+            - widget_id: W04-04
+              type: Table
+              title: "ТОП-10 клиентов по выручке"
+              subtitle: "ключевые контрагенты"
+              dataSource: "Q-SALES-04-04"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "customer_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "customer_category"
+                  title: "Категория"
+                  width: 150
+                - field: "total_revenue"
+                  title: "Выручка"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+                - field: "order_count"
+                  title: "Кол-во заказов"
+                  width: 120
+                  align: "right"
+              grid: { w: 6 }
+              linked_operations: [OP-SALES-13, OP-SALES-15]

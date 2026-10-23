@@ -84,3 +84,44 @@ class CPEvents:
     BLACKLIST_REMOVE = "CP.blacklist.remove"
     ATTACHMENT_CREATE = "CP.attachment.create"
     ATTACHMENT_DELETE = "CP.attachment.delete"
+
+
+class SalesEvents:
+    """События Sales-модуля (из SALES_Business_Roles.yml)."""
+    # Клиенты
+    CUSTOMER_SAVE = "Sales.customer.save"
+
+    # Прайс-листы
+    PRICE_LIST_SAVE = "Sales.priceList.save"
+    PRICE_LIST_ITEM_SAVE = "Sales.priceListItem.save"
+
+    # Воронка продаж
+    OPPORTUNITY_CREATE = "Sales.opportunity.create"
+    OPPORTUNITY_UPDATE_STAGE = "Sales.opportunity.updateStage"
+
+    # Коммерческие предложения
+    QUOTE_CREATE = "Sales.quote.create"
+    QUOTE_LINE_CREATE = "Sales.quoteLine.create"
+    QUOTE_ACCEPT = "Sales.quote.accept"
+
+    # Заказы
+    ORDER_CREATE = "Sales.order.create"
+    ORDER_LINE_CREATE = "Sales.orderLine.create"
+    ORDER_PRODUCE = "Sales.order.produce"
+    ORDER_UPDATE_STATUS = "Sales.order.updateStatus"
+    ORDER_CANCEL = "Sales.order.cancel"
+
+    # Отгрузки
+    SHIPMENT_CREATE = "Sales.shipment.create"
+    SHIPMENT_LINE_CREATE = "Sales.shipmentLine.create"
+    SHIPMENT_DELIVER = "Sales.shipment.deliver"
+
+    # Возвраты
+    RETURN_SAVE = "Sales.return.save"
+    RETURN_APPROVE = "Sales.return.approve"
+    RETURN_RECEIVE = "Sales.return.receive"
+
+    # Счета
+    INVOICE_CREATE = "Sales.invoice.create"
+    INVOICE_SEND = "Sales.invoice.send"
+    INVOICE_PAY = "Sales.invoice.pay"

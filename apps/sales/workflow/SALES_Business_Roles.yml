@@ -1,0 +1,600 @@
+# =====================================================================================
+# SALES — каталог форм для бизнес-операций
+# Источник: SALES_Business_Queries.sql (31 операция OP-SALES-01…31, схема v1.0).
+# Структура аналогична остальным *_Business_Roles.yml.
+#
+# НАЗНАЧЕНИЕ ФАЙЛА: по каждой операции описаны поля формы и событие, которое
+# запускает соответствующий SQL-запрос из SALES_Business_Queries.sql.
+# Группировка операций в процессы 1:1 совпадает с SALES_Process_Workflow.yml
+# (процессы SALES-01…06).
+#
+# СТРУКТУРА ОПЕРАЦИИ (как в Production_Business_Roles.yml):
+#   op_code       — код операции (список, если операция физически состоит из
+#                   двух SQL-запросов одной формы)
+#   name, table, type (insert|update), event, button, precondition
+#   fields        — field/label/type (text|textarea|number|date|datetime|select|
+#                   checkbox|repeater|hidden)/required/source/fields(для repeater)
+#
+# Поля с type=hidden не показываются пользователю: id генерируются приложением,
+# поля вроде created_by_employee_id подставляются из текущей сессии
+# (source: current_user), а не выбираются вручную.
+# =====================================================================================
+
+process: SALES-01
+process_name: "Справочники клиентов и прайс-листов"
+role: "sales_manager"
+operations:
+
+  - op_code: [OP-SALES-01, OP-SALES-02]
+    name: "Ведение клиентов"
+    table: sales_customer
+    type: [insert, update]
+    event: "Sales.customer.save"
+    button: "Сохранить клиента"
+    fields:
+      - field: customer_id
+        label: "Клиент (пусто для нового)"
+        type: select
+        required: false
+        source: { table: sales_customer, value_field: customer_id, label_field: customer_id }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: dict_counterparty, value_field: counterparty_id, label_field: counterparty_name }
+      - field: customer_category
+        label: "Категория клиента"
+        type: select
+        required: false
+        options: [VIP, regular, wholesale, retail]
+      - field: credit_limit
+        label: "Кредитный лимит"
+        type: number
+        required: false
+      - field: payment_terms
+        label: "Условия оплаты"
+        type: text
+        required: false
+      - field: default_price_list_id
+        label: "Прайс-лист по умолчанию"
+        type: select
+        required: false
+        source: { table: sales_price_list, value_field: price_list_id, label_field: price_list_name }
+      - field: sales_manager_employee_id
+        label: "Менеджер по продажам"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: is_active
+        label: "Активен"
+        type: checkbox
+        required: false
+
+  - op_code: [OP-SALES-03, OP-SALES-06]
+    name: "Ведение прайс-листов"
+    table: sales_price_list
+    type: [insert, update]
+    role: "sales_head"
+    event: "Sales.priceList.save"
+    button: "Сохранить прайс-лист"
+    fields:
+      - field: price_list_id
+        label: "Прайс-лист (пусто для нового)"
+        type: select
+        required: false
+        source: { table: sales_price_list, value_field: price_list_id, label_field: price_list_name }
+      - field: price_list_name
+        label: "Название прайс-листа"
+        type: text
+        required: true
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+      - field: valid_from
+        label: "Действует с"
+        type: date
+        required: false
+      - field: valid_to
+        label: "Действует по"
+        type: date
+        required: false
+      - field: is_default
+        label: "Прайс-лист по умолчанию"
+        type: checkbox
+        required: false
+
+  - op_code: [OP-SALES-04, OP-SALES-05]
+    name: "Ведение позиций прайс-листа"
+    table: sales_price_list_line
+    type: [insert, update]
+    role: "sales_head"
+    event: "Sales.priceListItem.save"
+    button: "Сохранить позицию прайс-листа"
+    fields:
+      - field: price_line_id
+        label: "Позиция (пусто для новой)"
+        type: select
+        required: false
+        source: { table: sales_price_list_line, value_field: price_line_id, label_field: price_line_id }
+      - field: price_list_id
+        label: "Прайс-лист"
+        type: select
+        required: true
+        source: { table: sales_price_list, value_field: price_list_id, label_field: price_list_name }
+      - field: material_id
+        label: "Товар"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: unit_price
+        label: "Цена за единицу"
+        type: number
+        required: true
+      - field: min_quantity
+        label: "Минимальное количество для цены"
+        type: number
+        required: false
+
+---
+process: SALES-02
+process_name: "Воронка продаж"
+role: "sales_manager"
+operations:
+
+  - op_code: OP-SALES-07
+    name: "Создание возможности (лид)"
+    table: sales_opportunity
+    type: insert
+    event: "Sales.opportunity.create"
+    button: "Создать возможность"
+    fields:
+      - field: customer_id
+        label: "Клиент"
+        type: select
+        required: false
+        source: { table: sales_customer, value_field: customer_id, label_field: customer_id }
+      - field: opportunity_name
+        label: "Название возможности"
+        type: text
+        required: true
+      - field: stage_id
+        label: "Стадия"
+        type: select
+        required: false
+        options: [lead, negotiation, proposal, closed_won, closed_lost]
+      - field: expected_value
+        label: "Ожидаемая сумма сделки"
+        type: number
+        required: false
+      - field: probability_percent
+        label: "Вероятность закрытия, %"
+        type: number
+        required: false
+      - field: expected_close_date
+        label: "Ожидаемая дата закрытия"
+        type: date
+        required: false
+      - field: created_by_employee_id
+        label: "Кто создал"
+        type: hidden
+        source: current_user
+
+  - op_code: OP-SALES-08
+    name: "Изменение стадии возможности"
+    table: sales_opportunity
+    type: update
+    event: "Sales.opportunity.updateStage"
+    button: "Сохранить стадию"
+    fields:
+      - field: opportunity_id
+        label: "Возможность"
+        type: select
+        required: true
+        source: { table: sales_opportunity, value_field: opportunity_id, label_field: opportunity_name }
+      - field: stage_id
+        label: "Стадия"
+        type: select
+        required: true
+        options: [lead, negotiation, proposal, closed_won, closed_lost]
+
+---
+process: SALES-03
+process_name: "Коммерческие предложения"
+role: "sales_manager"
+statuses: [draft, sent, accepted, declined]
+operations:
+
+  - op_code: [OP-SALES-09, OP-SALES-11]
+    name: "Создание и отправка коммерческого предложения"
+    table: sales_quote
+    type: [insert, update]
+    event: "Sales.quote.create"
+    button: "Создать предложение"
+    fields:
+      - field: quote_id
+        label: "Предложение (пусто для нового)"
+        type: select
+        required: false
+        source: { table: sales_quote, value_field: quote_id, label_field: quote_number }
+      - field: quote_number
+        label: "Номер предложения"
+        type: text
+        required: true
+      - field: customer_id
+        label: "Клиент"
+        type: select
+        required: true
+        source: { table: sales_customer, value_field: customer_id, label_field: customer_id }
+      - field: opportunity_id
+        label: "Возможность"
+        type: select
+        required: false
+        source: { table: sales_opportunity, value_field: opportunity_id, label_field: opportunity_name }
+      - field: quote_date
+        label: "Дата предложения"
+        type: date
+        required: true
+      - field: valid_until
+        label: "Срок действия"
+        type: date
+        required: false
+      - field: created_by_employee_id
+        label: "Кто создал"
+        type: hidden
+        source: current_user
+
+  - op_code: OP-SALES-10
+    name: "Добавление позиции предложения"
+    table: sales_quote_line
+    type: insert
+    event: "Sales.quoteLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: quote_id
+        label: "Предложение"
+        type: select
+        required: true
+        source: { table: sales_quote, value_field: quote_id, label_field: quote_number }
+      - field: material_id
+        label: "Товар"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: price_list_item_id
+        label: "Позиция прайс-листа"
+        type: select
+        required: false
+        source: { table: sales_price_list_line, value_field: price_line_id, label_field: price_line_id }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_price
+        label: "Цена за единицу"
+        type: number
+        required: true
+      - field: discount_percent
+        label: "Скидка, %"
+        type: number
+        required: false
+
+  - op_code: OP-SALES-12
+    name: "Принятие предложения клиентом"
+    table: sales_quote
+    type: update
+    event: "Sales.quote.accept"
+    button: "Отметить как принятое"
+    precondition: "status_id = sent"
+    fields:
+      - field: quote_id
+        label: "Предложение"
+        type: select
+        required: true
+        source: { table: sales_quote, value_field: quote_id, label_field: quote_number }
+
+---
+process: SALES-04
+process_name: "Заказы клиентов"
+role: "sales_manager"
+statuses: [draft, confirmed, in_production, ready_to_ship, partially_shipped, shipped, completed, cancelled]
+operations:
+
+  - op_code: [OP-SALES-13, OP-SALES-14, OP-SALES-15]
+    name: "Создание и подтверждение заказа"
+    table: sales_order
+    type: [insert, insert, update]
+    event: "Sales.order.create"
+    button: "Создать заказ"
+    fields:
+      - field: order_id
+        label: "Заказ (пусто для нового)"
+        type: select
+        required: false
+        source: { table: sales_order, value_field: order_id, label_field: order_number }
+      - field: order_number
+        label: "Номер заказа"
+        type: text
+        required: true
+      - field: customer_id
+        label: "Клиент"
+        type: select
+        required: true
+        source: { table: sales_customer, value_field: customer_id, label_field: customer_id }
+      - field: quote_id
+        label: "Коммерческое предложение"
+        type: select
+        required: false
+        source: { table: sales_quote, value_field: quote_id, label_field: quote_number }
+      - field: order_date
+        label: "Дата заказа"
+        type: date
+        required: true
+      - field: order_type
+        label: "Тип заказа"
+        type: select
+        required: false
+        options: [regular, urgent, sample]
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+      - field: expected_ship_date
+        label: "Ожидаемая дата отгрузки"
+        type: date
+        required: false
+      - field: delivery_address_id
+        label: "Адрес доставки"
+        type: select
+        required: false
+        source: { table: dict_address, value_field: address_id, label_field: address_id }
+      - field: created_by_employee_id
+        label: "Кто создал"
+        type: hidden
+        source: current_user
+
+  - op_code: OP-SALES-14
+    name: "Добавление позиции заказа"
+    table: sales_order_line
+    type: insert
+    event: "Sales.orderLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: order_id
+        label: "Заказ"
+        type: select
+        required: true
+        source: { table: sales_order, value_field: order_id, label_field: order_number }
+      - field: material_id
+        label: "Товар"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_price
+        label: "Цена за единицу"
+        type: number
+        required: true
+      - field: discount_percent
+        label: "Скидка, %"
+        type: number
+        required: false
+
+  - op_code: OP-SALES-16
+    name: "Передача заказа в производство"
+    table: sales_order
+    type: update
+    role: "sales_head"
+    event: "Sales.order.produce"
+    button: "Передать в производство"
+    precondition: "status_id = confirmed"
+    fields:
+      - field: order_id
+        label: "Заказ"
+        type: select
+        required: true
+        source: { table: sales_order, value_field: order_id, label_field: order_number }
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+
+  - op_code: OP-SALES-17
+    name: "Изменение статуса заказа"
+    table: sales_order
+    type: update
+    event: "Sales.order.updateStatus"
+    button: "Изменить статус"
+    fields:
+      - field: order_id
+        label: "Заказ"
+        type: select
+        required: true
+        source: { table: sales_order, value_field: order_id, label_field: order_number }
+      - field: status_id
+        label: "Статус"
+        type: select
+        required: true
+        options: [draft, confirmed, in_production, ready_to_ship, partially_shipped, shipped, completed, cancelled]
+
+  - op_code: OP-SALES-18
+    name: "Отмена заказа"
+    table: sales_order
+    type: update
+    event: "Sales.order.cancel"
+    button: "Отменить заказ"
+    precondition: "status_id in (draft, confirmed)"
+    fields:
+      - field: order_id
+        label: "Заказ"
+        type: select
+        required: true
+        source: { table: sales_order, value_field: order_id, label_field: order_number }
+
+---
+process: SALES-05
+process_name: "Отгрузка и доставка"
+role: "warehouse_keeper"
+statuses: [planned, in_progress, shipped, delivered]
+operations:
+
+  - op_code: [OP-SALES-19, OP-SALES-20, OP-SALES-21]
+    name: "Создание и подтверждение отгрузки"
+    table: sales_shipment
+    type: [insert, insert, update]
+    event: "Sales.shipment.create"
+    button: "Создать отгрузку"
+    fields:
+      - field: shipment_id
+        label: "Отгрузка (пусто для новой)"
+        type: select
+        required: false
+        source: { table: sales_shipment, value_field: shipment_id, label_field: shipment_number }
+      - field: shipment_number
+        label: "Номер отгрузки"
+        type: text
+        required: true
+      - field: order_id
+        label: "Заказ клиента"
+        type: select
+        required: true
+        source: { table: sales_order, value_field: order_id, label_field: order_number }
+      - field: warehouse_id
+        label: "Склад"
+        type: select
+        required: false
+        source: { table: wms_warehouse, value_field: warehouse_id, label_field: warehouse_name }
+      - field: shipment_date
+        label: "Дата отгрузки"
+        type: date
+        required: true
+      - field: tracking_number
+        label: "Трекинг-номер"
+        type: text
+        required: false
+      - field: shipping_method_id
+        label: "Способ доставки"
+        type: select
+        required: false
+        source: { table: dict_shipping_method, value_field: shipping_method_id, label_field: shipping_method_name }
+
+  - op_code: OP-SALES-20
+    name: "Добавление позиции отгрузки"
+    table: sales_shipment_line
+    type: insert
+    event: "Sales.shipmentLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: shipment_id
+        label: "Отгрузка"
+        type: select
+        required: true
+        source: { table: sales_shipment, value_field: shipment_id, label_field: shipment_number }
+      - field: order_line_id
+        label: "Позиция заказа"
+        type: select
+        required: true
+        source: { table: sales_order_line, value_field: order_line_id, label_field: order_line_id }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+
+  - op_code: OP-SALES-22
+    name: "Завершение отгрузки (товар доставлен)"
+    table: sales_shipment
+    type: update
+    event: "Sales.shipment.deliver"
+    button: "Подтвердить доставку"
+    precondition: "status_id = shipped"
+    fields:
+      - field: shipment_id
+        label: "Отгрузка"
+        type: select
+        required: true
+        source: { table: sales_shipment, value_field: shipment_id, label_field: shipment_number }
+
+  - op_code: OP-SALES-23
+    name: "Автоматическое обновление отгруженного количества"
+    table: sales_order_line
+    type: update
+    trigger: system
+    note: "Выполняется автоматически при отгрузке"
+    fields: []
+
+  - op_code: OP-SALES-24
+    name: "Завершение заказа (все позиции отгружены)"
+    table: sales_order
+    type: update
+    trigger: system
+    note: "Выполняется автоматически при завершении отгрузки"
+    fields: []
+
+---
+process: SALES-06
+process_name: "Счета и оплаты"
+role: "sales_manager"
+statuses: [draft, sent, paid, overdue, cancelled]
+operations:
+
+  - op_code: OP-SALES-29
+    name: "Создание счета на оплату"
+    table: sales_invoice
+    type: insert
+    event: "Sales.invoice.create"
+    button: "Создать счёт"
+    fields:
+      - field: invoice_number
+        label: "Номер счёта"
+        type: text
+        required: true
+      - field: order_id
+        label: "Заказ клиента"
+        type: select
+        required: true
+        source: { table: sales_order, value_field: order_id, label_field: order_number }
+      - field: invoice_date
+        label: "Дата счёта"
+        type: date
+        required: true
+      - field: due_date
+        label: "Срок оплаты"
+        type: date
+        required: false
+
+  - op_code: OP-SALES-30
+    name: "Отправка счёта клиенту"
+    table: sales_invoice
+    type: update
+    event: "Sales.invoice.send"
+    button: "Отправить счёт"
+    precondition: "status_id = draft"
+    fields:
+      - field: invoice_id
+        label: "Счёт"
+        type: select
+        required: true
+        source: { table: sales_invoice, value_field: invoice_id, label_field: invoice_number }
+
+  - op_code: OP-SALES-31
+    name: "Регистрация оплаты"
+    table: sales_invoice
+    type: update
+    event: "Sales.invoice.pay"
+    button: "Зарегистрировать оплату"
+    fields:
+      - field: invoice_id
+        label: "Счёт"
+        type: select
+        required: true
+        source: { table: sales_invoice, value_field: invoice_id, label_field: invoice_number }
+      - field: paid_amount
+        label: "Сумма оплаты"
+        type: number
+        required: true

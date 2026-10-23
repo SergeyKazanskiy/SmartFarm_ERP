@@ -1,0 +1,12 @@
+from django.apps import AppConfig
+from django.utils.translation import gettext_lazy as _
+
+
+class SalesConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.sales"
+    label = "sales"
+    verbose_name = _("Sales & Commercial")
+
+    def ready(self) -> None:
+        from apps.sales import handlers  # noqa: F401

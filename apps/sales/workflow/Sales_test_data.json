@@ -1,0 +1,220 @@
+{
+    "module": "Sales",
+    "description": "Тестовые данные для модуля Продажи",
+    "tables": {
+      "sales_customer": [
+        {
+          "customer_id": "CUST-001",
+          "counterparty_id": "CP-005",
+          "customer_category": "VIP",
+          "credit_limit": 500000.00,
+          "payment_terms": "net30",
+          "default_price_list_id": "PL-001",
+          "sales_manager_employee_id": "EMP-010",
+          "is_active": true,
+          "company_id": "COMP-001"
+        },
+        {
+          "customer_id": "CUST-002",
+          "counterparty_id": "CP-006",
+          "customer_category": "regular",
+          "credit_limit": 200000.00,
+          "payment_terms": "net45",
+          "default_price_list_id": "PL-001",
+          "sales_manager_employee_id": "EMP-010",
+          "is_active": true,
+          "company_id": "COMP-001"
+        },
+        {
+          "customer_id": "CUST-003",
+          "counterparty_id": "CP-007",
+          "customer_category": "wholesale",
+          "credit_limit": 1000000.00,
+          "payment_terms": "net60",
+          "default_price_list_id": "PL-002",
+          "sales_manager_employee_id": "EMP-010",
+          "is_active": true,
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_price_list": [
+        {
+          "price_list_id": "PL-001",
+          "price_list_name": "Стандартный прайс-лист",
+          "currency_id": "CUR-001",
+          "valid_from": "2026-01-01",
+          "valid_to": "2026-12-31",
+          "is_default": true,
+          "company_id": "COMP-001"
+        },
+        {
+          "price_list_id": "PL-002",
+          "price_list_name": "Оптовый прайс-лист",
+          "currency_id": "CUR-001",
+          "valid_from": "2026-01-01",
+          "valid_to": "2026-12-31",
+          "is_default": false,
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_price_list_line": [
+        {
+          "price_line_id": "PLL-001",
+          "price_list_id": "PL-001",
+          "material_id": "MAT-006",
+          "unit_price": 5500.00,
+          "min_quantity": 1,
+          "company_id": "COMP-001"
+        },
+        {
+          "price_line_id": "PLL-002",
+          "price_list_id": "PL-002",
+          "material_id": "MAT-006",
+          "unit_price": 4800.00,
+          "min_quantity": 10,
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_opportunity": [
+        {
+          "opportunity_id": "OPP-001",
+          "customer_id": "CUST-001",
+          "opportunity_name": "Закупка 50 телевизоров для офиса",
+          "stage_id": "proposal",
+          "expected_value": 275000.00,
+          "probability_percent": 60,
+          "expected_close_date": "2026-08-01",
+          "created_by_employee_id": "EMP-010",
+          "created_at": "2026-07-01 10:00:00",
+          "updated_at": "2026-07-01 10:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "opportunity_id": "OPP-002",
+          "customer_id": "CUST-002",
+          "opportunity_name": "Закупка 10 телевизоров для магазина",
+          "stage_id": "negotiation",
+          "expected_value": 55000.00,
+          "probability_percent": 40,
+          "expected_close_date": "2026-08-15",
+          "created_by_employee_id": "EMP-010",
+          "created_at": "2026-07-10 14:00:00",
+          "updated_at": "2026-07-10 14:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "opportunity_id": "OPP-003",
+          "customer_id": "CUST-003",
+          "opportunity_name": "Оптовая закупка 100 телевизоров",
+          "stage_id": "lead",
+          "expected_value": 480000.00,
+          "probability_percent": 20,
+          "expected_close_date": "2026-09-01",
+          "created_by_employee_id": "EMP-010",
+          "created_at": "2026-07-15 09:00:00",
+          "updated_at": "2026-07-15 09:00:00",
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_quote": [
+        {
+          "quote_id": "QUOTE-001",
+          "quote_number": "QUOTE-2026-001",
+          "customer_id": "CUST-001",
+          "opportunity_id": "OPP-001",
+          "quote_date": "2026-07-05",
+          "valid_until": "2026-08-05",
+          "total_amount": 275000.00,
+          "status_id": "sent",
+          "created_by_employee_id": "EMP-010",
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_quote_line": [
+        {
+          "quote_line_id": "QL-001",
+          "quote_id": "QUOTE-001",
+          "material_id": "MAT-006",
+          "price_list_item_id": "PLL-001",
+          "quantity": 50,
+          "unit_price": 5500.00,
+          "discount_percent": 0,
+          "total_price": 275000.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_order": [
+        {
+          "order_id": "SO-001",
+          "order_number": "SO-2026-001",
+          "customer_id": "CUST-001",
+          "quote_id": "QUOTE-001",
+          "order_date": "2026-07-01",
+          "order_type": "regular",
+          "status_id": "confirmed",
+          "total_amount": 275000.00,
+          "currency_id": "CUR-001",
+          "expected_ship_date": "2026-08-10",
+          "actual_ship_date": null,
+          "delivery_address_id": "ADDR-002",
+          "created_by_employee_id": "EMP-010",
+          "production_order_id": "PROD-001",
+          "company_id": "COMP-001"
+        },
+        {
+          "order_id": "SO-002",
+          "order_number": "SO-2026-002",
+          "customer_id": "CUST-002",
+          "quote_id": null,
+          "order_date": "2026-07-15",
+          "order_type": "regular",
+          "status_id": "draft",
+          "total_amount": 55000.00,
+          "currency_id": "CUR-001",
+          "expected_ship_date": "2026-08-20",
+          "actual_ship_date": null,
+          "delivery_address_id": "ADDR-003",
+          "created_by_employee_id": "EMP-010",
+          "production_order_id": null,
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_order_line": [
+        {
+          "order_line_id": "SOL-001",
+          "order_id": "SO-001",
+          "material_id": "MAT-006",
+          "quantity": 50,
+          "unit_price": 5500.00,
+          "discount_percent": 0,
+          "total_price": 275000.00,
+          "shipped_quantity": 0,
+          "company_id": "COMP-001"
+        },
+        {
+          "order_line_id": "SOL-002",
+          "order_id": "SO-002",
+          "material_id": "MAT-006",
+          "quantity": 10,
+          "unit_price": 5500.00,
+          "discount_percent": 0,
+          "total_price": 55000.00,
+          "shipped_quantity": 0,
+          "company_id": "COMP-001"
+        }
+      ],
+      "sales_invoice": [
+        {
+          "invoice_id": "SINV-001",
+          "invoice_number": "INV-2026-001",
+          "order_id": "SO-001",
+          "invoice_date": "2026-07-01",
+          "due_date": "2026-07-31",
+          "total_amount": 275000.00,
+          "status_id": "sent",
+          "paid_amount": 0,
+          "company_id": "COMP-001"
+        }
+      ]
+    }
+  }
