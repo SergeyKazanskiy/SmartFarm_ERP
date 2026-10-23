@@ -1,0 +1,369 @@
+meta:
+  title: CRM_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов продаж с ролями, задачами, переходами между
+    состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов (по кодам
+    OP-CRM-01…27). Объединяет через процессы CRM_Business_Queries.sql (SQL),
+    CRM_Business_Roles.yml (поля форм), CRM_Dashboards_Roles.yml (дашборды),
+    CRM_Reports_Roles.yml (отчёты).
+  schema_notes: >
+    Задача (task) соответствует ОДНОМУ экрану/форме — принцип идентичен остальным
+    *_Process_Workflow.yml файлам платформы.
+
+roles_catalog:
+  sales_manager: Менеджер по продажам
+  sales_director: Директор по продажам
+
+processes:
+
+- id: CRM-01
+  name: Лиды и контакты
+  description: Регистрация лидов, их обработка и идентификация как контрагентов, ведение контактных лиц.
+  dashboards:
+  - DASH-CRM-01 (Воронка продаж)
+  reports:
+  - REP-CRM-01 (Реестр лидов)
+  tasks:
+
+  - id: TASK-CRM-01-01
+    name: Создание лида
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-01]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-01
+        description: Создание лида
+    transitions:
+    - target_task: TASK-CRM-01-02
+      condition: Лид создан, требуется обработка (звонок/встреча)
+      on_event: [on_insert]
+
+  - id: TASK-CRM-01-02
+    name: Обработка лида (назначение, статус, идентификация контрагента)
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-02, OP-CRM-03, OP-CRM-04]
+    sql_queries:
+      on_assign:
+        query_code: OP-CRM-02
+        description: Назначение ответственного за лид
+      on_update_status:
+        query_code: OP-CRM-03
+        description: Изменение статуса лида
+      on_link_counterparty:
+        query_code: OP-CRM-04
+        description: Идентификация контрагента по лиду
+    transitions:
+    - target_task: TASK-CRM-03-01
+      condition: Требуется запланировать звонок/встречу по лиду
+      on_event: [on_assign, on_update_status]
+    - target_task: TASK-CRM-02-01
+      condition: Лид квалифицирован, можно создавать сделку
+      on_event: [on_update_status]
+
+  - id: TASK-CRM-01-03
+    name: Ведение контактных лиц
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-05, OP-CRM-06]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-05
+        description: Создание контактного лица
+      on_update:
+        query_code: OP-CRM-06
+        description: Изменение контактного лица
+    transitions: []
+
+- id: CRM-02
+  name: Сделки
+  description: Ведение сделки от создания из лида до закрытия (выигрыш/проигрыш), с промежуточными стадиями воронки продаж.
+  dashboards:
+  - DASH-CRM-01 (Воронка продаж)
+  reports:
+  - REP-CRM-02 (Реестр сделок)
+  tasks:
+
+  - id: TASK-CRM-02-01
+    name: Создание сделки из лида
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-07]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-07
+        description: Создание сделки из лида
+    transitions:
+    - target_task: TASK-CRM-02-02
+      condition: Сделка создана, ведётся по стадиям воронки
+      on_event: [on_insert]
+
+  - id: TASK-CRM-02-02
+    name: Ведение сделки (стадия, сумма, ответственный)
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-08, OP-CRM-09, OP-CRM-10]
+    sql_queries:
+      on_update_stage:
+        query_code: OP-CRM-08
+        description: Изменение стадии сделки
+      on_update_amount:
+        query_code: OP-CRM-09
+        description: Изменение суммы и ожидаемой даты закрытия сделки
+      on_assign:
+        query_code: OP-CRM-10
+        description: Назначение ответственного за сделку
+    transitions:
+    - target_task: TASK-CRM-04-01
+      condition: Сделка достигла стадии подготовки коммерческого предложения
+      on_event: [on_update_stage]
+    - target_task: TASK-CRM-02-03
+      condition: Сделка готова к закрытию
+      on_event: [on_update_stage]
+
+  - id: TASK-CRM-02-03
+    name: Закрытие сделки (выигрыш или проигрыш)
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-11, OP-CRM-12]
+    sql_queries:
+      on_win:
+        query_code: OP-CRM-11
+        description: Закрытие сделки как выигранной
+      on_lose:
+        query_code: OP-CRM-12
+        description: Закрытие сделки как проигранной
+    transitions:
+    - target_task: TASK-CRM-06-01
+      condition: Сделка выиграна — можно оформлять договор с контрагентом
+      on_event: [on_win]
+    - target_task: END_PROCESS
+      condition: Сделка проиграна
+      on_event: [on_lose]
+
+- id: CRM-03
+  name: Активности
+  description: Планирование и выполнение звонков, встреч, писем по лидам и сделкам.
+  dashboards:
+  - DASH-CRM-02 (Активность менеджеров)
+  reports:
+  - REP-CRM-03 (Журнал активностей)
+  tasks:
+
+  - id: TASK-CRM-03-01
+    name: Планирование активности
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-13]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-13
+        description: Планирование активности
+    transitions:
+    - target_task: TASK-CRM-03-02
+      condition: Активность запланирована, наступает срок выполнения
+      on_event: [on_insert]
+
+  - id: TASK-CRM-03-02
+    name: Завершение активности с результатом
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-14]
+    sql_queries:
+      on_complete:
+        query_code: OP-CRM-14
+        description: Завершение активности с результатом
+    transitions: []
+
+- id: CRM-04
+  name: Коммерческие предложения
+  description: Формирование, отправка и отслеживание решения клиента по коммерческому предложению.
+  dashboards:
+  - DASH-CRM-01 (Воронка продаж)
+  reports:
+  - REP-CRM-04 (Коммерческое предложение)
+  tasks:
+
+  - id: TASK-CRM-04-01
+    name: Создание коммерческого предложения
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-15]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-15
+        description: Создание коммерческого предложения
+    transitions:
+    - target_task: TASK-CRM-04-02
+      condition: Предложение создано в статусе draft, можно добавлять позиции
+      on_event: [on_insert]
+
+  - id: TASK-CRM-04-02
+    name: Добавление позиций предложения
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-16]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-16
+        description: Добавление позиции предложения
+    transitions:
+    - target_task: TASK-CRM-04-03
+      condition: Позиции внесены, предложение готово к отправке
+      on_event: [on_insert]
+
+  - id: TASK-CRM-04-03
+    name: Отправка предложения клиенту
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-17]
+    sql_queries:
+      on_send:
+        query_code: OP-CRM-17
+        description: Отправка предложения клиенту
+    transitions:
+    - target_task: TASK-CRM-04-04
+      condition: Предложение отправлено, ожидается решение клиента
+      on_event: [on_send]
+
+  - id: TASK-CRM-04-04
+    name: Решение клиента по предложению
+    role: sales_manager
+    has_form: true
+    form_ref: [OP-CRM-18, OP-CRM-19]
+    sql_queries:
+      on_accept:
+        query_code: OP-CRM-18
+        description: Принятие предложения клиентом
+      on_decline:
+        query_code: OP-CRM-19
+        description: Отклонение предложения
+    transitions:
+    - target_task: TASK-CRM-02-03
+      condition: 'Клиент принял предложение: можно закрывать сделку как выигранную'
+      on_event: [on_accept]
+    - target_task: END_PROCESS
+      condition: Клиент отклонил предложение
+      on_event: [on_decline]
+
+- id: CRM-05
+  name: Прайс-листы
+  description: Ведение прайс-листов и цен на товары/услуги, используемых в коммерческих предложениях.
+  dashboards: []
+  reports:
+  - REP-CRM-05 (Прайс-лист)
+  tasks:
+
+  - id: TASK-CRM-05-01
+    name: Создание прайс-листа
+    role: sales_director
+    has_form: true
+    form_ref: [OP-CRM-20]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-20
+        description: Создание прайс-листа
+    transitions:
+    - target_task: TASK-CRM-05-02
+      condition: Прайс-лист создан, можно наполнять позициями
+      on_event: [on_insert]
+
+  - id: TASK-CRM-05-02
+    name: Ведение позиций прайс-листа
+    role: sales_director
+    has_form: true
+    form_ref: [OP-CRM-21, OP-CRM-22]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-21
+        description: Добавление позиции прайс-листа
+      on_update_price:
+        query_code: OP-CRM-22
+        description: Изменение цены позиции прайс-листа
+    transitions: []
+
+- id: CRM-06
+  name: Договоры
+  description: Оформление и жизненный цикл договора с контрагентом после выигрыша сделки.
+  dashboards:
+  - DASH-CRM-03 (Договоры)
+  reports:
+  - REP-CRM-06 (Реестр договоров)
+  tasks:
+
+  - id: TASK-CRM-06-01
+    name: Создание договора
+    role: sales_director
+    has_form: true
+    form_ref: [OP-CRM-23]
+    sql_queries:
+      on_insert:
+        query_code: OP-CRM-23
+        description: Создание договора
+    transitions:
+    - target_task: TASK-CRM-06-02
+      condition: Договор создан в статусе draft
+      on_event: [on_insert]
+
+  - id: TASK-CRM-06-02
+    name: Активация договора
+    role: sales_director
+    has_form: true
+    form_ref: [OP-CRM-24]
+    sql_queries:
+      on_activate:
+        query_code: OP-CRM-24
+        description: Активация договора
+    transitions:
+    - target_task: TASK-CRM-06-03
+      condition: Договор активен, можно указать покрываемые объекты (проекты/заказы)
+      on_event: [on_activate]
+
+  - id: TASK-CRM-06-03
+    name: Привязка объектов, покрываемых договором
+    role: sales_director
+    has_form: true
+    form_ref: [OP-CRM-27]
+    sql_queries:
+      on_update:
+        query_code: OP-CRM-27
+        description: Изменение состава объектов, покрываемых договором
+    transitions:
+    - target_task: TASK-CRM-06-04
+      condition: 'Работы по договору завершены — Finance.invoice формирует счета на основании актов'
+      on_event: [on_update]
+
+  - id: TASK-CRM-06-04
+    name: Завершение или расторжение договора
+    role: sales_director
+    has_form: true
+    form_ref: [OP-CRM-25, OP-CRM-26]
+    sql_queries:
+      on_complete:
+        query_code: OP-CRM-25
+        description: Завершение договора
+      on_terminate:
+        query_code: OP-CRM-26
+        description: Расторжение договора
+    transitions:
+    - target_task: END_PROCESS
+      condition: Договор завершён или расторгнут
+      on_event: [on_complete, on_terminate]
+
+bpmn_diagrams:
+- id: BPMN-CRM-01
+  name: Работа с клиентом
+  description: От первого контакта (лид) через активности к сделке.
+  process_ids:
+  - CRM-01
+  - CRM-02
+  - CRM-03
+- id: BPMN-CRM-02
+  name: Коммерческие условия и договоры
+  description: Прайс-листы, коммерческие предложения и оформление договоров по итогам выигранных сделок.
+  process_ids:
+  - CRM-04
+  - CRM-05
+  - CRM-06

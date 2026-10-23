@@ -1,0 +1,356 @@
+# =====================================================================================
+# CRM — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на CRM_Schema.json версии 1.2
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Менеджер по продажам
+# =====================================================================================
+- role: "менеджер_по_продажам"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-CRM-01: Реестр лидов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-01
+      report: "Реестр лидов"
+      description: >
+        Полный список всех лидов за период с указанием источника,
+        статуса, ответственного сотрудника и контрагента.
+        Используется для контроля обработки лидов и планирования работы.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр лидов"
+          columns:
+            - { field: lead_id, label: "ID лида", type: number, format: integer }
+            - { field: lead_source_name, label: "Источник", type: string }
+            - { field: lead_status_name, label: "Статус", type: string, widget: status, statusMap: { new: "info", contacted: "warning", qualified: "success", lost: "danger" } }
+            - { field: responsible_employee_id, label: "Ответственный", type: number, format: integer }
+            - { field: counterparty_id, label: "ID контрагента", type: number, format: integer }
+            - { field: created_at, label: "Дата создания", type: datetime }
+      query_ref: Q-CRM-R01
+      linked_operations:
+        - OP-CRM-01  # Создание лида
+        - OP-CRM-02  # Изменение статуса лида
+        - OP-CRM-03  # Квалификация лида
+      export:
+        formats: [pdf, excel, print]
+        template: "lead_register"
+
+    # -------------------------------------------------------------------------------
+    # REP-CRM-02: Реестр сделок
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-02
+      report: "Реестр сделок"
+      description: >
+        Полный список всех сделок за период с указанием стадии,
+        суммы, ожидаемой даты закрытия, ответственного и результата.
+        Используется для контроля воронки продаж и прогнозирования.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр сделок"
+          columns:
+            - { field: opportunity_id, label: "ID сделки", type: number, format: integer }
+            - { field: opportunity_stage_name, label: "Стадия", type: string, widget: status, statusMap: { lead: "info", negotiation: "warning", proposal: "info", closed_won: "success", closed_lost: "danger" } }
+            - { field: amount, label: "Сумма", type: number, format: currency }
+            - { field: expected_close_date, label: "Ожидаемая дата закрытия", type: date }
+            - { field: responsible_employee_id, label: "Ответственный", type: number, format: integer }
+            - { field: is_won, label: "Выиграна", type: boolean }
+      summary:
+        - field: amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-CRM-R02
+      linked_operations:
+        - OP-CRM-07  # Создание сделки
+        - OP-CRM-08  # Изменение стадии
+        - OP-CRM-11  # Выигрыш сделки
+        - OP-CRM-12  # Проигрыш сделки
+      export:
+        formats: [pdf, excel, print]
+        template: "opportunity_register"
+
+    # -------------------------------------------------------------------------------
+    # REP-CRM-03: Журнал активностей
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-03
+      report: "Журнал активностей"
+      description: >
+        Журнал всех действий сотрудника за период: звонки, встречи,
+        письма и другие активности. Показывает тип активности,
+        связанные лиды/сделки и результат.
+      parameters:
+        - name: employee_id
+          label: "Сотрудник"
+          type: select
+          required: false
+          description: "Выберите сотрудника (опционально)"
+          options: []  # Заполняется динамически из БД
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Журнал активностей"
+          columns:
+            - { field: activity_type_id, label: "Тип активности", type: string, widget: badge, statusMap: { call: "info", meeting: "warning", email: "success", task: "neutral" } }
+            - { field: lead_id, label: "ID лида", type: number, format: integer }
+            - { field: opportunity_id, label: "ID сделки", type: number, format: integer }
+            - { field: activity_date, label: "Дата", type: datetime }
+            - { field: is_completed, label: "Выполнена", type: boolean }
+            - { field: result, label: "Результат", type: string }
+      query_ref: Q-CRM-R03
+      linked_operations:
+        - OP-CRM-13  # Создание активности
+        - OP-CRM-14  # Завершение активности
+      export:
+        formats: [pdf, excel, print]
+        template: "activity_journal"
+
+    # -------------------------------------------------------------------------------
+    # REP-CRM-04: Коммерческое предложение
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-04
+      report: "Коммерческое предложение"
+      description: >
+        Официальный документ для клиента с перечнем товаров/услуг,
+        их количеством и ценами. Используется для отправки клиенту
+        и последующего формирования заказа.
+      parameters:
+        - name: offer_id
+          label: "ID коммерческого предложения"
+          type: number
+          required: true
+          description: "Введите ID коммерческого предложения"
+      sections:
+        - title: "Шапка коммерческого предложения"
+          columns:
+            - { field: opportunity_id, label: "ID сделки", type: number, format: integer }
+            - { field: offer_date, label: "Дата", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { draft: "info", sent: "warning", accepted: "success", rejected: "danger" } }
+            - { field: total_amount, label: "Общая сумма", type: number, format: currency }
+        - title: "Позиции коммерческого предложения"
+          columns:
+            - { field: description, label: "Описание", type: string }
+            - { field: quantity, label: "Количество", type: number, format: integer }
+            - { field: unit_price, label: "Цена за ед.", type: number, format: currency }
+            - { field: line_amount, label: "Сумма", type: number, format: currency }
+      summary:
+        - field: line_amount
+          label: "Итого по предложению"
+          aggregation: SUM
+      query_ref: Q-CRM-R04
+      linked_operations:
+        - OP-CRM-15  # Создание коммерческого предложения
+        - OP-CRM-16  # Отправка коммерческого предложения
+        - OP-CRM-17  # Принятие коммерческого предложения
+      export:
+        formats: [pdf, print]
+        template: "commercial_offer"
+
+    # -------------------------------------------------------------------------------
+    # REP-CRM-07: Анализ эффективности продаж по менеджерам
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-07
+      report: "Анализ эффективности продаж по менеджерам"
+      description: >
+        Сравнительный анализ эффективности менеджеров по продажам:
+        количество лидов, конверсия в сделки, сумма выигранных сделок,
+        средний цикл сделки, win rate.
+        Используется для оценки эффективности работы отдела продаж.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Рейтинг менеджеров"
+          columns:
+            - { field: employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: personnel_number, label: "Таб. номер", type: string }
+            - { field: leads_count, label: "Лидов", type: number, format: integer }
+            - { field: opportunities_count, label: "Сделок", type: number, format: integer }
+            - { field: won_count, label: "Выиграно", type: number, format: integer }
+            - { field: total_revenue, label: "Выручка", type: number, format: currency }
+            - { field: avg_cycle_days, label: "Ср. цикл (дней)", type: number, format: decimal }
+            - { field: win_rate, label: "Win Rate (%)", type: number, format: percent, color: status }
+      summary:
+        - field: leads_count
+          label: "Итого"
+          aggregation: SUM
+        - field: opportunities_count
+          label: "Итого"
+          aggregation: SUM
+        - field: won_count
+          label: "Итого"
+          aggregation: SUM
+        - field: total_revenue
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-CRM-R07
+      linked_operations:
+        - OP-CRM-01  # Создание лида
+        - OP-CRM-07  # Создание сделки
+        - OP-CRM-08  # Изменение стадии
+        - OP-CRM-09  # Изменение суммы сделки
+        - OP-CRM-10  # Назначение ответственного
+        - OP-CRM-11  # Выигрыш сделки
+        - OP-CRM-12  # Проигрыш сделки
+      export:
+        formats: [pdf, excel, print]
+        template: "sales_analytics"
+
+
+# =====================================================================================
+# РОЛЬ: Директор по продажам
+# =====================================================================================
+- role: "директор_по_продажам"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-CRM-02: Реестр сделок
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-02
+      report: "Реестр сделок"
+      description: >
+        Полный список всех сделок за период с указанием стадии,
+        суммы, ожидаемой даты закрытия, ответственного и результата.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр сделок"
+          columns:
+            - { field: opportunity_id, label: "ID сделки", type: number, format: integer }
+            - { field: opportunity_stage_name, label: "Стадия", type: string, widget: status, statusMap: { lead: "info", negotiation: "warning", proposal: "info", closed_won: "success", closed_lost: "danger" } }
+            - { field: amount, label: "Сумма", type: number, format: currency }
+            - { field: expected_close_date, label: "Ожидаемая дата закрытия", type: date }
+            - { field: responsible_employee_id, label: "Ответственный", type: number, format: integer }
+            - { field: is_won, label: "Выиграна", type: boolean }
+      summary:
+        - field: amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-CRM-R02
+      linked_operations:
+        - OP-CRM-07  # Создание сделки
+        - OP-CRM-08  # Изменение стадии
+        - OP-CRM-11  # Выигрыш сделки
+        - OP-CRM-12  # Проигрыш сделки
+      export:
+        formats: [pdf, excel, print]
+        template: "opportunity_register"
+
+    # -------------------------------------------------------------------------------
+    # REP-CRM-05: Прайс-лист
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-05
+      report: "Прайс-лист"
+      description: >
+        Актуальный прайс-лист компании с ценами на товары и услуги.
+        Используется для формирования коммерческих предложений
+        и контроля ценовой политики.
+      parameters:
+        - name: price_list_id
+          label: "ID прайс-листа"
+          type: number
+          required: true
+          description: "Введите ID прайс-листа"
+      sections:
+        - title: "Прайс-лист"
+          columns:
+            - { field: item_type, label: "Тип", type: string, widget: badge, statusMap: { material: "info", service: "warning" } }
+            - { field: material_id, label: "ID товара", type: number, format: integer }
+            - { field: service_name, label: "Наименование услуги", type: string }
+            - { field: unit_id, label: "Ед. измерения", type: string }
+            - { field: price, label: "Цена", type: number, format: currency }
+      query_ref: Q-CRM-R05
+      linked_operations:
+        - OP-CRM-20  # Создание прайс-листа
+        - OP-CRM-21  # Добавление позиции
+        - OP-CRM-22  # Изменение цены
+      export:
+        formats: [pdf, excel, print]
+        template: "price_list"
+
+    # -------------------------------------------------------------------------------
+    # REP-CRM-06: Реестр договоров
+    # -------------------------------------------------------------------------------
+    - report_code: REP-CRM-06
+      report: "Реестр договоров"
+      description: >
+        Полный список всех договоров за период с указанием контрагента,
+        номера, даты, суммы и статуса.
+        Используется для контроля договорной базы и планирования работы.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр договоров"
+          columns:
+            - { field: contract_id, label: "ID договора", type: number, format: integer }
+            - { field: counterparty_id, label: "ID контрагента", type: number, format: integer }
+            - { field: contract_number, label: "№ договора", type: string }
+            - { field: contract_date, label: "Дата", type: date }
+            - { field: contract_amount, label: "Сумма", type: number, format: currency }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { draft: "info", active: "success", completed: "neutral", cancelled: "danger" } }
+      summary:
+        - field: contract_amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-CRM-R06
+      linked_operations:
+        - OP-CRM-23  # Создание договора
+        - OP-CRM-24  # Активация договора
+        - OP-CRM-25  # Изменение статуса
+        - OP-CRM-26  # Завершение договора
+      export:
+        formats: [pdf, excel, print]
+        template: "contract_register"

@@ -9,5 +9,6 @@ class TasksConfig(AppConfig):
     verbose_name = _("Tasks & Workflow")
 
     def ready(self) -> None:
+        pass
         # Регистрируем подписчиков Event Bus
-        from apps.tasks import handlers  # noqa: F401
+        # from apps.tasks import handlers  # noqa: F401 ???

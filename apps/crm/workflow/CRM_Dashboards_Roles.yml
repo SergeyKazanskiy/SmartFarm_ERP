@@ -1,0 +1,530 @@
+# =====================================================================================
+# CRM — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на CRM_Schema.json версии 1.2 (14 таблиц)
+# =====================================================================================
+
+- role: "менеджер_по_продажам"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-CRM-01: Воронка продаж
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CRM-01
+      dashboard: "Воронка продаж"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-pipeline"
+          type: "kpi"
+          title: "Ключевые показатели воронки"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Открытые сделки"
+              subtitle: "активные возможности"
+              dataSource: "Q-CRM-01-01"
+              field: "open_opportunities"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-07]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Сумма открытых сделок"
+              subtitle: "pipeline"
+              dataSource: "Q-CRM-01-02"
+              field: "pipeline_amount"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 1000000
+                  status: "success"
+                  label: "Отличный pipeline"
+                - field: "value"
+                  operator: "between"
+                  value: 500000
+                  value2: 1000000
+                  status: "warning"
+                  label: "Средний pipeline"
+                - field: "value"
+                  operator: "<"
+                  value: 500000
+                  status: "danger"
+                  label: "Требуется пополнение"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-09]
+
+        - id: "sec-analytics-pipeline"
+          type: "analytics"
+          title: "Аналитика воронки"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение сделок по стадиям"
+              subtitle: "текущее состояние"
+              dataSource: "Q-CRM-01-03"
+              chartType: "pie"
+              category: "opportunity_stage_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "opportunity_count"
+                  label: "Количество сделок"
+              grid: { w: 6 }
+              linked_operations: [OP-CRM-08]
+
+    # -------------------------------------------------------------------------------
+    # DASH-CRM-02: Активность менеджеров
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CRM-02
+      dashboard: "Активность менеджеров"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-activity"
+          type: "kpi"
+          title: "Ключевые показатели активности"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Активности за период"
+              subtitle: "всего действий"
+              dataSource: "Q-CRM-02-01"
+              field: "activities_count"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-13, OP-CRM-14]
+
+        - id: "sec-alerts-activity"
+          type: "alerts"
+          title: "Просроченные активности"
+          widgets:
+            - widget_id: W02-02
+              type: Table
+              title: "Просроченные активности"
+              subtitle: "требуют выполнения"
+              dataSource: "Q-CRM-02-02"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "activity_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "activity_type_id"
+                  title: "Тип"
+                  width: 120
+                - field: "lead_id"
+                  title: "ID лида"
+                  width: 100
+                  align: "center"
+                - field: "opportunity_id"
+                  title: "ID сделки"
+                  width: 100
+                  align: "center"
+                - field: "employee_id"
+                  title: "ID сотрудника"
+                  width: 100
+                  align: "center"
+                - field: "activity_date"
+                  title: "Дата"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 12 }
+              linked_operations: [OP-CRM-13, OP-CRM-14]
+
+
+# =====================================================================================
+# РОЛЬ: Директор по продажам
+# =====================================================================================
+- role: "директор_по_продажам"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-CRM-01: Воронка продаж (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CRM-01
+      dashboard: "Воронка продаж"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-pipeline-director"
+          type: "kpi"
+          title: "Ключевые показатели отдела"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Открытые сделки"
+              subtitle: "все активные возможности"
+              dataSource: "Q-CRM-01-01"
+              field: "open_opportunities"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-CRM-07]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Сумма открытых сделок"
+              subtitle: "pipeline"
+              dataSource: "Q-CRM-01-02"
+              field: "pipeline_amount"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 3 }
+              linked_operations: [OP-CRM-09]
+              
+            - widget_id: W01-04
+              type: Indicator
+              title: "Win Rate"
+              subtitle: "% выигранных сделок"
+              dataSource: "Q-CRM-01-04"
+              field: "win_rate_percent"
+              aggregation: "SUM"
+              format: "percent"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 40
+                  status: "success"
+                  label: "Отлично"
+                - field: "value"
+                  operator: "between"
+                  value: 25
+                  value2: 40
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: "<"
+                  value: 25
+                  status: "danger"
+                  label: "Низкая конверсия"
+              grid: { w: 3 }
+              linked_operations: [OP-CRM-11, OP-CRM-12]
+
+        - id: "sec-analytics-pipeline-director"
+          type: "analytics"
+          title: "Аналитика воронки"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение сделок по стадиям"
+              subtitle: "все менеджеры"
+              dataSource: "Q-CRM-01-03"
+              chartType: "pie"
+              category: "opportunity_stage_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "opportunity_count"
+                  label: "Количество сделок"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-08]
+              
+            - widget_id: W01-05
+              type: Chart
+              title: "Динамика выигранных/проигранных сделок"
+              subtitle: "по месяцам"
+              dataSource: "Q-CRM-01-05"
+              chartType: "bar"
+              category: "month"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "won_count"
+                  label: "Выиграно"
+                  color: "#34d399"
+                - field: "lost_count"
+                  label: "Проиграно"
+                  color: "#f87171"
+              grid: { w: 8 }
+              linked_operations: [OP-CRM-11, OP-CRM-12]
+
+    # -------------------------------------------------------------------------------
+    # DASH-CRM-02: Активность менеджеров (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CRM-02
+      dashboard: "Активность менеджеров"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-activity-director"
+          type: "analytics"
+          title: "Аналитика активности"
+          widgets:
+            - widget_id: W02-03
+              type: Chart
+              title: "Количество активностей по менеджерам"
+              subtitle: "за период"
+              dataSource: "Q-CRM-02-03"
+              chartType: "bar"
+              category: "employee_id"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "activities_count"
+                  label: "Количество активностей"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-CRM-13, OP-CRM-14]
+
+        - id: "sec-alerts-activity-director"
+          type: "alerts"
+          title: "Просроченные активности"
+          widgets:
+            - widget_id: W02-02
+              type: Table
+              title: "Просроченные активности"
+              subtitle: "по всем менеджерам"
+              dataSource: "Q-CRM-02-02"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "activity_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "activity_type_id"
+                  title: "Тип"
+                  width: 120
+                - field: "lead_id"
+                  title: "ID лида"
+                  width: 100
+                  align: "center"
+                - field: "opportunity_id"
+                  title: "ID сделки"
+                  width: 100
+                  align: "center"
+                - field: "employee_id"
+                  title: "ID сотрудника"
+                  width: 100
+                  align: "center"
+                - field: "activity_date"
+                  title: "Дата"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 6 }
+              linked_operations: [OP-CRM-13, OP-CRM-14]
+
+    # -------------------------------------------------------------------------------
+    # DASH-CRM-03: Договоры
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CRM-03
+      dashboard: "Договоры"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-contracts"
+          type: "kpi"
+          title: "Ключевые показатели договоров"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Активные договоры"
+              subtitle: "действующие контракты"
+              dataSource: "Q-CRM-03-01"
+              field: "active_contracts"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-24]
+              
+            - widget_id: W03-02
+              type: Indicator
+              title: "Сумма активных договоров"
+              subtitle: "общая сумма контрактов"
+              dataSource: "Q-CRM-03-02"
+              field: "active_contracts_amount"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-23, OP-CRM-24]
+
+        - id: "sec-alerts-contracts"
+          type: "alerts"
+          title: "Договоры, ожидающие активации"
+          widgets:
+            - widget_id: W03-03
+              type: Table
+              title: "Договоры, ожидающие активации"
+              subtitle: "draft статус"
+              dataSource: "Q-CRM-03-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "contract_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "counterparty_id"
+                  title: "ID контрагента"
+                  width: 120
+                  align: "center"
+                - field: "contract_number"
+                  title: "№ договора"
+                  width: 140
+                  sortable: true
+                - field: "contract_date"
+                  title: "Дата"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "contract_amount"
+                  title: "Сумма"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+              grid: { w: 12 }
+              linked_operations: [OP-CRM-23]
+
+    # -------------------------------------------------------------------------------
+    # DASH-CRM-04: Эффективность продаж (инвестиционная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-CRM-04
+      dashboard: "Эффективность продаж"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-efficiency"
+          type: "kpi"
+          title: "Ключевые показатели эффективности"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Средний цикл сделки"
+              subtitle: "от создания до закрытия"
+              dataSource: "Q-CRM-04-01"
+              field: "avg_cycle_days"
+              aggregation: "SUM"
+              format: "number"
+              suffix: " дней"
+              higherIsBetter: false
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 30
+                  status: "success"
+                  label: "Быстро"
+                - field: "value"
+                  operator: "between"
+                  value: 30
+                  value2: 60
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: ">"
+                  value: 60
+                  status: "danger"
+                  label: "Долго"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-07, OP-CRM-11, OP-CRM-12]
+              
+            - widget_id: W04-02
+              type: Indicator
+              title: "Средняя сумма выигранной сделки"
+              subtitle: "средний чек"
+              dataSource: "Q-CRM-04-02"
+              field: "avg_won_amount"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-CRM-09, OP-CRM-11]
+
+        - id: "sec-analytics-efficiency"
+          type: "analytics"
+          title: "Аналитика эффективности"
+          widgets:
+            - widget_id: W04-03
+              type: Chart
+              title: "ТОП-5 менеджеров по выручке"
+              subtitle: "за период"
+              dataSource: "Q-CRM-04-03"
+              chartType: "bar"
+              category: "personnel_number"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_revenue"
+                  label: "Выручка"
+                  color: "#34d399"
+                - field: "deals_won"
+                  label: "Сделок выиграно"
+                  color: "#60a5fa"
+                  yAxisId: "right"
+              rightAxis:
+                format: "number"
+              grid: { w: 6 }
+              linked_operations: [OP-CRM-09, OP-CRM-10, OP-CRM-11]
+              
+            - widget_id: W04-05
+              type: Chart
+              title: "Динамика Win Rate"
+              subtitle: "по месяцам"
+              dataSource: "Q-CRM-04-05"
+              chartType: "line"
+              category: "month"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "percent"
+              series:
+                - field: "win_rate"
+                  label: "Win Rate %"
+                  color: "#a78bfa"
+                - field: "won_count"
+                  label: "Выиграно"
+                  color: "#34d399"
+                  yAxisId: "right"
+                - field: "lost_count"
+                  label: "Проиграно"
+                  color: "#f87171"
+                  yAxisId: "right"
+              rightAxis:
+                format: "number"
+              grid: { w: 6 }
+              linked_operations: [OP-CRM-11, OP-CRM-12]
+
+        - id: "sec-analytics-lost-reasons"
+          type: "analytics"
+          title: "Причины проигрыша"
+          widgets:
+            - widget_id: W04-04
+              type: Chart
+              title: "Распределение причин проигрыша сделок"
+              subtitle: "анализ потерь"
+              dataSource: "Q-CRM-04-04"
+              chartType: "pie"
+              category: "lost_reason"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "lost_count"
+                  label: "Количество"
+              grid: { w: 6 }
+              linked_operations: [OP-CRM-12]

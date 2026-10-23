@@ -84,3 +84,46 @@ class CPEvents:
     BLACKLIST_REMOVE = "CP.blacklist.remove"
     ATTACHMENT_CREATE = "CP.attachment.create"
     ATTACHMENT_DELETE = "CP.attachment.delete"
+
+class CRMEvents:
+    """События CRM-модуля (из CRM_Business_Roles.yml)."""
+    # Лиды
+    LEAD_CREATE = "CRM.lead.create"
+    LEAD_ASSIGN = "CRM.lead.assign"
+    LEAD_UPDATE_STATUS = "CRM.lead.updateStatus"
+    LEAD_LINK_COUNTERPARTY = "CRM.lead.linkCounterparty"
+
+    # Контакты
+    CONTACT_CREATE = "CRM.contact.create"
+    CONTACT_UPDATE = "CRM.contact.update"
+
+    # Сделки
+    OPPORTUNITY_CREATE = "CRM.opportunity.create"
+    OPPORTUNITY_UPDATE_STAGE = "CRM.opportunity.updateStage"
+    OPPORTUNITY_UPDATE_AMOUNT = "CRM.opportunity.updateAmount"
+    OPPORTUNITY_ASSIGN = "CRM.opportunity.assign"
+    OPPORTUNITY_WIN = "CRM.opportunity.win"
+    OPPORTUNITY_LOSE = "CRM.opportunity.lose"
+
+    # Активности
+    ACTIVITY_CREATE = "CRM.activity.create"
+    ACTIVITY_COMPLETE = "CRM.activity.complete"
+
+    # Коммерческие предложения
+    COMMERCIAL_OFFER_CREATE = "CRM.commercialOffer.create"
+    COMMERCIAL_OFFER_LINE_CREATE = "CRM.commercialOfferLine.create"
+    COMMERCIAL_OFFER_SEND = "CRM.commercialOffer.send"
+    COMMERCIAL_OFFER_ACCEPT = "CRM.commercialOffer.accept"
+    COMMERCIAL_OFFER_DECLINE = "CRM.commercialOffer.decline"
+
+    # Прайс-листы
+    PRICE_LIST_CREATE = "CRM.priceList.create"
+    PRICE_LIST_ITEM_CREATE = "CRM.priceListItem.create"
+    PRICE_LIST_ITEM_UPDATE_PRICE = "CRM.priceListItem.updatePrice"
+
+    # Договоры
+    CONTRACT_CREATE = "CRM.contract.create"
+    CONTRACT_ACTIVATE = "CRM.contract.activate"
+    CONTRACT_COMPLETE = "CRM.contract.complete"
+    CONTRACT_TERMINATE = "CRM.contract.terminate"
+    CONTRACT_UPDATE_COVERED_OBJECTS = "CRM.contract.updateCoveredObjects"

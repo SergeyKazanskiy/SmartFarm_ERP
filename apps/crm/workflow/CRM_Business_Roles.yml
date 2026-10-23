@@ -1,0 +1,595 @@
+# =====================================================================================
+# CRM — каталог форм для бизнес-операций
+# Источник: CRM_Business_Queries.sql (27 операций OP-CRM-01…27, схема v1.2).
+# Структура аналогична Production/Construction/WMS/HR_Business_Roles.yml.
+# =====================================================================================
+
+process: CRM-01
+process_name: "Лиды и контакты"
+role: "sales_manager"
+operations:
+
+  - op_code: OP-CRM-01
+    name: "Создание лида"
+    table: crm_lead
+    type: insert
+    event: "CRM.lead.create"
+    button: "Создать лид"
+    fields:
+      - field: lead_source_id
+        label: "Источник лида"
+        type: select
+        required: false
+        source: { table: crm_lead_source, value_field: lead_source_id, label_field: lead_source_name }
+      - field: lead_status_id
+        label: "Статус"
+        type: select
+        required: false
+        source: { table: crm_lead_status, value_field: lead_status_id, label_field: lead_status_name }
+      - field: responsible_employee_id
+        label: "Ответственный менеджер"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-CRM-02
+    name: "Назначение ответственного за лид"
+    table: crm_lead
+    type: update
+    event: "CRM.lead.assign"
+    button: "Назначить ответственного"
+    fields:
+      - field: lead_id
+        label: "Лид"
+        type: select
+        required: true
+        source: { table: crm_lead, value_field: lead_id, label_field: lead_id }
+      - field: responsible_employee_id
+        label: "Ответственный менеджер"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-CRM-03
+    name: "Изменение статуса лида"
+    table: crm_lead
+    type: update
+    event: "CRM.lead.updateStatus"
+    button: "Сохранить статус"
+    fields:
+      - field: lead_id
+        label: "Лид"
+        type: select
+        required: true
+        source: { table: crm_lead, value_field: lead_id, label_field: lead_id }
+      - field: lead_status_id
+        label: "Статус"
+        type: select
+        required: true
+        source: { table: crm_lead_status, value_field: lead_status_id, label_field: lead_status_name }
+
+  - op_code: OP-CRM-04
+    name: "Идентификация контрагента по лиду"
+    table: crm_lead
+    type: update
+    event: "CRM.lead.linkCounterparty"
+    button: "Связать с контрагентом"
+    fields:
+      - field: lead_id
+        label: "Лид"
+        type: select
+        required: true
+        source: { table: crm_lead, value_field: lead_id, label_field: lead_id }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: dict_counterparty, value_field: counterparty_id, label_field: counterparty_name }
+
+  - op_code: OP-CRM-05
+    name: "Создание контактного лица"
+    table: crm_contact
+    type: insert
+    event: "CRM.contact.create"
+    button: "Создать контакт"
+    fields:
+      - field: natural_person_id
+        label: "Физическое лицо"
+        type: select
+        required: false
+        source: { table: dict_natural_person, value_field: natural_person_id, label_field: last_name }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: false
+        source: { table: dict_counterparty, value_field: counterparty_id, label_field: counterparty_name }
+      - field: position
+        label: "Должность"
+        type: text
+        required: false
+      - field: phone
+        label: "Телефон"
+        type: text
+        required: false
+      - field: email
+        label: "Электронная почта"
+        type: text
+        required: false
+
+  - op_code: OP-CRM-06
+    name: "Изменение контактного лица"
+    table: crm_contact
+    type: update
+    event: "CRM.contact.update"
+    button: "Сохранить"
+    fields:
+      - field: contact_id
+        label: "Контактное лицо"
+        type: select
+        required: true
+        source: { table: crm_contact, value_field: contact_id, label_field: contact_id }
+      - field: position
+        label: "Должность"
+        type: text
+        required: false
+      - field: phone
+        label: "Телефон"
+        type: text
+        required: false
+      - field: email
+        label: "Электронная почта"
+        type: text
+        required: false
+
+---
+process: CRM-02
+process_name: "Сделки"
+role: "sales_manager"
+operations:
+
+  - op_code: OP-CRM-07
+    name: "Создание сделки из лида"
+    table: crm_opportunity
+    type: insert
+    event: "CRM.opportunity.create"
+    button: "Создать сделку"
+    fields:
+      - field: lead_id
+        label: "Лид"
+        type: select
+        required: false
+        source: { table: crm_lead, value_field: lead_id, label_field: lead_id }
+      - field: opportunity_stage_id
+        label: "Стадия"
+        type: select
+        required: false
+        source: { table: crm_opportunity_stage, value_field: opportunity_stage_id, label_field: opportunity_stage_name }
+      - field: responsible_employee_id
+        label: "Ответственный менеджер"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: amount
+        label: "Ожидаемая сумма сделки"
+        type: number
+        required: false
+      - field: expected_close_date
+        label: "Ожидаемая дата закрытия"
+        type: date
+        required: false
+
+  - op_code: OP-CRM-08
+    name: "Изменение стадии сделки"
+    table: crm_opportunity
+    type: update
+    event: "CRM.opportunity.updateStage"
+    button: "Сохранить стадию"
+    precondition: "is_won IS NULL"
+    fields:
+      - field: opportunity_id
+        label: "Сделка"
+        type: select
+        required: true
+        source: { table: crm_opportunity, value_field: opportunity_id, label_field: opportunity_id }
+      - field: opportunity_stage_id
+        label: "Стадия"
+        type: select
+        required: true
+        source: { table: crm_opportunity_stage, value_field: opportunity_stage_id, label_field: opportunity_stage_name }
+
+  - op_code: OP-CRM-09
+    name: "Изменение суммы и даты закрытия сделки"
+    table: crm_opportunity
+    type: update
+    event: "CRM.opportunity.updateAmount"
+    button: "Сохранить"
+    precondition: "is_won IS NULL"
+    fields:
+      - field: opportunity_id
+        label: "Сделка"
+        type: select
+        required: true
+        source: { table: crm_opportunity, value_field: opportunity_id, label_field: opportunity_id }
+      - field: amount
+        label: "Сумма сделки"
+        type: number
+        required: true
+      - field: expected_close_date
+        label: "Ожидаемая дата закрытия"
+        type: date
+        required: false
+
+  - op_code: OP-CRM-10
+    name: "Назначение ответственного за сделку"
+    table: crm_opportunity
+    type: update
+    event: "CRM.opportunity.assign"
+    button: "Назначить ответственного"
+    fields:
+      - field: opportunity_id
+        label: "Сделка"
+        type: select
+        required: true
+        source: { table: crm_opportunity, value_field: opportunity_id, label_field: opportunity_id }
+      - field: responsible_employee_id
+        label: "Ответственный менеджер"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-CRM-11
+    name: "Закрытие сделки как выигранной"
+    table: crm_opportunity
+    type: update
+    event: "CRM.opportunity.win"
+    button: "Сделка выиграна"
+    precondition: "is_won IS NULL"
+    fields:
+      - field: opportunity_id
+        label: "Сделка"
+        type: select
+        required: true
+        source: { table: crm_opportunity, value_field: opportunity_id, label_field: opportunity_id }
+
+  - op_code: OP-CRM-12
+    name: "Закрытие сделки как проигранной"
+    table: crm_opportunity
+    type: update
+    event: "CRM.opportunity.lose"
+    button: "Сделка проиграна"
+    precondition: "is_won IS NULL"
+    fields:
+      - field: opportunity_id
+        label: "Сделка"
+        type: select
+        required: true
+        source: { table: crm_opportunity, value_field: opportunity_id, label_field: opportunity_id }
+      - field: lost_reason
+        label: "Причина проигрыша"
+        type: text
+        required: true
+
+---
+process: CRM-03
+process_name: "Активности"
+role: "sales_manager"
+operations:
+
+  - op_code: OP-CRM-13
+    name: "Планирование активности"
+    table: crm_activity
+    type: insert
+    event: "CRM.activity.create"
+    button: "Запланировать активность"
+    fields:
+      - field: activity_type_id
+        label: "Тип активности"
+        type: select
+        required: false
+        source: { table: crm_activity_type, value_field: activity_type_id, label_field: activity_type_name }
+      - field: lead_id
+        label: "Лид"
+        type: select
+        required: false
+        source: { table: crm_lead, value_field: lead_id, label_field: lead_id }
+      - field: opportunity_id
+        label: "Сделка"
+        type: select
+        required: false
+        source: { table: crm_opportunity, value_field: opportunity_id, label_field: opportunity_id }
+      - field: employee_id
+        label: "Исполнитель"
+        type: hidden
+        source: current_user
+      - field: activity_date
+        label: "Дата и время"
+        type: datetime
+        required: true
+
+  - op_code: OP-CRM-14
+    name: "Завершение активности с результатом"
+    table: crm_activity
+    type: update
+    event: "CRM.activity.complete"
+    button: "Завершить активность"
+    precondition: "is_completed = 0"
+    fields:
+      - field: activity_id
+        label: "Активность"
+        type: select
+        required: true
+        source: { table: crm_activity, value_field: activity_id, label_field: activity_id }
+      - field: result
+        label: "Результат"
+        type: textarea
+        required: true
+
+---
+process: CRM-04
+process_name: "Коммерческие предложения"
+role: "sales_manager"
+statuses: [draft, sent, accepted, declined]
+operations:
+
+  - op_code: OP-CRM-15
+    name: "Создание коммерческого предложения"
+    table: crm_commercial_offer
+    type: insert
+    event: "CRM.commercialOffer.create"
+    button: "Создать предложение"
+    fields:
+      - field: opportunity_id
+        label: "Сделка"
+        type: select
+        required: true
+        source: { table: crm_opportunity, value_field: opportunity_id, label_field: opportunity_id }
+      - field: offer_date
+        label: "Дата предложения"
+        type: date
+        required: true
+
+  - op_code: OP-CRM-16
+    name: "Добавление позиции предложения"
+    table: crm_commercial_offer_line
+    type: insert
+    event: "CRM.commercialOfferLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: offer_id
+        label: "Предложение"
+        type: select
+        required: true
+        source: { table: crm_commercial_offer, value_field: offer_id, label_field: offer_id }
+      - field: price_list_item_id
+        label: "Позиция прайс-листа"
+        type: select
+        required: false
+        source: { table: crm_price_list_item, value_field: price_list_item_id, label_field: price_list_item_id }
+      - field: description
+        label: "Описание позиции"
+        type: text
+        required: true
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_price
+        label: "Цена за единицу"
+        type: number
+        required: true
+
+  - op_code: OP-CRM-17
+    name: "Отправка предложения клиенту"
+    table: crm_commercial_offer
+    type: update
+    event: "CRM.commercialOffer.send"
+    button: "Отправить клиенту"
+    precondition: "status_id = draft"
+    note: "total_amount пересчитывается в приложении как SUM(line_amount) по позициям."
+    fields:
+      - field: offer_id
+        label: "Предложение"
+        type: select
+        required: true
+        source: { table: crm_commercial_offer, value_field: offer_id, label_field: offer_id }
+
+  - op_code: OP-CRM-18
+    name: "Принятие предложения клиентом"
+    table: crm_commercial_offer
+    type: update
+    event: "CRM.commercialOffer.accept"
+    button: "Отметить как принятое"
+    precondition: "status_id = sent"
+    fields:
+      - field: offer_id
+        label: "Предложение"
+        type: select
+        required: true
+        source: { table: crm_commercial_offer, value_field: offer_id, label_field: offer_id }
+
+  - op_code: OP-CRM-19
+    name: "Отклонение предложения"
+    table: crm_commercial_offer
+    type: update
+    event: "CRM.commercialOffer.decline"
+    button: "Отметить как отклонённое"
+    precondition: "status_id = sent"
+    fields:
+      - field: offer_id
+        label: "Предложение"
+        type: select
+        required: true
+        source: { table: crm_commercial_offer, value_field: offer_id, label_field: offer_id }
+
+---
+process: CRM-05
+process_name: "Прайс-листы"
+role: "sales_director"
+operations:
+
+  - op_code: OP-CRM-20
+    name: "Создание прайс-листа"
+    table: crm_price_list
+    type: insert
+    event: "CRM.priceList.create"
+    button: "Создать прайс-лист"
+    fields:
+      - field: price_list_name
+        label: "Название прайс-листа"
+        type: text
+        required: true
+      - field: valid_from
+        label: "Действует с"
+        type: date
+        required: false
+
+  - op_code: OP-CRM-21
+    name: "Добавление позиции прайс-листа"
+    table: crm_price_list_item
+    type: insert
+    event: "CRM.priceListItem.create"
+    button: "Добавить позицию"
+    fields:
+      - field: price_list_id
+        label: "Прайс-лист"
+        type: select
+        required: true
+        source: { table: crm_price_list, value_field: price_list_id, label_field: price_list_name }
+      - field: item_type
+        label: "Тип позиции"
+        type: select
+        required: true
+        options: [material, service]
+      - field: material_id
+        label: "Материал/товар (если item_type=material)"
+        type: select
+        required: false
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: service_name
+        label: "Название услуги (если item_type=service)"
+        type: text
+        required: false
+      - field: unit_id
+        label: "Единица измерения"
+        type: select
+        required: false
+        source: { table: dict_unit, value_field: unit_id, label_field: unit_name }
+      - field: price
+        label: "Цена за единицу"
+        type: number
+        required: true
+
+  - op_code: OP-CRM-22
+    name: "Изменение цены позиции прайс-листа"
+    table: crm_price_list_item
+    type: update
+    event: "CRM.priceListItem.updatePrice"
+    button: "Сохранить цену"
+    fields:
+      - field: price_list_item_id
+        label: "Позиция прайс-листа"
+        type: select
+        required: true
+        source: { table: crm_price_list_item, value_field: price_list_item_id, label_field: price_list_item_id }
+      - field: price
+        label: "Новая цена"
+        type: number
+        required: true
+
+---
+process: CRM-06
+process_name: "Договоры"
+role: "sales_director"
+statuses: [draft, active, completed, terminated]
+operations:
+
+  - op_code: OP-CRM-23
+    name: "Создание договора"
+    table: crm_contract
+    type: insert
+    event: "CRM.contract.create"
+    button: "Создать договор"
+    fields:
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: dict_counterparty, value_field: counterparty_id, label_field: counterparty_name }
+      - field: contract_number
+        label: "Номер договора"
+        type: text
+        required: false
+      - field: contract_date
+        label: "Дата заключения"
+        type: date
+        required: true
+      - field: contract_amount
+        label: "Сумма договора"
+        type: number
+        required: false
+
+  - op_code: OP-CRM-24
+    name: "Активация договора"
+    table: crm_contract
+    type: update
+    event: "CRM.contract.activate"
+    button: "Активировать договор"
+    precondition: "status_id = draft"
+    fields:
+      - field: contract_id
+        label: "Договор"
+        type: select
+        required: true
+        source: { table: crm_contract, value_field: contract_id, label_field: contract_number }
+
+  - op_code: OP-CRM-25
+    name: "Завершение договора"
+    table: crm_contract
+    type: update
+    event: "CRM.contract.complete"
+    button: "Завершить договор"
+    precondition: "status_id = active"
+    fields:
+      - field: contract_id
+        label: "Договор"
+        type: select
+        required: true
+        source: { table: crm_contract, value_field: contract_id, label_field: contract_number }
+
+  - op_code: OP-CRM-26
+    name: "Расторжение договора"
+    table: crm_contract
+    type: update
+    event: "CRM.contract.terminate"
+    button: "Расторгнуть договор"
+    precondition: "status_id = active"
+    fields:
+      - field: contract_id
+        label: "Договор"
+        type: select
+        required: true
+        source: { table: crm_contract, value_field: contract_id, label_field: contract_number }
+
+  - op_code: OP-CRM-27
+    name: "Изменение состава объектов, покрываемых договором"
+    table: crm_contract
+    type: update
+    event: "CRM.contract.updateCoveredObjects"
+    button: "Сохранить объекты"
+    fields:
+      - field: contract_id
+        label: "Договор"
+        type: select
+        required: true
+        source: { table: crm_contract, value_field: contract_id, label_field: contract_number }
+      - field: covered_objects_json
+        label: "Объекты, покрываемые договором"
+        type: repeater
+        required: false
+        fields:
+          - field: object_type
+            label: "Тип объекта"
+            type: text
+          - field: object_id
+            label: "Идентификатор объекта"
+            type: text

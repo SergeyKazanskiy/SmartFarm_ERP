@@ -1,0 +1,28 @@
+# 1. Убедиться, что CP уже загружен (нужен для маппинга CP-005)
+python manage.py demo_cp --company=1
+python manage.py process_events --once
+
+# 2. Загрузка workflow CRM
+python manage.py load_workflow --company=1 --module=CRM
+# Ожидаете: created=17, updated=0, transitions=? (пока не реализованы fully)
+
+# 3. Загрузка demo-данных CRM
+python manage.py demo_crm --company=1 \
+  --file=apps/crm/workflow/CRM_test_data.json
+# Ожидаете: lead_source=3, lead_status=4, opportunity_stage=4,
+#           activity_type=3, contact=2, lead=3, opportunity=2,
+#           activity=2, price_list=1, price_list_item=1,
+#           offer=1, offer_line=1, contract=1
+
+# 4. Обработка событий
+python manage.py process_events --once
+
+# 5. Проверить задачи
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+for t in TaskTask.objects.filter(definition__module='CRM')[:20]:
+    print(t.id, t.definition.code, t.assigned_role, t.status)
+"
+
+# 6. Тесты
+pytest apps/crm/tests/ -v

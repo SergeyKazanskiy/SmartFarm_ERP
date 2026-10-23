@@ -1,0 +1,237 @@
+{
+    "module": "CRM",
+    "description": "Тестовые данные для модуля CRM",
+    "tables": {
+      "crm_lead_source": [
+        {
+          "lead_source_id": "LS-001",
+          "lead_source_name": "Сайт компании",
+          "company_id": "COMP-001"
+        },
+        {
+          "lead_source_id": "LS-002",
+          "lead_source_name": "Телефонный звонок",
+          "company_id": "COMP-001"
+        },
+        {
+          "lead_source_id": "LS-003",
+          "lead_source_name": "Рекомендация",
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_lead_status": [
+        {
+          "lead_status_id": "LSTAT-001",
+          "lead_status_name": "Новый",
+          "company_id": "COMP-001"
+        },
+        {
+          "lead_status_id": "LSTAT-002",
+          "lead_status_name": "В обработке",
+          "company_id": "COMP-001"
+        },
+        {
+          "lead_status_id": "LSTAT-003",
+          "lead_status_name": "Квалифицирован",
+          "company_id": "COMP-001"
+        },
+        {
+          "lead_status_id": "LSTAT-004",
+          "lead_status_name": "Отказ",
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_lead": [
+        {
+          "lead_id": "LEAD-001",
+          "lead_source_id": "LS-001",
+          "lead_status_id": "LSTAT-003",
+          "counterparty_id": "CP-005",
+          "responsible_employee_id": "EMP-010",
+          "created_at": "2026-06-15 10:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "lead_id": "LEAD-002",
+          "lead_source_id": "LS-002",
+          "lead_status_id": "LSTAT-002",
+          "counterparty_id": "CP-006",
+          "responsible_employee_id": "EMP-010",
+          "created_at": "2026-07-01 14:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "lead_id": "LEAD-003",
+          "lead_source_id": "LS-003",
+          "lead_status_id": "LSTAT-001",
+          "counterparty_id": null,
+          "responsible_employee_id": "EMP-010",
+          "created_at": "2026-07-10 09:00:00",
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_contact": [
+        {
+          "contact_id": "CONT-001",
+          "natural_person_id": "NP-001",
+          "counterparty_id": "CP-005",
+          "position": "Директор",
+          "phone": "+380501234567",
+          "email": "director@company1.com",
+          "company_id": "COMP-001"
+        },
+        {
+          "contact_id": "CONT-002",
+          "natural_person_id": "NP-002",
+          "counterparty_id": "CP-006",
+          "position": "Менеджер по закупкам",
+          "phone": "+380501234568",
+          "email": "manager@company2.com",
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_opportunity_stage": [
+        {
+          "opportunity_stage_id": "OST-001",
+          "opportunity_stage_name": "Первичный контакт",
+          "company_id": "COMP-001"
+        },
+        {
+          "opportunity_stage_id": "OST-002",
+          "opportunity_stage_name": "Переговоры",
+          "company_id": "COMP-001"
+        },
+        {
+          "opportunity_stage_id": "OST-003",
+          "opportunity_stage_name": "Коммерческое предложение",
+          "company_id": "COMP-001"
+        },
+        {
+          "opportunity_stage_id": "OST-004",
+          "opportunity_stage_name": "Закрыто",
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_opportunity": [
+        {
+          "opportunity_id": "OPP-001",
+          "lead_id": "LEAD-001",
+          "opportunity_stage_id": "OST-003",
+          "responsible_employee_id": "EMP-010",
+          "amount": 275000.00,
+          "expected_close_date": "2026-08-01",
+          "is_won": null,
+          "lost_reason": null,
+          "company_id": "COMP-001"
+        },
+        {
+          "opportunity_id": "OPP-002",
+          "lead_id": "LEAD-002",
+          "opportunity_stage_id": "OST-002",
+          "responsible_employee_id": "EMP-010",
+          "amount": 55000.00,
+          "expected_close_date": "2026-08-15",
+          "is_won": null,
+          "lost_reason": null,
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_activity_type": [
+        {
+          "activity_type_id": "AT-001",
+          "activity_type_name": "Звонок",
+          "company_id": "COMP-001"
+        },
+        {
+          "activity_type_id": "AT-002",
+          "activity_type_name": "Встреча",
+          "company_id": "COMP-001"
+        },
+        {
+          "activity_type_id": "AT-003",
+          "activity_type_name": "Письмо",
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_activity": [
+        {
+          "activity_id": "ACT-001",
+          "activity_type_id": "AT-001",
+          "lead_id": "LEAD-001",
+          "opportunity_id": null,
+          "employee_id": "EMP-010",
+          "activity_date": "2026-06-16 10:00:00",
+          "is_completed": 1,
+          "result": "Клиент заинтересован",
+          "company_id": "COMP-001"
+        },
+        {
+          "activity_id": "ACT-002",
+          "activity_type_id": "AT-002",
+          "lead_id": "LEAD-002",
+          "opportunity_id": null,
+          "employee_id": "EMP-010",
+          "activity_date": "2026-07-02 14:00:00",
+          "is_completed": 0,
+          "result": null,
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_price_list": [
+        {
+          "price_list_id": "PL-001",
+          "price_list_name": "Стандартный прайс-лист CRM",
+          "valid_from": "2026-01-01",
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_price_list_item": [
+        {
+          "price_list_item_id": "PLI-001",
+          "price_list_id": "PL-001",
+          "item_type": "material",
+          "material_id": "MAT-006",
+          "service_name": null,
+          "unit_id": "UNIT-001",
+          "price": 5500.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_commercial_offer": [
+        {
+          "offer_id": "OFFER-001",
+          "opportunity_id": "OPP-001",
+          "offer_date": "2026-07-05",
+          "status_id": "sent",
+          "total_amount": 275000.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_commercial_offer_line": [
+        {
+          "offer_line_id": "OFFL-001",
+          "offer_id": "OFFER-001",
+          "price_list_item_id": "PLI-001",
+          "description": "Телевизор SmartTV X-100 55\"",
+          "quantity": 50,
+          "unit_price": 5500.00,
+          "line_amount": 275000.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "crm_contract": [
+        {
+          "contract_id": "CONTR-001",
+          "counterparty_id": "CP-005",
+          "contract_number": "CONTR-2026-001",
+          "contract_date": "2026-07-01",
+          "contract_amount": 275000.00,
+          "status_id": "active",
+          "covered_objects_json": [
+            {"object_type": "sales_order", "object_id": "SO-001"}
+          ],
+          "company_id": "COMP-001"
+        }
+      ]
+    }
+  }

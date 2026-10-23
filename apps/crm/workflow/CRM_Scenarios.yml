@@ -1,0 +1,162 @@
+# ==============================================================================
+# МОДУЛЬ: УПРАВЛЕНИЕ ВЗАИМООТНОШЕНИЯМИ С КЛИЕНТАМИ (CRM)
+# ==============================================================================
+
+module_info:
+  id: "CRM"
+  name: "Управление взаимоотношениями с клиентами"
+  version: "1.0"
+  description: "Реестр сквозных бизнес-сценариев для модуля CRM (Customer Relationship Management)"
+  related_modules:
+    - "SALES"
+    - "FIN"
+    - "PROD"
+    - "WMS"
+
+scenarios:
+  - id: "SCENARIO-CRM-01"
+    title: "Лидогенерация, квалификация и конвертация в сделку (Lead-to-Opportunity)"
+    description: "Сквозной процесс обработки входящего обращения: от первично созданного лида и планирования активностей до квалификации, связывания с контрагентом и создания сделки."
+    module: "CRM"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "sales_manager"
+    steps:
+      - step_id: "CRM-01-01"
+        lane: "CRM"
+        task: "Регистрация и первичная обработка лида"
+        process_ref: "[CRM-01, TASK-CRM-01-01]"
+        operation_ref: "OP-CRM-01"
+        description: "Фиксация нового лида из внешнего источника или вручную менеджеру по продажам[cite: 3]."
+        depends_on: []
+        trigger: "Входящее обращение / Веб-форма / Ручной ввод"
+        system_action: "crm_lead.status_id = 'new'"
+        ui_notification: "Зарегистрирован новый лид №... Запланируйте первичную активность[cite: 3]."
+
+      - step_id: "CRM-01-02"
+        lane: "CRM"
+        task: "Планирование и проведение первичной активности (Звонок/Встреча)"
+        process_ref: "[CRM-03, TASK-CRM-03-01]"
+        operation_ref: "OP-CRM-13"
+        description: "Планирование контакта с потенциальным клиентом для выявления потребностей[cite: 3]."
+        depends_on:
+          - "CRM-01-01"
+        system_action: "crm_activity.status_id = 'scheduled'"
+        ui_notification: "Запланирована активность по лиду[cite: 3]."
+
+      - step_id: "CRM-01-03"
+        lane: "CRM"
+        task: "Завершение активности и фиксация результатов"
+        process_ref: "[CRM-03, TASK-CRM-03-02]"
+        operation_ref: "OP-CRM-14"
+        description: "Ввод итогов разговора/встречи и оценка потенциала клиента[cite: 3]."
+        depends_on:
+          - "CRM-01-02"
+        system_action: "crm_activity.status_id = 'completed'"
+        ui_notification: "Активность завершена, результаты сохранены[cite: 3]."
+
+      - step_id: "CRM-01-04"
+        lane: "CRM"
+        task: "Идентификация контрагента, ведение контактных лиц и квалификация"
+        process_ref: "[CRM-01, TASK-CRM-01-02]"
+        operation_ref: "OP-CRM-04"
+        description: "Проверка на дубли, связывание с существующей карточкой контрагента или создание нового, внесение контактов[cite: 3]."
+        depends_on:
+          - "CRM-01-03"
+        system_action: "crm_lead.status_id = 'qualified', crm_counterparty.id = linked_id"
+        ui_notification: "Лид успешно квалифицирован[cite: 3]."
+
+      - step_id: "CRM-01-05"
+        lane: "CRM"
+        task: "Конвертация лида и создание сделки"
+        process_ref: "[CRM-02, TASK-CRM-02-01]"
+        operation_ref: "OP-CRM-07"
+        description: "Автоматическое формирование новой сделки в воронке продаж на основе квалифицированного лида[cite: 3]."
+        depends_on:
+          - "CRM-01-04"
+        system_action: "crm_deal.status_id = 'created', crm_lead.status_id = 'converted'"
+        ui_notification: "Сделка №... успешно создана из лида[cite: 3]."
+
+      - step_id: "CRM-01-END"
+        lane: "CRM"
+        task: "Завершение цикла работы с лидом"
+        description: "Лид переведен в сделку и передан на этап ведения воронки[cite: 3]."
+        depends_on:
+          - "CRM-01-05"
+        system_action: "core_audit_log"
+        ui_notification: "Процесс обработка лида завершен[cite: 3]."
+
+  - id: "SCENARIO-CRM-02"
+    title: "Ведение сделки, коммерческое предложение и заключение договора (Opportunity-to-Contract)"
+    description: "Проведение сделки по стадиям воронки, подготовка и согласование коммерческого предложения, выигрыш сделки и официальное оформление договора[cite: 3]."
+    module: "CRM"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "sales_manager"
+      - "sales_director"
+    steps:
+      - step_id: "CRM-02-01"
+        lane: "CRM"
+        task: "Проработка сделки и продвижение по стадиям воронки"
+        process_ref: "[CRM-02, TASK-CRM-02-02]"
+        operation_ref: "OP-CRM-08"
+        description: "Актуализация суммы, ожидаемой даты закрытия и переведение сделки на этап подготовки предложение[cite: 3]."
+        depends_on: []
+        trigger: "Наличие активной сделки в воронке[cite: 3]"
+        system_action: "crm_deal.stage_id = 'proposal_preparation'"
+        ui_notification: "Сделка переведена на стадию подготовки КП[cite: 3]."
+
+      - step_id: "CRM-02-02"
+        lane: "CRM"
+        task: "Формирование коммерческого предложения и заполнение спецификации"
+        process_ref: "[CRM-04, TASK-CRM-04-01]"
+        operation_ref: "OP-CRM-15"
+        description: "Создание документа КП, выбор товаров/услуг и цен из актуального прайс-листа[cite: 3]."
+        depends_on:
+          - "CRM-02-01"
+        system_action: "crm_quote.status_id = 'draft'"
+        ui_notification: "Коммерческое предложение №... сформировано в черновике[cite: 3]."
+
+      - step_id: "CRM-02-03"
+        lane: "CRM"
+        task: "Отправка КП клиенту и фиксация решения"
+        process_ref: "[CRM-04, TASK-CRM-04-03]"
+        operation_ref: "OP-CRM-17"
+        description: "Отправка коммерческого предложения клиенту и регистрация положительного ответа[cite: 3]."
+        depends_on:
+          - "CRM-02-02"
+        system_action: "crm_quote.status_id = 'accepted'"
+        ui_notification: "Клиент принял коммерческое предложение[cite: 3]."
+
+      - step_id: "CRM-02-04"
+        lane: "CRM"
+        task: "Закрытие сделки со статусом «Выиграна»"
+        process_ref: "[CRM-02, TASK-CRM-02-03]"
+        operation_ref: "OP-CRM-11"
+        description: "Перевод сделки в финальную выигранную стадию по результатам согласованного КП[cite: 3]."
+        depends_on:
+          - "CRM-02-03"
+        system_action: "crm_deal.status_id = 'won'"
+        ui_notification: "Сделка №... успешно выиграна![cite: 3]"
+
+      - step_id: "CRM-02-05"
+        lane: "CRM"
+        task: "Создание и активация договора с контрагентом"
+        process_ref: "[CRM-06, TASK-CRM-06-01]"
+        operation_ref: "OP-CRM-23"
+        description: "Оформление договора, активация статуса и привязка объектов/заказов исполнения[cite: 3]."
+        depends_on:
+          - "CRM-02-04"
+        system_action: "crm_contract.status_id = 'active'"
+        ui_notification: "Договор №... активирован и готов для передачи в исполнение[cite: 3]."
+
+      - step_id: "CRM-02-END"
+        lane: "CRM/SALES"
+        task: "Передача сделки в исполнение (Заказ / Финансы)"
+        description: "Договор зарегистрирован, стартует процесс исполнения заказа коммерческим/производственным отделом[cite: 3]."
+        depends_on:
+          - "CRM-02-05"
+        system_action: "core_audit_log"
+        ui_notification: "Сделка и договор успешно оформлены и переданы в исполнение[cite: 3]."
