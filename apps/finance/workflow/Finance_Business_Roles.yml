@@ -1,0 +1,482 @@
+# =====================================================================================
+# Finance — каталог форм для бизнес-операций
+# Источник: Finance_Business_Queries.sql (21 операция OP-FIN-01…21, схема v1.2).
+# Структура аналогична остальным *_Business_Roles.yml.
+# =====================================================================================
+
+process: FIN-01
+process_name: "Справочники"
+role: "accountant"
+operations:
+
+  - op_code: OP-FIN-01
+    name: "Создание счёта плана счетов"
+    table: fin_account
+    type: insert
+    event: "Finance.account.create"
+    button: "Создать счёт"
+    fields:
+      - field: account_code
+        label: "Код счёта"
+        type: text
+        required: true
+      - field: account_name
+        label: "Название счёта"
+        type: text
+        required: true
+      - field: account_type
+        label: "Тип счёта"
+        type: select
+        required: true
+        options: [asset, liability, equity, income, expense]
+
+  - op_code: OP-FIN-02
+    name: "Создание центра затрат"
+    table: fin_cost_center
+    type: insert
+    event: "Finance.costCenter.create"
+    button: "Создать центр затрат"
+    fields:
+      - field: cost_center_name
+        label: "Название центра затрат"
+        type: text
+        required: true
+
+  - op_code: OP-FIN-03
+    name: "Создание кассы"
+    table: fin_cash_account
+    type: insert
+    role: "treasurer"
+    event: "Finance.cashAccount.create"
+    button: "Создать кассу"
+    fields:
+      - field: cash_account_name
+        label: "Название кассы"
+        type: text
+        required: true
+
+  - op_code: OP-FIN-04
+    name: "Создание банковского счёта"
+    table: fin_bank_account
+    type: insert
+    role: "treasurer"
+    event: "Finance.bankAccount.create"
+    button: "Создать банковский счёт"
+    fields:
+      - field: bank_id
+        label: "Банк"
+        type: select
+        required: false
+        source: { table: dict_bank, value_field: bank_id, label_field: bank_name }
+      - field: account_number
+        label: "Номер счёта (IBAN)"
+        type: text
+        required: true
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+
+  - op_code: OP-FIN-05
+    name: "Внесение курса валюты"
+    table: fin_exchange_rate
+    type: insert
+    event: "Finance.exchangeRate.create"
+    button: "Внести курс"
+    fields:
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: true
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+      - field: rate_date
+        label: "Дата курса"
+        type: date
+        required: true
+      - field: rate_value
+        label: "Значение курса"
+        type: number
+        required: true
+
+---
+process: FIN-02
+process_name: "Бюджетирование"
+role: "financial_controller"
+statuses: [draft, approved]
+operations:
+
+  - op_code: OP-FIN-06
+    name: "Создание финансового проекта"
+    table: fin_financial_project
+    type: insert
+    event: "Finance.financialProject.create"
+    button: "Создать финансовый проект"
+    fields:
+      - field: financial_project_name
+        label: "Название финансового проекта"
+        type: text
+        required: true
+      - field: linked_object_type
+        label: "Тип связанного объекта"
+        type: text
+        required: false
+      - field: linked_object_id
+        label: "Идентификатор связанного объекта"
+        type: text
+        required: false
+
+  - op_code: OP-FIN-07
+    name: "Создание бюджета"
+    table: fin_budget
+    type: insert
+    event: "Finance.budget.create"
+    button: "Создать бюджет"
+    fields:
+      - field: financial_project_id
+        label: "Финансовый проект"
+        type: select
+        required: false
+        source: { table: fin_financial_project, value_field: financial_project_id, label_field: financial_project_name }
+      - field: period_from
+        label: "Начало периода"
+        type: date
+        required: true
+      - field: period_to
+        label: "Конец периода"
+        type: date
+        required: true
+
+  - op_code: OP-FIN-08
+    name: "Утверждение бюджета"
+    table: fin_budget
+    type: update
+    role: "director"
+    event: "Finance.budget.approve"
+    button: "Утвердить бюджет"
+    precondition: "status_id = draft"
+    fields:
+      - field: budget_id
+        label: "Бюджет"
+        type: select
+        required: true
+        source: { table: fin_budget, value_field: budget_id, label_field: budget_id }
+
+  - op_code: OP-FIN-09
+    name: "Добавление статьи бюджета"
+    table: fin_budget_item
+    type: insert
+    event: "Finance.budgetItem.create"
+    button: "Добавить статью"
+    fields:
+      - field: budget_id
+        label: "Бюджет"
+        type: select
+        required: true
+        source: { table: fin_budget, value_field: budget_id, label_field: budget_id }
+      - field: cost_center_id
+        label: "Центр затрат"
+        type: select
+        required: false
+        source: { table: fin_cost_center, value_field: cost_center_id, label_field: cost_center_name }
+      - field: planned_amount
+        label: "Плановая сумма"
+        type: number
+        required: true
+
+  - op_code: OP-FIN-10
+    name: "Изменение плановой суммы статьи бюджета"
+    table: fin_budget_item
+    type: update
+    event: "Finance.budgetItem.update"
+    button: "Сохранить сумму"
+    fields:
+      - field: budget_item_id
+        label: "Статья бюджета"
+        type: select
+        required: true
+        source: { table: fin_budget_item, value_field: budget_item_id, label_field: budget_item_id }
+      - field: planned_amount
+        label: "Плановая сумма"
+        type: number
+        required: true
+
+---
+process: FIN-03
+process_name: "Счета (Invoice)"
+role: "accountant"
+statuses: [draft, issued, partially_paid, paid, overdue, cancelled]
+operations:
+
+  - op_code: OP-FIN-11
+    name: "Создание счёта"
+    table: fin_invoice
+    type: insert
+    event: "Finance.invoice.create"
+    button: "Создать счёт"
+    fields:
+      - field: invoice_type
+        label: "Тип счёта"
+        type: select
+        required: true
+        options: [AR, AP]
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: dict_counterparty, value_field: counterparty_id, label_field: counterparty_name }
+      - field: contract_id
+        label: "Договор"
+        type: select
+        required: false
+        source: { table: crm_contract, value_field: contract_id, label_field: contract_number }
+      - field: source_object_type
+        label: "Тип документа-основания"
+        type: text
+        required: false
+      - field: source_object_id
+        label: "Идентификатор документа-основания"
+        type: text
+        required: false
+      - field: invoice_number
+        label: "Номер счёта"
+        type: text
+        required: false
+      - field: invoice_date
+        label: "Дата счёта"
+        type: date
+        required: true
+      - field: due_date
+        label: "Срок оплаты"
+        type: date
+        required: false
+      - field: amount
+        label: "Сумма счёта"
+        type: number
+        required: true
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+
+  - op_code: OP-FIN-12
+    name: "Добавление позиции счёта"
+    table: fin_invoice_line
+    type: insert
+    event: "Finance.invoiceLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: invoice_id
+        label: "Счёт"
+        type: select
+        required: true
+        source: { table: fin_invoice, value_field: invoice_id, label_field: invoice_number }
+      - field: description
+        label: "Описание позиции"
+        type: text
+        required: true
+      - field: amount
+        label: "Сумма позиции"
+        type: number
+        required: true
+
+  - op_code: OP-FIN-13
+    name: "Выставление счёта"
+    table: fin_invoice
+    type: update
+    event: "Finance.invoice.issue"
+    button: "Выставить счёт"
+    precondition: "status_id = draft"
+    fields:
+      - field: invoice_id
+        label: "Счёт"
+        type: select
+        required: true
+        source: { table: fin_invoice, value_field: invoice_id, label_field: invoice_number }
+
+  - op_code: OP-FIN-14
+    name: "Отмена счёта"
+    table: fin_invoice
+    type: update
+    event: "Finance.invoice.cancel"
+    button: "Отменить счёт"
+    precondition: "status_id in (draft, issued)"
+    fields:
+      - field: invoice_id
+        label: "Счёт"
+        type: select
+        required: true
+        source: { table: fin_invoice, value_field: invoice_id, label_field: invoice_number }
+
+---
+process: FIN-04
+process_name: "Платежи"
+role: "treasurer"
+statuses: [planned, completed, cancelled]
+operations:
+
+  - op_code: OP-FIN-15
+    name: "Планирование платежа"
+    table: fin_payment
+    type: insert
+    event: "Finance.payment.plan"
+    button: "Запланировать платёж"
+    fields:
+      - field: invoice_id
+        label: "Счёт"
+        type: select
+        required: false
+        source: { table: fin_invoice, value_field: invoice_id, label_field: invoice_number }
+      - field: bank_account_id
+        label: "Банковский счёт"
+        type: select
+        required: false
+        source: { table: fin_bank_account, value_field: bank_account_id, label_field: account_number }
+      - field: cash_account_id
+        label: "Касса"
+        type: select
+        required: false
+        source: { table: fin_cash_account, value_field: cash_account_id, label_field: cash_account_name }
+      - field: payment_date
+        label: "Дата платежа"
+        type: datetime
+        required: true
+      - field: amount
+        label: "Сумма платежа"
+        type: number
+        required: true
+
+  - op_code: OP-FIN-16
+    name: "Проведение (исполнение) платежа"
+    table: fin_payment
+    type: update
+    event: "Finance.payment.complete"
+    button: "Провести платёж"
+    precondition: "payment_status = planned"
+    note: "Одновременно пересчитывается статус связанного fin_invoice (paid/partially_paid)."
+    fields:
+      - field: payment_id
+        label: "Платёж"
+        type: select
+        required: true
+        source: { table: fin_payment, value_field: payment_id, label_field: payment_id }
+
+  - op_code: OP-FIN-17
+    name: "Отмена платежа"
+    table: fin_payment
+    type: update
+    event: "Finance.payment.cancel"
+    button: "Отменить платёж"
+    precondition: "payment_status = planned"
+    fields:
+      - field: payment_id
+        label: "Платёж"
+        type: select
+        required: true
+        source: { table: fin_payment, value_field: payment_id, label_field: payment_id }
+
+---
+process: FIN-05
+process_name: "Бухгалтерские проводки"
+role: "accountant"
+operations:
+
+  - op_code: OP-FIN-18
+    name: "Регистрация проводки"
+    table: fin_financial_transaction
+    type: insert
+    event: "Finance.financialTransaction.create"
+    button: "Создать проводку"
+    fields:
+      - field: debit_account_id
+        label: "Дебет счёта"
+        type: select
+        required: true
+        source: { table: fin_account, value_field: account_id, label_field: account_name }
+      - field: credit_account_id
+        label: "Кредит счёта"
+        type: select
+        required: true
+        source: { table: fin_account, value_field: account_id, label_field: account_name }
+      - field: cost_center_id
+        label: "Центр затрат"
+        type: select
+        required: false
+        source: { table: fin_cost_center, value_field: cost_center_id, label_field: cost_center_name }
+      - field: payment_id
+        label: "Платёж-основание"
+        type: select
+        required: false
+        source: { table: fin_payment, value_field: payment_id, label_field: payment_id }
+      - field: amount
+        label: "Сумма проводки"
+        type: number
+        required: true
+
+---
+process: FIN-06
+process_name: "Периоды и показатели"
+role: "financial_controller"
+operations:
+
+  - op_code: OP-FIN-19
+    name: "Создание финансового периода"
+    table: fin_financial_period
+    type: insert
+    event: "Finance.financialPeriod.create"
+    button: "Создать период"
+    fields:
+      - field: period_name
+        label: "Название периода"
+        type: text
+        required: true
+      - field: date_from
+        label: "Начало периода"
+        type: date
+        required: true
+      - field: date_to
+        label: "Конец периода"
+        type: date
+        required: true
+
+  - op_code: OP-FIN-20
+    name: "Закрытие финансового периода"
+    table: fin_financial_period
+    type: update
+    role: "director"
+    event: "Finance.financialPeriod.close"
+    button: "Закрыть период"
+    precondition: "is_closed = 0"
+    fields:
+      - field: period_id
+        label: "Период"
+        type: select
+        required: true
+        source: { table: fin_financial_period, value_field: period_id, label_field: period_name }
+
+  - op_code: OP-FIN-21
+    name: "Внесение расчётного финансового показателя"
+    table: fin_financial_indicator
+    type: insert
+    event: "Finance.financialIndicator.create"
+    button: "Внести показатель"
+    fields:
+      - field: financial_project_id
+        label: "Финансовый проект"
+        type: select
+        required: false
+        source: { table: fin_financial_project, value_field: financial_project_id, label_field: financial_project_name }
+      - field: period_id
+        label: "Период"
+        type: select
+        required: false
+        source: { table: fin_financial_period, value_field: period_id, label_field: period_name }
+      - field: indicator_code
+        label: "Код показателя"
+        type: text
+        required: true
+      - field: indicator_value
+        label: "Значение показателя"
+        type: number
+        required: true

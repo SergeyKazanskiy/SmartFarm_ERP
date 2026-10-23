@@ -84,3 +84,39 @@ class CPEvents:
     BLACKLIST_REMOVE = "CP.blacklist.remove"
     ATTACHMENT_CREATE = "CP.attachment.create"
     ATTACHMENT_DELETE = "CP.attachment.delete"
+
+
+class FinanceEvents:
+    """События Finance-модуля (из Finance_Business_Roles.yml)."""
+    # Справочники
+    ACCOUNT_CREATE = "Finance.account.create"
+    COST_CENTER_CREATE = "Finance.costCenter.create"
+    CASH_ACCOUNT_CREATE = "Finance.cashAccount.create"
+    BANK_ACCOUNT_CREATE = "Finance.bankAccount.create"
+    EXCHANGE_RATE_CREATE = "Finance.exchangeRate.create"
+
+    # Бюджеты
+    FINANCIAL_PROJECT_CREATE = "Finance.financialProject.create"
+    BUDGET_CREATE = "Finance.budget.create"
+    BUDGET_APPROVE = "Finance.budget.approve"
+    BUDGET_ITEM_CREATE = "Finance.budgetItem.create"
+    BUDGET_ITEM_UPDATE = "Finance.budgetItem.update"
+
+    # Счета
+    INVOICE_CREATE = "Finance.invoice.create"
+    INVOICE_LINE_CREATE = "Finance.invoiceLine.create"
+    INVOICE_ISSUE = "Finance.invoice.issue"
+    INVOICE_CANCEL = "Finance.invoice.cancel"
+
+    # Платежи
+    PAYMENT_PLAN = "Finance.payment.plan"
+    PAYMENT_COMPLETE = "Finance.payment.complete"
+    PAYMENT_CANCEL = "Finance.payment.cancel"
+
+    # Проводки
+    FINANCIAL_TRANSACTION_CREATE = "Finance.financialTransaction.create"
+
+    # Периоды и показатели
+    FINANCIAL_PERIOD_CREATE = "Finance.financialPeriod.create"
+    FINANCIAL_PERIOD_CLOSE = "Finance.financialPeriod.close"
+    FINANCIAL_INDICATOR_CREATE = "Finance.financialIndicator.create"

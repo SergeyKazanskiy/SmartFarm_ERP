@@ -1,0 +1,649 @@
+# =====================================================================================
+# Finance — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на Finance_Schema.json версии 1.2 (14 таблиц)
+# =====================================================================================
+
+- role: "бухгалтер"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-FIN-02: Дебиторская и кредиторская задолженность
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-FIN-02
+      dashboard: "Дебиторская и кредиторская задолженность"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-arap"
+          type: "kpi"
+          title: "Ключевые показатели задолженности"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Дебиторская задолженность (AR)"
+              subtitle: "непогашенные счета к получению"
+              dataSource: "Q-FIN-02-01"
+              field: "total_ar_outstanding"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 1000000
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 1000000
+                  status: "warning"
+                  label: "Требует внимания"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-11, OP-FIN-13]
+              
+            - widget_id: W02-02
+              type: Indicator
+              title: "Кредиторская задолженность (AP)"
+              subtitle: "непогашенные счета к оплате"
+              dataSource: "Q-FIN-02-02"
+              field: "total_ap_outstanding"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2000000
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 2000000
+                  status: "warning"
+                  label: "Требует внимания"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-11, OP-FIN-13]
+
+        - id: "sec-analytics-arap"
+          type: "analytics"
+          title: "Аналитика задолженности"
+          widgets:
+            - widget_id: W02-04
+              type: Chart
+              title: "Счета по статусам"
+              subtitle: "распределение"
+              dataSource: "Q-FIN-02-04"
+              chartType: "pie"
+              category: "status_id"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "invoice_count"
+                  label: "Количество счетов"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-11, OP-FIN-13, OP-FIN-14]
+
+        - id: "sec-alerts-arap"
+          type: "alerts"
+          title: "Просроченные счета"
+          widgets:
+            - widget_id: W02-03
+              type: Table
+              title: "Просроченные счета"
+              subtitle: "требуют оплаты"
+              dataSource: "Q-FIN-02-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "invoice_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "invoice_type"
+                  title: "Тип"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "AR": "info"
+                      "AP": "warning"
+                - field: "counterparty_id"
+                  title: "ID контрагента"
+                  width: 120
+                  align: "center"
+                - field: "invoice_number"
+                  title: "№ счета"
+                  width: 140
+                  sortable: true
+                - field: "due_date"
+                  title: "Срок оплаты"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "amount"
+                  title: "Сумма"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "issued": "warning"
+                      "partially_paid": "info"
+                      "overdue": "danger"
+              grid: { w: 8 }
+              linked_operations: [OP-FIN-13]
+
+
+# =====================================================================================
+# РОЛЬ: Казначей
+# =====================================================================================
+- role: "казначей"
+  dashboards:
+    - dashboard_code: DASH-FIN-02
+      dashboard: "Дебиторская и кредиторская задолженность"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-treasury"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Дебиторская задолженность (AR)"
+              dataSource: "Q-FIN-02-01"
+              field: "total_ar_outstanding"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-11, OP-FIN-13]
+              
+            - widget_id: W02-02
+              type: Indicator
+              title: "Кредиторская задолженность (AP)"
+              dataSource: "Q-FIN-02-02"
+              field: "total_ap_outstanding"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-11, OP-FIN-13]
+
+        - id: "sec-alerts-treasury"
+          type: "alerts"
+          title: "Просроченные счета"
+          widgets:
+            - widget_id: W02-03
+              type: Table
+              title: "Просроченные счета"
+              dataSource: "Q-FIN-02-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "invoice_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "invoice_type"
+                  title: "Тип"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "AR": "info"
+                      "AP": "warning"
+                - field: "counterparty_id"
+                  title: "ID контрагента"
+                  width: 120
+                  align: "center"
+                - field: "invoice_number"
+                  title: "№ счета"
+                  width: 140
+                  sortable: true
+                - field: "due_date"
+                  title: "Срок оплаты"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "amount"
+                  title: "Сумма"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "issued": "warning"
+                      "partially_paid": "info"
+                      "overdue": "danger"
+              grid: { w: 8 }
+              linked_operations: [OP-FIN-13]
+
+
+# =====================================================================================
+# РОЛЬ: Финансовый контролёр
+# =====================================================================================
+- role: "финансовый_контролёр"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-FIN-01: Бюджет и исполнение
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-FIN-01
+      dashboard: "Бюджет и исполнение"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-budget"
+          type: "kpi"
+          title: "Ключевые показатели бюджета"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Утверждённые бюджеты"
+              subtitle: "активные бюджеты"
+              dataSource: "Q-FIN-01-01"
+              field: "approved_budgets"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-08]
+
+        - id: "sec-analytics-budget"
+          type: "analytics"
+          title: "Аналитика бюджета"
+          widgets:
+            - widget_id: W01-02
+              type: Chart
+              title: "План vs факт по центрам затрат"
+              subtitle: "исполнение бюджета"
+              dataSource: "Q-FIN-01-02"
+              chartType: "bar"
+              category: "cost_center_name"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "planned_amount"
+                  label: "План"
+                  color: "#60a5fa"
+                - field: "actual_amount"
+                  label: "Факт"
+                  color: "#f59e0b"
+              grid: { w: 8 }
+              linked_operations: [OP-FIN-09, OP-FIN-18]
+
+        - id: "sec-alerts-budget"
+          type: "alerts"
+          title: "Превышение бюджета"
+          widgets:
+            - widget_id: W01-03
+              type: Table
+              title: "Статьи бюджета с превышением плана"
+              subtitle: "перерасход"
+              dataSource: "Q-FIN-01-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "budget_item_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "cost_center_name"
+                  title: "Центр затрат"
+                  width: 200
+                  sortable: true
+                - field: "planned_amount"
+                  title: "План"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "actual_amount"
+                  title: "Факт"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                - field: "overrun_amount"
+                  title: "Превышение"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "0-10000": "warning"
+                      "10001-50000": "danger"
+                      "50001": "danger"
+              grid: { w: 12 }
+              linked_operations: [OP-FIN-09, OP-FIN-18]
+
+    # -------------------------------------------------------------------------------
+    # DASH-FIN-03: Финансовые показатели
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-FIN-03
+      dashboard: "Финансовые показатели"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-metrics"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-02
+              type: Indicator
+              title: "Обороты за период"
+              subtitle: "всего транзакций"
+              dataSource: "Q-FIN-03-02"
+              field: "total_turnover"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-18]
+
+        - id: "sec-analytics-metrics"
+          type: "analytics"
+          title: "Финансовые показатели по проектам"
+          widgets:
+            - widget_id: W03-01
+              type: Table
+              title: "Финансовые показатели по проектам"
+              subtitle: "за период"
+              dataSource: "Q-FIN-03-01"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "financial_project_name"
+                  title: "Проект"
+                  width: 200
+                  sortable: true
+                - field: "indicator_code"
+                  title: "Код показателя"
+                  width: 150
+                - field: "indicator_value"
+                  title: "Значение"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+              grid: { w: 8 }
+              linked_operations: [OP-FIN-21]
+
+
+# =====================================================================================
+# РОЛЬ: Директор
+# =====================================================================================
+- role: "директор"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-FIN-01: Бюджет и исполнение (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-FIN-01
+      dashboard: "Бюджет и исполнение"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-budget-director"
+          type: "analytics"
+          title: "Исполнение бюджета"
+          widgets:
+            - widget_id: W01-02
+              type: Chart
+              title: "План vs факт по центрам затрат"
+              dataSource: "Q-FIN-01-02"
+              chartType: "bar"
+              category: "cost_center_name"
+              showGrid: true
+              showLegend: true
+              height: 400
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "planned_amount"
+                  label: "План"
+                  color: "#60a5fa"
+                - field: "actual_amount"
+                  label: "Факт"
+                  color: "#f59e0b"
+              grid: { w: 12 }
+              linked_operations: [OP-FIN-09, OP-FIN-18]
+
+    # -------------------------------------------------------------------------------
+    # DASH-FIN-02: Дебиторская и кредиторская задолженность (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-FIN-02
+      dashboard: "Дебиторская и кредиторская задолженность"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-arap-director"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Дебиторская задолженность (AR)"
+              dataSource: "Q-FIN-02-01"
+              field: "total_ar_outstanding"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 6 }
+              linked_operations: [OP-FIN-11, OP-FIN-13]
+              
+            - widget_id: W02-02
+              type: Indicator
+              title: "Кредиторская задолженность (AP)"
+              dataSource: "Q-FIN-02-02"
+              field: "total_ap_outstanding"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 6 }
+              linked_operations: [OP-FIN-11, OP-FIN-13]
+
+    # -------------------------------------------------------------------------------
+    # DASH-FIN-03: Финансовые показатели (расширенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-FIN-03
+      dashboard: "Финансовые показатели"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-metrics-director"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-02
+              type: Indicator
+              title: "Обороты за период"
+              dataSource: "Q-FIN-03-02"
+              field: "total_turnover"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-18]
+
+        - id: "sec-analytics-metrics-director"
+          type: "analytics"
+          title: "Аналитика показателей"
+          widgets:
+            - widget_id: W03-01
+              type: Table
+              title: "Финансовые показатели по проектам"
+              dataSource: "Q-FIN-03-01"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "financial_project_name"
+                  title: "Проект"
+                  width: 200
+                  sortable: true
+                - field: "indicator_code"
+                  title: "Код показателя"
+                  width: 150
+                - field: "indicator_value"
+                  title: "Значение"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+              grid: { w: 6 }
+              linked_operations: [OP-FIN-21]
+              
+            - widget_id: W03-03
+              type: Chart
+              title: "Обороты по типам счетов"
+              subtitle: "структура оборотов"
+              dataSource: "Q-FIN-03-03"
+              chartType: "pie"
+              category: "account_type"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "turnover"
+                  label: "Оборот"
+              grid: { w: 6 }
+              linked_operations: [OP-FIN-18]
+
+    # -------------------------------------------------------------------------------
+    # DASH-FIN-04: Денежный поток (Cash Flow)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-FIN-04
+      dashboard: "Денежный поток (Cash Flow)"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-cashflow"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Остаток на счетах"
+              subtitle: "денежные средства"
+              dataSource: "Q-FIN-04-01"
+              field: "cash_balance"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 1000000
+                  status: "success"
+                  label: "Достаточно"
+                - field: "value"
+                  operator: "between"
+                  value: 500000
+                  value2: 1000000
+                  status: "warning"
+                  label: "Средний остаток"
+                - field: "value"
+                  operator: "<"
+                  value: 500000
+                  status: "danger"
+                  label: "Низкий остаток"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-16]
+
+        - id: "sec-analytics-cashflow"
+          type: "analytics"
+          title: "Прогноз денежного потока"
+          widgets:
+            - widget_id: W04-02
+              type: Chart
+              title: "Прогноз денежного потока на 3 месяца"
+              subtitle: "поступления и выплаты"
+              dataSource: "Q-FIN-04-02"
+              chartType: "area"
+              category: "expected_date"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "expected_inflow"
+                  label: "Поступления"
+                  color: "#34d399"
+                - field: "expected_outflow"
+                  label: "Выплаты"
+                  color: "#f87171"
+                - field: "net_cash_flow"
+                  label: "Чистый поток"
+                  color: "#60a5fa"
+              grid: { w: 8 }
+              linked_operations: [OP-FIN-11, OP-FIN-15, OP-FIN-16]
+
+        - id: "sec-alerts-cashflow"
+          type: "alerts"
+          title: "Крупные ожидаемые платежи"
+          widgets:
+            - widget_id: W04-03
+              type: Table
+              title: "Крупные ожидаемые поступления и выплаты"
+              subtitle: "на 3 месяца"
+              dataSource: "Q-FIN-04-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "invoice_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "invoice_type"
+                  title: "Тип"
+                  width: 100
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "AR": "success"
+                      "AP": "danger"
+                - field: "counterparty_id"
+                  title: "ID контрагента"
+                  width: 120
+                  align: "center"
+                - field: "invoice_number"
+                  title: "№ счета"
+                  width: 140
+                  sortable: true
+                - field: "due_date"
+                  title: "Срок"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "amount"
+                  title: "Сумма"
+                  width: 150
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "issued": "warning"
+                      "partially_paid": "info"
+                      "overdue": "danger"
+              grid: { w: 4 }
+              linked_operations: [OP-FIN-11, OP-FIN-15]

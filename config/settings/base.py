@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'apps.hr.apps.HRConfig',
     'apps.tasks.apps.TasksConfig',
     "apps.cp", # ???
+    "apps.finance",
 
     # Встроенные приложения Django
     'django.contrib.admin',

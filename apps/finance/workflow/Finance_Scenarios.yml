@@ -1,0 +1,157 @@
+# ==============================================================================
+# МОДУЛЬ: ФИНАНСЫ И КАЗНАЧЕЙСТВО (FIN / FINANCE & TREASURY)
+# ==============================================================================
+
+module_info:
+  id: "FIN"
+  name: "Финансы, бухучет и казначейство"
+  version: "1.0"
+  description: "Реестр сквозных бизнес-сценариев для модуля Финансы (FIN)"
+  related_modules:
+    - "PROC"
+    - "SALES"
+    - "WMS"
+    - "PROD"
+    - "FA"
+    - "HR"
+
+scenarios:
+  - id: "SCENARIO-FIN-01"
+    title: "Управление платежным календарем и исполнение платежей (Procure-to-Pay / AP)"
+    description: "Формирование реестра платежей, согласование заявки на расходование денежных средств (ЗРС), контрольные проверки бюджетов и исполнение платежа через банк-клиент."
+    module: "FIN"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "accountant"
+      - "financial_controller"
+      - "treasurer"
+      - "cfo"
+    steps:
+      - step_id: "FIN-01-01"
+        lane: "FIN/PROC"
+        task: "Формирование Заявки на расходование денежных средств (ЗРС)"
+        process_ref: "[FIN-04, TASK-FIN-04-01]"
+        operation_ref: "OP-FIN-14"
+        description: "Автоматическое или ручное создание заявки на оплату счета поставщика или иных расходов."
+        depends_on: []
+        trigger: "Поступление входящего счета / Наступление даты оплаты"
+        system_action: "fin_payment_request.status_id = 'draft'"
+        ui_notification: "Сформирована заявка на расходование денежных средств №..."
+
+      - step_id: "FIN-01-02"
+        lane: "FIN"
+        task: "Автоматический контроль лимитов БДДС (Бюджет движения денежных средств)"
+        process_ref: "[FIN-01, TASK-FIN-01-04]"
+        operation_ref: "OP-FIN-04"
+        description: "Система проверяет наличие неиспользованного лимита по статьи БДДС и ЦФО."
+        depends_on:
+          - "FIN-01-01"
+        system_action: "fin_budget_check.status = 'passed'"
+        ui_notification: "Проверка лимитов БДДС успешно пройдена."
+
+      - step_id: "FIN-01-03"
+        lane: "FIN"
+        task: "Утверждение платежного календаря и согласование ЗРС"
+        process_ref: "[FIN-04, TASK-FIN-04-02]"
+        operation_ref: "OP-FIN-15"
+        description: "Согласование заявки финансовым контролером/КФО и включение в реестр платежей на день."
+        depends_on:
+          - "FIN-01-02"
+        system_action: "fin_payment_schedule.status = 'approved', fin_payment_request.status_id = 'approved'"
+        ui_notification: "Заявка на оплату включена в реестр платежей."
+
+      - step_id: "FIN-01-04"
+        lane: "FIN"
+        task: "Формирование и отправка платежных поручений в Клиент-Банк"
+        process_ref: "[FIN-04, TASK-FIN-04-03]"
+        operation_ref: "OP-FIN-16"
+        description: "Генерация файла платежных поручений (или передача через DirectBank API) и отправка в банк."
+        depends_on:
+          - "FIN-01-03"
+        system_action: "fin_payment_order.status_id = 'sent_to_bank'"
+        ui_notification: "Платежные поручения отправлены в банк."
+
+      - step_id: "FIN-01-05"
+        lane: "FIN"
+        task: "Загрузка банковской выписки и проведение выписки в Главной книге (GL)"
+        process_ref: "[FIN-04, TASK-FIN-04-04]"
+        operation_ref: "OP-FIN-17"
+        description: "Автоматическое разнесение списаний по счетам бухучета (Дт 60/76 — Кт 51) после подтверждения банком."
+        depends_on:
+          - "FIN-01-04"
+        system_action: "fin_bank_statement.status = 'posted', fin_gl_entry.posted = true"
+        ui_notification: "Выписка банка проведена. Задолженность погашена."
+
+      - step_id: "FIN-01-END"
+        lane: "FIN"
+        task: "Завершение платежного цикла"
+        description: "Платеж исполнен, балансы счетов и лимиты обновлены."
+        depends_on:
+          - "FIN-01-05"
+        system_action: "fin_payment_request.status_id = 'executed', core_audit_log"
+        ui_notification: "Платеж полностью обработан."
+
+  - id: "SCENARIO-FIN-02"
+    title: "Закрытие отчетного периода и расчет финансового результата (Month-End Closing)"
+    description: "Регламентный процесс конца месяца: закрытие вспомогательных счетов, распределение косвенных затрат, переоценка валюты, расчет налога на прибыль и формирование финансового результата."
+    module: "FIN"
+    scenario_type: "integration"
+    priority: "critical"
+    roles:
+      - "chief_accountant"
+      - "financial_controller"
+      - "cfo"
+    steps:
+      - step_id: "FIN-02-01"
+        lane: "FIN"
+        task: "Блокировка ввода первичных документов за закрываемый период"
+        process_ref: "[FIN-06, TASK-FIN-06-01]"
+        operation_ref: "OP-FIN-20"
+        description: "Установка запрета на изменение и проведение документов прошлым месяцем."
+        depends_on: []
+        trigger: "Регламентная дата закрытия периода"
+        system_action: "sys_period_lock.status = 'locked'"
+        ui_notification: "Период заблокирован для проведения новых документов."
+
+      - step_id: "FIN-02-02"
+        lane: "FIN/FA/PROD"
+        task: "Проведение регламентных операций (Амортизация, Себестоимость, Переоценка)"
+        process_ref: "[FIN-06, TASK-FIN-06-02]"
+        operation_ref: "OP-FIN-21"
+        description: "Запуск процедур начисления амортизации ОС/НМА, расчета себестоимости выпуска (PROD) и курсовых разниц."
+        depends_on:
+          - "FIN-02-01"
+        system_action: "fin_depreciation.status = 'posted', fin_costing.status = 'closed'"
+        ui_notification: "Регламентные расчеты амортизации и себестоимости выполнены."
+
+      - step_id: "FIN-02-03"
+        lane: "FIN"
+        task: "Распределение общепроизводственных и общехозяйственных расходов (25, 26 счета)"
+        process_ref: "[FIN-05, TASK-FIN-05-02]"
+        operation_ref: "OP-FIN-19"
+        description: "Закрытие затратных счетов на себестоимость или финансовый результат согласно учетной политике."
+        depends_on:
+          - "FIN-02-02"
+        system_action: "fin_gl_entry.type = 'cost_allocation'"
+        ui_notification: "Косвенные расходы успешно распределены."
+
+      - step_id: "FIN-02-04"
+        lane: "FIN"
+        task: "Закрытие счетов реализации (90, 91) и определение финансового результата (99 счет)"
+        process_ref: "[FIN-06, TASK-FIN-06-03]"
+        operation_ref: "OP-FIN-22"
+        description: "Расчет прибыли/убытка до налогообложения, начисление налога на прибыль (ПБУ 18/02)."
+        depends_on:
+          - "FIN-02-03"
+        system_action: "fin_gl_entry.account_99_balance = calculated_profit"
+        ui_notification: "Финансовый результат за месяц сформирован."
+
+      - step_id: "FIN-02-END"
+        lane: "FIN"
+        task: "Финал закрытия месяца"
+        description: "Период полностью закрыт, формируется бухгалтерская и управленческая отчетность (P&L, Balance Sheet)."
+        depends_on:
+          - "FIN-02-04"
+        system_action: "sys_period_lock.status = 'closed_final', core_audit_log"
+        ui_notification: "Отчетный период успешно закрыт."

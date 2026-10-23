@@ -1,0 +1,333 @@
+meta:
+  title: Finance_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание финансовых бизнес-процессов с ролями, задачами, переходами
+    между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов (по
+    кодам OP-FIN-01…21). Объединяет через процессы Finance_Business_Queries.sql
+    (SQL), Finance_Business_Roles.yml (поля форм), Finance_Dashboards_Roles.yml
+    (дашборды), Finance_Reports_Roles.yml (отчёты).
+  schema_notes: >
+    Задача (task) соответствует ОДНОМУ экрану/форме — принцип идентичен остальным
+    *_Process_Workflow.yml файлам платформы.
+
+roles_catalog:
+  accountant: Бухгалтер
+  treasurer: Казначей
+  financial_controller: Финансовый контролёр
+  director: Директор
+
+processes:
+
+- id: FIN-01
+  name: Справочники
+  description: Ведение плана счетов, центров затрат, касс, банковских счетов и курсов валют.
+  dashboards: []
+  reports: []
+  tasks:
+
+  - id: TASK-FIN-01-01
+    name: Ведение плана счетов
+    role: accountant
+    has_form: true
+    form_ref: [OP-FIN-01]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-01
+        description: Создание счёта плана счетов
+    transitions: []
+
+  - id: TASK-FIN-01-02
+    name: Ведение центров затрат
+    role: accountant
+    has_form: true
+    form_ref: [OP-FIN-02]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-02
+        description: Создание центра затрат
+    transitions: []
+
+  - id: TASK-FIN-01-03
+    name: Ведение касс и банковских счетов
+    role: treasurer
+    has_form: true
+    form_ref: [OP-FIN-03, OP-FIN-04]
+    sql_queries:
+      on_insert_cash:
+        query_code: OP-FIN-03
+        description: Создание кассы
+      on_insert_bank:
+        query_code: OP-FIN-04
+        description: Создание банковского счёта
+    transitions: []
+
+  - id: TASK-FIN-01-04
+    name: Внесение курса валюты
+    role: accountant
+    has_form: true
+    form_ref: [OP-FIN-05]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-05
+        description: Внесение курса валюты
+    transitions: []
+
+- id: FIN-02
+  name: Бюджетирование
+  description: Формирование, утверждение и детализация бюджета по центрам затрат.
+  dashboards:
+  - DASH-FIN-01 (Бюджет и исполнение)
+  reports:
+  - REP-FIN-01 (Бюджет)
+  tasks:
+
+  - id: TASK-FIN-02-01
+    name: Создание финансового проекта
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-FIN-06]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-06
+        description: Создание финансового проекта
+    transitions:
+    - target_task: TASK-FIN-02-02
+      condition: Финансовый проект создан, можно формировать бюджет
+      on_event: [on_insert]
+
+  - id: TASK-FIN-02-02
+    name: Создание бюджета
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-FIN-07]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-07
+        description: Создание бюджета
+    transitions:
+    - target_task: TASK-FIN-02-03
+      condition: Бюджет создан в статусе draft, можно добавлять статьи
+      on_event: [on_insert]
+
+  - id: TASK-FIN-02-03
+    name: Ведение статей бюджета
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-FIN-09, OP-FIN-10]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-09
+        description: Добавление статьи бюджета
+      on_update:
+        query_code: OP-FIN-10
+        description: Изменение плановой суммы статьи бюджета
+    transitions:
+    - target_task: TASK-FIN-02-04
+      condition: Статьи наполнены, бюджет готов к утверждению
+      on_event: [on_insert, on_update]
+
+  - id: TASK-FIN-02-04
+    name: Утверждение бюджета
+    role: director
+    has_form: true
+    form_ref: [OP-FIN-08]
+    sql_queries:
+      on_approve:
+        query_code: OP-FIN-08
+        description: Утверждение бюджета
+    transitions:
+    - target_task: END_PROCESS
+      condition: Бюджет утверждён, доступен для контроля исполнения на дашборде
+      on_event: [on_approve]
+
+- id: FIN-03
+  name: Счета (Invoice)
+  description: Формирование счетов на основании документов других модулей (акты КБ-2в, отгрузки Production и т.д.) и их жизненный цикл.
+  dashboards:
+  - DASH-FIN-02 (Дебиторская и кредиторская задолженность)
+  reports:
+  - REP-FIN-02 (Реестр счетов)
+  tasks:
+
+  - id: TASK-FIN-03-01
+    name: Создание счёта
+    role: accountant
+    has_form: true
+    form_ref: [OP-FIN-11]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-11
+        description: Создание счёта
+    transitions:
+    - target_task: TASK-FIN-03-02
+      condition: Счёт создан в статусе draft, можно добавлять позиции
+      on_event: [on_insert]
+
+  - id: TASK-FIN-03-02
+    name: Добавление позиций счёта
+    role: accountant
+    has_form: true
+    form_ref: [OP-FIN-12]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-12
+        description: Добавление позиции счёта
+    transitions:
+    - target_task: TASK-FIN-03-03
+      condition: Позиции внесены, счёт готов к выставлению
+      on_event: [on_insert]
+
+  - id: TASK-FIN-03-03
+    name: Выставление или отмена счёта
+    role: accountant
+    has_form: true
+    form_ref: [OP-FIN-13, OP-FIN-14]
+    sql_queries:
+      on_issue:
+        query_code: OP-FIN-13
+        description: Выставление счёта
+      on_cancel:
+        query_code: OP-FIN-14
+        description: Отмена счёта
+    transitions:
+    - target_task: TASK-FIN-04-01
+      condition: Счёт выставлен, ожидается оплата
+      on_event: [on_issue]
+    - target_task: END_PROCESS
+      condition: Счёт отменён
+      on_event: [on_cancel]
+
+- id: FIN-04
+  name: Платежи
+  description: Планирование, исполнение и контроль платежей, погашающих счета.
+  dashboards:
+  - DASH-FIN-02 (Дебиторская и кредиторская задолженность)
+  reports:
+  - REP-FIN-03 (Реестр платежей)
+  tasks:
+
+  - id: TASK-FIN-04-01
+    name: Планирование платежа
+    role: treasurer
+    has_form: true
+    form_ref: [OP-FIN-15]
+    sql_queries:
+      on_plan:
+        query_code: OP-FIN-15
+        description: Планирование платежа
+    transitions:
+    - target_task: TASK-FIN-04-02
+      condition: Платёж запланирован в статусе planned
+      on_event: [on_plan]
+
+  - id: TASK-FIN-04-02
+    name: Проведение или отмена платежа
+    role: treasurer
+    has_form: true
+    form_ref: [OP-FIN-16, OP-FIN-17]
+    sql_queries:
+      on_complete:
+        query_code: OP-FIN-16
+        description: Проведение (исполнение) платежа
+      on_cancel:
+        query_code: OP-FIN-17
+        description: Отмена платежа
+    transitions:
+    - target_task: TASK-FIN-05-01
+      condition: Платёж исполнен, требуется зарегистрировать бухгалтерскую проводку
+      on_event: [on_complete]
+    - target_task: END_PROCESS
+      condition: Платёж отменён
+      on_event: [on_cancel]
+
+- id: FIN-05
+  name: Бухгалтерские проводки
+  description: Регистрация двойной записи по факту хозяйственных операций (в т.ч. платежей).
+  dashboards:
+  - DASH-FIN-03 (Финансовые показатели)
+  reports:
+  - REP-FIN-04 (Оборотно-сальдовая ведомость)
+  tasks:
+
+  - id: TASK-FIN-05-01
+    name: Регистрация проводки
+    role: accountant
+    has_form: true
+    form_ref: [OP-FIN-18]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-18
+        description: Регистрация проводки (двойная запись)
+    transitions: []
+
+- id: FIN-06
+  name: Периоды и показатели
+  description: Закрытие отчётных периодов и расчёт сводных финансовых показателей.
+  dashboards:
+  - DASH-FIN-03 (Финансовые показатели)
+  reports:
+  - REP-FIN-05 (Финансовые показатели по проектам)
+  tasks:
+
+  - id: TASK-FIN-06-01
+    name: Создание финансового периода
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-FIN-19]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-19
+        description: Создание финансового периода
+    transitions:
+    - target_task: TASK-FIN-06-02
+      condition: Период открыт, накапливаются проводки
+      on_event: [on_insert]
+
+  - id: TASK-FIN-06-02
+    name: Внесение расчётных показателей
+    role: financial_controller
+    has_form: true
+    form_ref: [OP-FIN-21]
+    sql_queries:
+      on_insert:
+        query_code: OP-FIN-21
+        description: Внесение расчётного финансового показателя
+    transitions:
+    - target_task: TASK-FIN-06-03
+      condition: Показатели рассчитаны, период готов к закрытию
+      on_event: [on_insert]
+
+  - id: TASK-FIN-06-03
+    name: Закрытие финансового периода
+    role: director
+    has_form: true
+    form_ref: [OP-FIN-20]
+    sql_queries:
+      on_close:
+        query_code: OP-FIN-20
+        description: Закрытие финансового периода
+    transitions:
+    - target_task: END_PROCESS
+      condition: Период закрыт, изменения проводок за период более невозможны
+      on_event: [on_close]
+
+bpmn_diagrams:
+- id: BPMN-FIN-01
+  name: Планирование
+  description: Справочники и бюджетирование.
+  process_ids:
+  - FIN-01
+  - FIN-02
+- id: BPMN-FIN-02
+  name: Расчёты
+  description: Счета и платежи — денежный цикл по документам-основаниям других модулей.
+  process_ids:
+  - FIN-03
+  - FIN-04
+- id: BPMN-FIN-03
+  name: Учёт и закрытие периода
+  description: Бухгалтерские проводки, финансовые показатели и закрытие отчётного периода.
+  process_ids:
+  - FIN-05
+  - FIN-06

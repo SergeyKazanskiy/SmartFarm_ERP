@@ -1,0 +1,39 @@
+# 1. Убедиться, что CP, Sales, PM загружены
+python manage.py demo_cp --company=1
+python manage.py demo_sales --company=1
+python manage.py process_events --once
+
+# 2. Workflow Finance
+python manage.py load_workflow --company=1 --module=FINANCE
+# Ожидаете: created=15, updated=0, transitions=?
+
+# 3. Demo-данные Finance
+python manage.py demo_finance --company=1 \
+  --file=apps/finance/workflow/Finance_test_data.json
+# Ожидаете:
+#   account: 7
+#   cost_center: 3
+#   financial_project: 1
+#   budget: 1
+#   budget_item: 3
+#   cash_account: 1
+#   bank_account: 1
+#   invoice: 3
+#   invoice_line: 2
+#   payment: 1
+#   transaction: 2
+#   period: 3
+#   indicator: 2
+
+# 4. Обработка событий
+python manage.py process_events --once
+
+# 5. Проверка задач
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+for t in TaskTask.objects.filter(definition__module='FINANCE')[:20]:
+    print(t.id, t.definition.code, t.assigned_role, t.status)
+"
+
+# 6. Тесты
+pytest apps/finance/tests/ -v

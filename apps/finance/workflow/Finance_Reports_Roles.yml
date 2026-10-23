@@ -1,0 +1,381 @@
+# =====================================================================================
+# Finance — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на Finance_Schema.json версии 1.2
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Бухгалтер
+# =====================================================================================
+- role: "бухгалтер"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-FIN-02: Реестр счетов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-02
+      report: "Реестр счетов"
+      description: >
+        Полный список всех счетов (дебиторских и кредиторских) за период.
+        Показывает тип счета, контрагента, номер, даты, сумму и статус.
+        Используется для контроля задолженности и планирования платежей.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+        - name: invoice_type
+          label: "Тип счета"
+          type: select
+          required: false
+          description: "Фильтр по типу счета"
+          options:
+            - { label: "Все", value: "" }
+            - { label: "Дебиторская (AR)", value: "AR" }
+            - { label: "Кредиторская (AP)", value: "AP" }
+      sections:
+        - title: "Реестр счетов"
+          columns:
+            - { field: invoice_id, label: "ID счета", type: number, format: integer }
+            - { field: invoice_type, label: "Тип", type: string, widget: badge, statusMap: { AR: "success", AP: "warning" } }
+            - { field: counterparty_id, label: "ID контрагента", type: number, format: integer }
+            - { field: invoice_number, label: "№ счета", type: string }
+            - { field: invoice_date, label: "Дата", type: date }
+            - { field: due_date, label: "Срок оплаты", type: date }
+            - { field: amount, label: "Сумма", type: number, format: currency }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { issued: "info", partially_paid: "warning", paid: "success", overdue: "danger", cancelled: "neutral" } }
+      summary:
+        - field: amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-FIN-R02
+      linked_operations:
+        - OP-FIN-11  # Создание счета
+        - OP-FIN-13  # Оплата счета
+        - OP-FIN-14  # Отмена счета
+      export:
+        formats: [pdf, excel, print]
+        template: "invoice_register"
+
+    # -------------------------------------------------------------------------------
+    # REP-FIN-03: Реестр платежей
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-03
+      report: "Реестр платежей"
+      description: >
+        Полный список всех платежей за период с указанием связанного счета,
+        даты, суммы и статуса. Используется для контроля денежных потоков
+        и сверки с банковскими выписками.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр платежей"
+          columns:
+            - { field: payment_id, label: "ID платежа", type: number, format: integer }
+            - { field: invoice_id, label: "ID счета", type: number, format: integer }
+            - { field: payment_date, label: "Дата", type: date }
+            - { field: amount, label: "Сумма", type: number, format: currency }
+            - { field: payment_status, label: "Статус", type: string, widget: status, statusMap: { pending: "warning", completed: "success", failed: "danger" } }
+      summary:
+        - field: amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-FIN-R03
+      linked_operations:
+        - OP-FIN-15  # Создание платежа
+        - OP-FIN-16  # Проведение платежа
+        - OP-FIN-17  # Отмена платежа
+      export:
+        formats: [pdf, excel, print]
+        template: "payment_register"
+
+    # -------------------------------------------------------------------------------
+    # REP-FIN-04: Оборотно-сальдовая ведомость
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-04
+      report: "Оборотно-сальдовая ведомость"
+      description: >
+        Детальная оборотно-сальдовая ведомость по всем счетам за период.
+        Показывает дебетовые и кредитовые обороты по каждому счету.
+        Используется для анализа финансовых потоков и подготовки отчетности.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Оборотно-сальдовая ведомость"
+          columns:
+            - { field: account_code, label: "Код счета", type: string }
+            - { field: account_name, label: "Наименование счета", type: string }
+            - { field: debit_turnover, label: "Дебет", type: number, format: currency }
+            - { field: credit_turnover, label: "Кредит", type: number, format: currency }
+      summary:
+        - field: debit_turnover
+          label: "Итого дебет"
+          aggregation: SUM
+        - field: credit_turnover
+          label: "Итого кредит"
+          aggregation: SUM
+      query_ref: Q-FIN-R04
+      linked_operations:
+        - OP-FIN-18  # Создание проводки
+      export:
+        formats: [pdf, excel, print]
+        template: "balance_sheet"
+
+
+# =====================================================================================
+# РОЛЬ: Казначей
+# =====================================================================================
+- role: "казначей"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-FIN-03: Реестр платежей
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-03
+      report: "Реестр платежей"
+      description: >
+        Полный список всех платежей за период с указанием связанного счета,
+        даты, суммы и статуса. Используется для контроля денежных потоков
+        и управления ликвидностью.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Реестр платежей"
+          columns:
+            - { field: payment_id, label: "ID платежа", type: number, format: integer }
+            - { field: invoice_id, label: "ID счета", type: number, format: integer }
+            - { field: payment_date, label: "Дата", type: date }
+            - { field: amount, label: "Сумма", type: number, format: currency }
+            - { field: payment_status, label: "Статус", type: string, widget: status, statusMap: { pending: "warning", completed: "success", failed: "danger" } }
+      summary:
+        - field: amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-FIN-R03
+      linked_operations:
+        - OP-FIN-15  # Создание платежа
+        - OP-FIN-16  # Проведение платежа
+        - OP-FIN-17  # Отмена платежа
+      export:
+        formats: [pdf, excel, print]
+        template: "payment_register"
+
+
+# =====================================================================================
+# РОЛЬ: Финансовый контролёр
+# =====================================================================================
+- role: "финансовый_контролёр"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-FIN-01: Бюджет
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-01
+      report: "Бюджет"
+      description: >
+        Детальный бюджет с разбивкой по центрам затрат.
+        Показывает плановые суммы по каждой статье бюджета.
+        Используется для контроля исполнения бюджета и планирования.
+      parameters:
+        - name: budget_id
+          label: "ID бюджета"
+          type: number
+          required: true
+          description: "Введите ID бюджета"
+      sections:
+        - title: "Бюджет"
+          columns:
+            - { field: cost_center_name, label: "Центр затрат", type: string }
+            - { field: planned_amount, label: "Плановая сумма", type: number, format: currency }
+      summary:
+        - field: planned_amount
+          label: "Итого по бюджету"
+          aggregation: SUM
+      query_ref: Q-FIN-R01
+      linked_operations:
+        - OP-FIN-07  # Создание бюджета
+        - OP-FIN-08  # Утверждение бюджета
+        - OP-FIN-09  # Корректировка бюджета
+      export:
+        formats: [pdf, excel, print]
+        template: "budget"
+
+    # -------------------------------------------------------------------------------
+    # REP-FIN-05: Финансовые показатели по проектам
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-05
+      report: "Финансовые показатели по проектам"
+      description: >
+        Сводка финансовых показателей по каждому проекту за период.
+        Показывает ключевые индикаторы: выручка, затраты, прибыль, маржинальность.
+        Используется для оценки эффективности проектов и принятия решений.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Финансовые показатели по проектам"
+          columns:
+            - { field: financial_project_name, label: "Проект", type: string }
+            - { field: indicator_code, label: "Код показателя", type: string }
+            - { field: indicator_value, label: "Значение", type: number, format: currency }
+      query_ref: Q-FIN-R05
+      linked_operations:
+        - OP-FIN-21  # Расчет показателей
+      export:
+        formats: [pdf, excel, print]
+        template: "project_financials"
+
+
+# =====================================================================================
+# РОЛЬ: Директор
+# =====================================================================================
+- role: "директор"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-FIN-04: Оборотно-сальдовая ведомость
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-04
+      report: "Оборотно-сальдовая ведомость"
+      description: >
+        Детальная оборотно-сальдовая ведомость по всем счетам за период.
+        Показывает дебетовые и кредитовые обороты по каждому счету.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Оборотно-сальдовая ведомость"
+          columns:
+            - { field: account_code, label: "Код счета", type: string }
+            - { field: account_name, label: "Наименование счета", type: string }
+            - { field: debit_turnover, label: "Дебет", type: number, format: currency }
+            - { field: credit_turnover, label: "Кредит", type: number, format: currency }
+      summary:
+        - field: debit_turnover
+          label: "Итого дебет"
+          aggregation: SUM
+        - field: credit_turnover
+          label: "Итого кредит"
+          aggregation: SUM
+      query_ref: Q-FIN-R04
+      linked_operations:
+        - OP-FIN-18  # Создание проводки
+      export:
+        formats: [pdf, excel, print]
+        template: "balance_sheet"
+
+    # -------------------------------------------------------------------------------
+    # REP-FIN-05: Финансовые показатели по проектам
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-05
+      report: "Финансовые показатели по проектам"
+      description: >
+        Сводка финансовых показателей по каждому проекту за период.
+        Показывает ключевые индикаторы: выручка, затраты, прибыль, маржинальность.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Финансовые показатели по проектам"
+          columns:
+            - { field: financial_project_name, label: "Проект", type: string }
+            - { field: indicator_code, label: "Код показателя", type: string }
+            - { field: indicator_value, label: "Значение", type: number, format: currency }
+      query_ref: Q-FIN-R05
+      linked_operations:
+        - OP-FIN-21  # Расчет показателей
+      export:
+        formats: [pdf, excel, print]
+        template: "project_financials"
+
+    # -------------------------------------------------------------------------------
+    # REP-FIN-06: Отчёт о прибылях и убытках (P&L)
+    # -------------------------------------------------------------------------------
+    - report_code: REP-FIN-06
+      report: "Отчёт о прибылях и убытках (P&L)"
+      description: >
+        Сводный отчёт о доходах и расходах за период.
+        Группировка по типам счетов: выручка (income), себестоимость (expense),
+        операционные расходы, валовая прибыль, EBITDA, чистая прибыль.
+        Используется для оценки финансовых результатов деятельности.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Отчёт о прибылях и убытках"
+          columns:
+            - { field: account_type, label: "Тип счета", type: string, widget: badge, statusMap: { income: "success", expense: "danger" } }
+            - { field: account_code, label: "Код счета", type: string }
+            - { field: account_name, label: "Наименование счета", type: string }
+            - { field: turnover, label: "Оборот", type: number, format: currency }
+      summary:
+        - field: turnover
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-FIN-R06
+      linked_operations:
+        - OP-FIN-18  # Создание проводки
+      export:
+        formats: [pdf, excel, print]
+        template: "profit_loss"

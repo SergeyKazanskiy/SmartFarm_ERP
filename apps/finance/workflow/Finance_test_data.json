@@ -1,0 +1,273 @@
+{
+    "module": "Finance",
+    "description": "Тестовые данные для модуля Финансы",
+    "tables": {
+      "fin_account": [
+        {
+          "account_id": "ACC-001",
+          "account_code": "10",
+          "account_name": "Основные средства",
+          "account_type": "asset",
+          "company_id": "COMP-001"
+        },
+        {
+          "account_id": "ACC-002",
+          "account_code": "20",
+          "account_name": "Товарно-материальные ценности",
+          "account_type": "asset",
+          "company_id": "COMP-001"
+        },
+        {
+          "account_id": "ACC-003",
+          "account_code": "30",
+          "account_name": "Денежные средства",
+          "account_type": "asset",
+          "company_id": "COMP-001"
+        },
+        {
+          "account_id": "ACC-004",
+          "account_code": "60",
+          "account_name": "Расчеты с поставщиками",
+          "account_type": "liability",
+          "company_id": "COMP-001"
+        },
+        {
+          "account_id": "ACC-005",
+          "account_code": "62",
+          "account_name": "Расчеты с покупателями",
+          "account_type": "asset",
+          "company_id": "COMP-001"
+        },
+        {
+          "account_id": "ACC-006",
+          "account_code": "70",
+          "account_name": "Выручка от реализации",
+          "account_type": "income",
+          "company_id": "COMP-001"
+        },
+        {
+          "account_id": "ACC-007",
+          "account_code": "90",
+          "account_name": "Себестоимость продукции",
+          "account_type": "expense",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_cost_center": [
+        {
+          "cost_center_id": "CC-001",
+          "cost_center_name": "Цех сборки",
+          "company_id": "COMP-001"
+        },
+        {
+          "cost_center_id": "CC-002",
+          "cost_center_name": "Цех механообработки",
+          "company_id": "COMP-001"
+        },
+        {
+          "cost_center_id": "CC-003",
+          "cost_center_name": "Отдел продаж",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_financial_project": [
+        {
+          "financial_project_id": "FP-001",
+          "financial_project_name": "Производство телевизоров 2026",
+          "linked_object_type": "production",
+          "linked_object_id": "PROD-001",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_budget": [
+        {
+          "budget_id": "BUD-001",
+          "financial_project_id": "FP-001",
+          "period_from": "2026-01-01",
+          "period_to": "2026-12-31",
+          "status_id": "approved",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_budget_item": [
+        {
+          "budget_item_id": "BI-001",
+          "budget_id": "BUD-001",
+          "cost_center_id": "CC-001",
+          "planned_amount": 1500000.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "budget_item_id": "BI-002",
+          "budget_id": "BUD-001",
+          "cost_center_id": "CC-002",
+          "planned_amount": 2000000.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "budget_item_id": "BI-003",
+          "budget_id": "BUD-001",
+          "cost_center_id": "CC-003",
+          "planned_amount": 500000.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_cash_account": [
+        {
+          "cash_account_id": "CASH-001",
+          "cash_account_name": "Основная касса",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_bank_account": [
+        {
+          "bank_account_id": "BANK-001",
+          "bank_id": "BANK-001",
+          "account_number": "UA123456789012345678901234567",
+          "currency_id": "CUR-001",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_invoice": [
+        {
+          "invoice_id": "FINV-001",
+          "invoice_type": "AR",
+          "counterparty_id": "CP-005",
+          "contract_id": null,
+          "source_object_type": "sales_order",
+          "source_object_id": "SO-001",
+          "invoice_number": "FINV-2026-001",
+          "invoice_date": "2026-07-01",
+          "due_date": "2026-07-31",
+          "amount": 275000.00,
+          "currency_id": "CUR-001",
+          "status_id": "issued",
+          "company_id": "COMP-001"
+        },
+        {
+          "invoice_id": "FINV-002",
+          "invoice_type": "AP",
+          "counterparty_id": "CP-001",
+          "contract_id": null,
+          "source_object_type": "procurement_order",
+          "source_object_id": "PO-001",
+          "invoice_number": "FINV-2026-002",
+          "invoice_date": "2026-06-08",
+          "due_date": "2026-07-08",
+          "amount": 625000.00,
+          "currency_id": "CUR-001",
+          "status_id": "paid",
+          "company_id": "COMP-001"
+        },
+        {
+          "invoice_id": "FINV-003",
+          "invoice_type": "AP",
+          "counterparty_id": "CP-002",
+          "contract_id": null,
+          "source_object_type": "procurement_order",
+          "source_object_id": "PO-002",
+          "invoice_number": "FINV-2026-003",
+          "invoice_date": "2026-06-12",
+          "due_date": "2026-07-12",
+          "amount": 145000.00,
+          "currency_id": "CUR-001",
+          "status_id": "issued",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_invoice_line": [
+        {
+          "invoice_line_id": "FINVL-001",
+          "invoice_id": "FINV-001",
+          "description": "Телевизоры SmartTV X-100 55\" (50 шт.)",
+          "amount": 275000.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "invoice_line_id": "FINVL-002",
+          "invoice_id": "FINV-002",
+          "description": "Печатные платы и микросхемы",
+          "amount": 625000.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_payment": [
+        {
+          "payment_id": "PAY-001",
+          "invoice_id": "FINV-002",
+          "bank_account_id": "BANK-001",
+          "cash_account_id": null,
+          "payment_status": "completed",
+          "payment_date": "2026-06-15 10:00:00",
+          "amount": 625000.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_financial_transaction": [
+        {
+          "transaction_id": "FT-001",
+          "debit_account_id": "ACC-002",
+          "credit_account_id": "ACC-003",
+          "cost_center_id": "CC-001",
+          "payment_id": "PAY-001",
+          "amount": 625000.00,
+          "transaction_date": "2026-06-15 10:00:00",
+          "company_id": "COMP-001"
+        },
+        {
+          "transaction_id": "FT-002",
+          "debit_account_id": "ACC-003",
+          "credit_account_id": "ACC-005",
+          "cost_center_id": "CC-003",
+          "payment_id": null,
+          "amount": 275000.00,
+          "transaction_date": "2026-07-01 09:00:00",
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_financial_period": [
+        {
+          "period_id": "PER-001",
+          "period_name": "Январь 2026",
+          "date_from": "2026-01-01",
+          "date_to": "2026-01-31",
+          "is_closed": 1,
+          "company_id": "COMP-001"
+        },
+        {
+          "period_id": "PER-002",
+          "period_name": "Февраль 2026",
+          "date_from": "2026-02-01",
+          "date_to": "2026-02-28",
+          "is_closed": 1,
+          "company_id": "COMP-001"
+        },
+        {
+          "period_id": "PER-003",
+          "period_name": "Июнь 2026",
+          "date_from": "2026-06-01",
+          "date_to": "2026-06-30",
+          "is_closed": 0,
+          "company_id": "COMP-001"
+        }
+      ],
+      "fin_financial_indicator": [
+        {
+          "indicator_id": "FI-001",
+          "financial_project_id": "FP-001",
+          "period_id": "PER-003",
+          "indicator_code": "revenue",
+          "indicator_value": 275000.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "indicator_id": "FI-002",
+          "financial_project_id": "FP-001",
+          "period_id": "PER-003",
+          "indicator_code": "cost_of_goods_sold",
+          "indicator_value": 150000.00,
+          "company_id": "COMP-001"
+        }
+      ]
+    }
+  }
