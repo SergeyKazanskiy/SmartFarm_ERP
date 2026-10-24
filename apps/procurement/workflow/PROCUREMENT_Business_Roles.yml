@@ -1,0 +1,447 @@
+# =====================================================================================
+# PROCUREMENT — каталог форм для бизнес-операций
+# Источник: PROCUREMENT_Business_Queries.sql (20 операций OP-PROC-01…20, схема v1.0).
+# Структура аналогична остальным *_Business_Roles.yml.
+#
+# НАЗНАЧЕНИЕ ФАЙЛА: по каждой операции описаны поля формы и событие, которое
+# запускает соответствующий SQL-запрос из PROCUREMENT_Business_Queries.sql.
+# Группировка операций в процессы 1:1 совпадает с PROCUREMENT_Process_Workflow.yml
+# (процессы PROC-01…04).
+#
+# СТРУКТУРА ОПЕРАЦИИ (как в Production_Business_Roles.yml):
+#   op_code       — код операции (список, если операция физически состоит из
+#                   двух SQL-запросов одной формы)
+#   name, table, type (insert|update), event, button, precondition
+#   fields        — field/label/type (text|textarea|number|date|datetime|select|
+#                   checkbox|repeater|hidden)/required/source/fields(для repeater)
+#
+# Поля с type=hidden не показываются пользователю: id генерируются приложением,
+# поля вроде created_by_employee_id подставляются из текущей сессии
+# (source: current_user), а не выбираются вручную.
+# =====================================================================================
+
+process: PROC-01
+process_name: "Справочники поставщиков"
+role: "purchasing_manager"
+operations:
+
+  - op_code: [OP-PROC-01, OP-PROC-02]
+    name: "Ведение поставщиков"
+    table: procurement_supplier
+    type: [insert, update]
+    event: "Procurement.supplier.save"
+    button: "Сохранить поставщика"
+    fields:
+      - field: supplier_id
+        label: "Поставщик (пусто для нового)"
+        type: select
+        required: false
+        source: { table: procurement_supplier, value_field: supplier_id, label_field: supplier_id }
+      - field: counterparty_id
+        label: "Контрагент"
+        type: select
+        required: true
+        source: { table: dict_counterparty, value_field: counterparty_id, label_field: counterparty_name }
+      - field: rating
+        label: "Рейтинг (1-10)"
+        type: number
+        required: false
+      - field: payment_terms
+        label: "Условия оплаты"
+        type: text
+        required: false
+      - field: delivery_terms
+        label: "Условия поставки"
+        type: text
+        required: false
+      - field: lead_time_days
+        label: "Типовой срок поставки (дней)"
+        type: number
+        required: false
+      - field: is_preferred
+        label: "Предпочтительный поставщик"
+        type: checkbox
+        required: false
+
+---
+process: PROC-02
+process_name: "Заявки на закупку"
+role: "purchasing_manager"
+statuses: [draft, pending_approval, approved, rejected, ordered]
+operations:
+
+  - op_code: [OP-PROC-03, OP-PROC-04]
+    name: "Создание заявки на закупку"
+    table: procurement_requisition
+    type: [insert, insert]
+    event: "Procurement.requisition.create"
+    button: "Создать заявку"
+    fields:
+      - field: requisition_id
+        label: "Заявка (пусто для новой)"
+        type: select
+        required: false
+        source: { table: procurement_requisition, value_field: requisition_id, label_field: requisition_number }
+      - field: requisition_number
+        label: "Номер заявки"
+        type: text
+        required: true
+      - field: source_type
+        label: "Источник заявки"
+        type: select
+        required: false
+        options: [wms_deficit, production_need, toir_spare_part, manual]
+      - field: source_id
+        label: "Идентификатор источника"
+        type: text
+        required: false
+      - field: requisition_date
+        label: "Дата заявки"
+        type: date
+        required: true
+      - field: requested_by_employee_id
+        label: "Заявитель"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+      - field: planned_order_date
+        label: "Плановая дата заказа"
+        type: date
+        required: false
+      - field: required_date
+        label: "Требуемая дата поставки"
+        type: date
+        required: false
+
+  - op_code: OP-PROC-04
+    name: "Добавление позиции заявки"
+    table: procurement_requisition_line
+    type: insert
+    event: "Procurement.requisitionLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: requisition_id
+        label: "Заявка"
+        type: select
+        required: true
+        source: { table: procurement_requisition, value_field: requisition_id, label_field: requisition_number }
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_id
+        label: "Единица измерения"
+        type: select
+        required: false
+        source: { table: dict_unit, value_field: unit_id, label_field: unit_name }
+      - field: estimated_unit_cost
+        label: "Ориентировочная цена за единицу"
+        type: number
+        required: false
+
+  - op_code: OP-PROC-05
+    name: "Изменение позиции заявки"
+    table: procurement_requisition_line
+    type: update
+    event: "Procurement.requisitionLine.update"
+    button: "Сохранить изменения"
+    fields:
+      - field: requisition_line_id
+        label: "Позиция заявки"
+        type: select
+        required: true
+        source: { table: procurement_requisition_line, value_field: requisition_line_id, label_field: requisition_line_id }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: estimated_unit_cost
+        label: "Ориентировочная цена за единицу"
+        type: number
+        required: false
+
+  - op_code: OP-PROC-06
+    name: "Согласование заявки"
+    table: procurement_requisition
+    type: update
+    role: "director"
+    event: "Procurement.requisition.review"
+    button: "Утвердить / Отклонить"
+    precondition: "status_id = pending_approval"
+    fields:
+      - field: requisition_id
+        label: "Заявка"
+        type: select
+        required: true
+        source: { table: procurement_requisition, value_field: requisition_id, label_field: requisition_number }
+      - field: status_id
+        label: "Решение"
+        type: select
+        required: true
+        options: [approved, rejected]
+
+---
+process: PROC-03
+process_name: "Запрос предложений (RFQ)"
+role: "purchasing_manager"
+statuses: [draft, sent, responded, closed]
+operations:
+
+  - op_code: [OP-PROC-07, OP-PROC-08, OP-PROC-09]
+    name: "Создание и отправка RFQ"
+    table: procurement_rfq
+    type: [insert, insert, update]
+    event: "Procurement.rfq.create"
+    button: "Создать RFQ"
+    fields:
+      - field: rfq_id
+        label: "RFQ (пусто для нового)"
+        type: select
+        required: false
+        source: { table: procurement_rfq, value_field: rfq_id, label_field: rfq_number }
+      - field: rfq_number
+        label: "Номер RFQ"
+        type: text
+        required: true
+      - field: requisition_id
+        label: "Заявка"
+        type: select
+        required: false
+        source: { table: procurement_requisition, value_field: requisition_id, label_field: requisition_number }
+      - field: rfq_date
+        label: "Дата RFQ"
+        type: date
+        required: true
+      - field: response_deadline
+        label: "Срок предоставления предложений"
+        type: date
+        required: false
+
+  - op_code: OP-PROC-08
+    name: "Добавление поставщика в RFQ"
+    table: procurement_rfq_supplier
+    type: insert
+    event: "Procurement.rfqSupplier.add"
+    button: "Добавить поставщика"
+    fields:
+      - field: rfq_id
+        label: "RFQ"
+        type: select
+        required: true
+        source: { table: procurement_rfq, value_field: rfq_id, label_field: rfq_number }
+      - field: supplier_id
+        label: "Поставщик"
+        type: select
+        required: true
+        source: { table: procurement_supplier, value_field: supplier_id, label_field: supplier_id }
+
+  - op_code: OP-PROC-10
+    name: "Внесение ценового предложения поставщика"
+    table: procurement_supplier_quote
+    type: insert
+    event: "Procurement.supplierQuote.create"
+    button: "Внести предложение"
+    fields:
+      - field: rfq_supplier_id
+        label: "Поставщик в RFQ"
+        type: select
+        required: true
+        source: { table: procurement_rfq_supplier, value_field: rfq_supplier_id, label_field: rfq_supplier_id }
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: unit_price
+        label: "Цена за единицу"
+        type: number
+        required: true
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: delivery_days
+        label: "Срок поставки, дней"
+        type: number
+        required: false
+
+  - op_code: OP-PROC-11
+    name: "Закрытие RFQ (выбор поставщика)"
+    table: procurement_rfq
+    type: update
+    event: "Procurement.rfq.close"
+    button: "Закрыть RFQ"
+    precondition: "status_id = responded"
+    fields:
+      - field: rfq_id
+        label: "RFQ"
+        type: select
+        required: true
+        source: { table: procurement_rfq, value_field: rfq_id, label_field: rfq_number }
+
+---
+process: PROC-04
+process_name: "Заказы поставщикам (PO)"
+role: "purchasing_manager"
+statuses: [draft, sent, confirmed, partially_received, completed, cancelled]
+operations:
+
+  - op_code: [OP-PROC-12, OP-PROC-13, OP-PROC-15]
+    name: "Создание и отправка заказа поставщику"
+    table: procurement_order
+    type: [insert, insert, update]
+    event: "Procurement.order.create"
+    button: "Создать заказ"
+    fields:
+      - field: order_id
+        label: "Заказ (пусто для нового)"
+        type: select
+        required: false
+        source: { table: procurement_order, value_field: order_id, label_field: order_number }
+      - field: order_number
+        label: "Номер заказа"
+        type: text
+        required: true
+      - field: supplier_id
+        label: "Поставщик"
+        type: select
+        required: true
+        source: { table: procurement_supplier, value_field: supplier_id, label_field: supplier_id }
+      - field: requisition_id
+        label: "Заявка"
+        type: select
+        required: false
+        source: { table: procurement_requisition, value_field: requisition_id, label_field: requisition_number }
+      - field: rfq_id
+        label: "RFQ"
+        type: select
+        required: false
+        source: { table: procurement_rfq, value_field: rfq_id, label_field: rfq_number }
+      - field: order_date
+        label: "Дата заказа"
+        type: date
+        required: true
+      - field: expected_delivery_date
+        label: "Ожидаемая дата поставки"
+        type: date
+        required: false
+      - field: currency_id
+        label: "Валюта"
+        type: select
+        required: false
+        source: { table: dict_currency, value_field: currency_id, label_field: currency_name }
+      - field: created_by_employee_id
+        label: "Кто создал"
+        type: hidden
+        source: current_user
+
+  - op_code: OP-PROC-13
+    name: "Добавление позиции заказа"
+    table: procurement_order_line
+    type: insert
+    event: "Procurement.orderLine.create"
+    button: "Добавить позицию"
+    fields:
+      - field: order_id
+        label: "Заказ"
+        type: select
+        required: true
+        source: { table: procurement_order, value_field: order_id, label_field: order_number }
+      - field: material_id
+        label: "Материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_price
+        label: "Цена за единицу"
+        type: number
+        required: true
+
+  - op_code: OP-PROC-14
+    name: "Изменение позиции заказа"
+    table: procurement_order_line
+    type: update
+    event: "Procurement.orderLine.update"
+    button: "Сохранить изменения"
+    precondition: "order.status = draft"
+    fields:
+      - field: order_line_id
+        label: "Позиция заказа"
+        type: select
+        required: true
+        source: { table: procurement_order_line, value_field: order_line_id, label_field: order_line_id }
+      - field: quantity
+        label: "Количество"
+        type: number
+        required: true
+      - field: unit_price
+        label: "Цена за единицу"
+        type: number
+        required: true
+
+  - op_code: OP-PROC-16
+    name: "Подтверждение заказа поставщиком"
+    table: procurement_order
+    type: update
+    event: "Procurement.order.confirm"
+    button: "Подтвердить заказ"
+    precondition: "status_id = sent"
+    fields:
+      - field: order_id
+        label: "Заказ"
+        type: select
+        required: true
+        source: { table: procurement_order, value_field: order_id, label_field: order_number }
+
+  - op_code: [OP-PROC-17, OP-PROC-18]
+    name: "Регистрация поставки и завершение заказа"
+    table: [procurement_order_line, procurement_order]
+    type: [update, update]
+    role: "warehouse_keeper"
+    event: "Procurement.order.receive"
+    button: "Зарегистрировать поставку"
+    fields:
+      - field: order_line_id
+        label: "Позиция заказа"
+        type: select
+        required: true
+        source: { table: procurement_order_line, value_field: order_line_id, label_field: order_line_id }
+      - field: received_quantity
+        label: "Полученное количество"
+        type: number
+        required: true
+      - field: delivery_date
+        label: "Дата поставки"
+        type: date
+        required: true
+
+  - op_code: OP-PROC-19
+    name: "Отмена заказа поставщику"
+    table: procurement_order
+    type: update
+    event: "Procurement.order.cancel"
+    button: "Отменить заказ"
+    precondition: "status_id in (draft, sent)"
+    fields:
+      - field: order_id
+        label: "Заказ"
+        type: select
+        required: true
+        source: { table: procurement_order, value_field: order_id, label_field: order_number }
+
+  - op_code: OP-PROC-20
+    name: "Автоматическое создание прихода в WMS"
+    table: proc_wms_integration
+    type: trigger
+    trigger: system
+    note: "Выполняется автоматически при получении товара"
+    fields: []

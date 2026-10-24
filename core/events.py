@@ -84,3 +84,30 @@ class CPEvents:
     BLACKLIST_REMOVE = "CP.blacklist.remove"
     ATTACHMENT_CREATE = "CP.attachment.create"
     ATTACHMENT_DELETE = "CP.attachment.delete"
+
+
+class ProcurementEvents:
+    """События Procurement-модуля (из PROCUREMENT_Business_Roles.yml)."""
+    # Поставщики
+    SUPPLIER_SAVE = "Procurement.supplier.save"
+
+    # Заявки
+    REQUISITION_CREATE = "Procurement.requisition.create"
+    REQUISITION_LINE_CREATE = "Procurement.requisitionLine.create"
+    REQUISITION_LINE_UPDATE = "Procurement.requisitionLine.update"
+    REQUISITION_REVIEW = "Procurement.requisition.review"
+
+    # RFQ
+    RFQ_CREATE = "Procurement.rfq.create"
+    RFQ_SUPPLIER_ADD = "Procurement.rfqSupplier.add"
+    SUPPLIER_QUOTE_CREATE = "Procurement.supplierQuote.create"
+    RFQ_CLOSE = "Procurement.rfq.close"
+
+    # Заказы
+    ORDER_CREATE = "Procurement.order.create"
+    ORDER_LINE_CREATE = "Procurement.orderLine.create"
+    ORDER_LINE_UPDATE = "Procurement.orderLine.update"
+    ORDER_CONFIRM = "Procurement.order.confirm"
+    ORDER_RECEIVE = "Procurement.order.receive"
+    ORDER_RECEIVE_COMPLETE = "Procurement.order.receive_complete"
+    ORDER_CANCEL = "Procurement.order.cancel"

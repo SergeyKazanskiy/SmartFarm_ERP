@@ -1,0 +1,530 @@
+# =====================================================================================
+# Procurement — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# =====================================================================================
+
+- role: "менеджер_по_закупкам"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PROC-01: Дефицит и заявки
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROC-01
+      dashboard: "Дефицит и заявки"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-shortage"
+          type: "kpi"
+          title: "Ключевые показатели дефицита"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Материалы с дефицитом"
+              subtitle: "ниже точки перезаказа"
+              dataSource: "Q-PROC-01-01"
+              field: "deficit_count"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 5
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 6
+                  value2: 15
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 15
+                  status: "danger"
+                  label: "Критический дефицит"
+              grid: { w: 3 }
+              linked_operations: [OP-WMS-09]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Активные заявки на закупку"
+              subtitle: "ожидают согласования"
+              dataSource: "Q-PROC-01-02"
+              field: "pending_requests"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 3
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 3
+                  status: "warning"
+                  label: "Накопление"
+              grid: { w: 3 }
+              linked_operations: [OP-PROC-03]
+
+        - id: "sec-analytics-shortage"
+          type: "analytics"
+          title: "Аналитика дефицита"
+          widgets:
+            - widget_id: W01-04
+              type: Chart
+              title: "Прогноз потребности в материалах"
+              subtitle: "на неделю"
+              dataSource: "Q-PROC-01-04"
+              chartType: "bar"
+              category: "material_name"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+                unit: "шт"
+              series:
+                - field: "forecast_quantity"
+                  label: "Прогноз потребности"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-PROC-03]
+
+        - id: "sec-detailed-shortage"
+          type: "alerts"
+          title: "Детальный список дефицита"
+          widgets:
+            - widget_id: W01-03
+              type: Table
+              title: "Дефицитные материалы"
+              subtitle: "с потребностью в закупке"
+              dataSource: "Q-PROC-01-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "material_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "material_name"
+                  title: "Материал"
+                  width: 200
+                  sortable: true
+                - field: "current_stock"
+                  title: "Текущий остаток"
+                  width: 130
+                  align: "right"
+                - field: "reorder_point"
+                  title: "Точка перезаказа"
+                  width: 130
+                  align: "right"
+                - field: "deficit_quantity"
+                  title: "Дефицит"
+                  width: 120
+                  align: "right"
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "0-10": "warning"
+                      "11-50": "danger"
+                      "51": "danger"
+                - field: "required_quantity"
+                  title: "Требуется закупить"
+                  width: 130
+                  align: "right"
+                  summary: "SUM"
+                - field: "urgency_level"
+                  title: "Срочность"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "high": "danger"
+                      "medium": "warning"
+                      "low": "info"
+              grid: { w: 12 }
+              linked_operations: [OP-WMS-09, OP-PROC-03]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROC-02: Анализ поставщиков
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROC-02
+      dashboard: "Анализ поставщиков"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-suppliers"
+          type: "kpi"
+          title: "Ключевые показатели поставщиков"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Средний рейтинг поставщиков"
+              subtitle: "по всем контрагентам"
+              dataSource: "Q-PROC-02-01"
+              field: "avg_rating"
+              aggregation: "AVG"
+              format: "number"
+              suffix: " ★"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 4.5
+                  status: "success"
+                  label: "Отлично"
+                - field: "value"
+                  operator: "between"
+                  value: 3.5
+                  value2: 4.5
+                  status: "warning"
+                  label: "Хорошо"
+                - field: "value"
+                  operator: "<"
+                  value: 3.5
+                  status: "danger"
+                  label: "Требует внимания"
+              grid: { w: 4 }
+              linked_operations: [OP-PROC-01, OP-PROC-02]
+
+        - id: "sec-analytics-suppliers"
+          type: "analytics"
+          title: "Аналитика поставщиков"
+          widgets:
+            - widget_id: W02-02
+              type: Chart
+              title: "Распределение заказов по поставщикам"
+              subtitle: "доля в закупках"
+              dataSource: "Q-PROC-02-02"
+              chartType: "pie"
+              category: "supplier_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "order_count"
+                  label: "Количество заказов"
+              grid: { w: 4 }
+              linked_operations: [OP-PROC-12]
+              
+            - widget_id: W02-04
+              type: Chart
+              title: "ТОП поставщиков по объёму закупок"
+              subtitle: "за последние 12 месяцев"
+              dataSource: "Q-PROC-02-04"
+              chartType: "bar"
+              category: "supplier_name"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_purchases"
+                  label: "Объём закупок"
+                  color: "#34d399"
+              grid: { w: 8 }
+              linked_operations: [OP-PROC-12]
+
+        - id: "sec-alerts-suppliers"
+          type: "alerts"
+          title: "Проблемные поставщики"
+          widgets:
+            - widget_id: W02-03
+              type: Table
+              title: "Поставщики с нарушением сроков"
+              subtitle: "последние 6 месяцев"
+              dataSource: "Q-PROC-02-03"
+              pageSize: 10
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "supplier_name"
+                  title: "Поставщик"
+                  width: 200
+                  sortable: true
+                - field: "total_orders"
+                  title: "Всего заказов"
+                  width: 120
+                  align: "right"
+                - field: "delayed_orders"
+                  title: "Просроченных"
+                  width: 120
+                  align: "right"
+                - field: "delay_rate"
+                  title: "% просрочек"
+                  width: 120
+                  align: "right"
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "0-5": "success"
+                      "5-15": "warning"
+                      "15-30": "danger"
+                      "30": "danger"
+                - field: "avg_delay_days"
+                  title: "Ср. задержка (дни)"
+                  width: 130
+                  align: "right"
+              grid: { w: 12 }
+              linked_operations: [OP-PROC-12, OP-PROC-18]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROC-03: Заказы и поставки
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROC-03
+      dashboard: "Заказы и поставки"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-orders"
+          type: "kpi"
+          title: "Ключевые показатели заказов"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Заказы со статусом 'отправлен'"
+              subtitle: "ожидают подтверждения"
+              dataSource: "Q-PROC-03-01"
+              field: "sent_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 3 }
+              linked_operations: [OP-PROC-15, OP-PROC-16]
+              
+            - widget_id: W03-02
+              type: Indicator
+              title: "Просроченные поставки"
+              subtitle: "ожидаемая дата < сегодня"
+              dataSource: "Q-PROC-03-02"
+              field: "overdue_shipments"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 2
+                  status: "danger"
+                  label: "Требует внимания"
+              grid: { w: 3 }
+              linked_operations: [OP-PROC-12, OP-PROC-17]
+              
+            - widget_id: W03-05
+              type: Indicator
+              title: "Общая сумма активных заказов"
+              subtitle: "в обработке"
+              dataSource: "Q-PROC-03-05"
+              field: "total_active_amount"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 3 }
+              linked_operations: [OP-PROC-12]
+
+        - id: "sec-analytics-orders"
+          type: "analytics"
+          title: "Аналитика заказов"
+          widgets:
+            - widget_id: W03-03
+              type: Chart
+              title: "Динамика закупок по месяцам"
+              subtitle: "в деньгах"
+              dataSource: "Q-PROC-03-03"
+              chartType: "area"
+              category: "month"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_amount"
+                  label: "Сумма закупок"
+                  color: "#f59e0b"
+              grid: { w: 6 }
+              linked_operations: [OP-PROC-12, OP-PROC-18]
+
+        - id: "sec-detailed-orders"
+          type: "analytics"
+          title: "Детальная информация по заказам"
+          widgets:
+            - widget_id: W03-04
+              type: Table
+              title: "Незавершённые заказы"
+              subtitle: "поставка ожидается"
+              dataSource: "Q-PROC-03-04"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "purchase_order_id"
+                  title: "ID заказа"
+                  width: 80
+                  align: "center"
+                - field: "order_number"
+                  title: "№ заказа"
+                  width: 120
+                  sortable: true
+                - field: "supplier_name"
+                  title: "Поставщик"
+                  width: 180
+                - field: "total_amount"
+                  title: "Сумма"
+                  width: 130
+                  align: "right"
+                  formatter: "currency"
+                  summary: "SUM"
+                - field: "order_date"
+                  title: "Дата заказа"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "expected_delivery"
+                  title: "План поставки"
+                  width: 120
+                  formatter: "date"
+                - field: "status_id"
+                  title: "Статус"
+                  width: 130
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "sent": "info"
+                      "confirmed": "success"
+                      "partial": "warning"
+                      "overdue": "danger"
+                      "cancelled": "danger"
+                - field: "days_until_delivery"
+                  title: "Дней до поставки"
+                  width: 120
+                  align: "right"
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "1-3": "danger"
+                      "4-7": "warning"
+                      "8": "success"
+              grid: { w: 12 }
+              linked_operations: [OP-PROC-12, OP-PROC-16, OP-PROC-17]
+
+
+# =====================================================================================
+# РОЛЬ: Директор
+# =====================================================================================
+- role: "директор"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PROC-01: Дефицит и заявки (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROC-01
+      dashboard: "Дефицит и заявки"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-director"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-02
+              type: Indicator
+              title: "Активные заявки на закупку"
+              subtitle: "ожидают согласования"
+              dataSource: "Q-PROC-01-02"
+              field: "pending_requests"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROC-03]
+
+        - id: "sec-alerts-director"
+          type: "alerts"
+          title: "Критический дефицит"
+          widgets:
+            - widget_id: W01-03
+              type: Table
+              title: "Дефицитные материалы"
+              subtitle: "с потребностью в закупке"
+              dataSource: "Q-PROC-01-03"
+              pageSize: 10
+              enableSearch: true
+              columns:
+                - field: "material_name"
+                  title: "Материал"
+                  width: 200
+                  sortable: true
+                - field: "current_stock"
+                  title: "Текущий остаток"
+                  width: 130
+                  align: "right"
+                - field: "reorder_point"
+                  title: "Точка перезаказа"
+                  width: 130
+                  align: "right"
+                - field: "deficit_quantity"
+                  title: "Дефицит"
+                  width: 120
+                  align: "right"
+                - field: "urgency_level"
+                  title: "Срочность"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "high": "danger"
+                      "medium": "warning"
+                      "low": "info"
+              grid: { w: 12 }
+              linked_operations: [OP-WMS-09, OP-PROC-03]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROC-03: Заказы и поставки (сокращенная версия)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROC-03
+      dashboard: "Заказы и поставки"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-director-orders"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-05
+              type: Indicator
+              title: "Общая сумма активных заказов"
+              subtitle: "в обработке"
+              dataSource: "Q-PROC-03-05"
+              field: "total_active_amount"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              grid: { w: 4 }
+              linked_operations: [OP-PROC-12]
+              
+            - widget_id: W03-02
+              type: Indicator
+              title: "Просроченные поставки"
+              subtitle: "ожидаемая дата < сегодня"
+              dataSource: "Q-PROC-03-02"
+              field: "overdue_shipments"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: ">"
+                  value: 2
+                  status: "danger"
+                  label: "Требует внимания"
+              grid: { w: 4 }
+              linked_operations: [OP-PROC-12, OP-PROC-17]

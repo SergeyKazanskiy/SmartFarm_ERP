@@ -1,0 +1,223 @@
+# ==============================================================================
+# МОДУЛЬ: ЗАКУПКИИ И СНАБЖЕНИЕ (PROC / PROCUREMENT)
+# ==============================================================================
+
+module_info:
+  id: "PROC"
+  name: "Закупки и снабжение"
+  version: "1.0"
+  description: "Реестр сквозных бизнес-сценариев для модуля Закупки (PROC)"
+  related_modules:
+    - "WMS"
+    - "FIN"
+    - "PROD"
+    - "MAINT"
+    - "FA"
+
+scenarios:
+  - id: "SCENARIO-PROC-01"
+    title: "Закупка ТМЦ по потребности (Полный цикл закупки)"
+    description: "Полный процесс обеспечения потребности в сырье/материалах: от автоматического расчета MRP или заявки до приемки на склад и проведения поставки в финансах."
+    module: "PROC"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "procurement_manager"
+      - "warehouse_keeper"
+      - "accountant"
+      - "financial_controller"
+    steps:
+      - step_id: "PROC-01-01"
+        lane: "PROC/PROD"
+        task: "Формирование потребности и заявки на закупку (Requisition)"
+        process_ref: "[PROC-01, TASK-PROC-01-01]"
+        operation_ref: "OP-PROC-01"
+        description: "Формирование внутренней заявки на закупку на основе расчета MRP, минимальных остатков или ручной потребности подразделения."
+        depends_on: []
+        trigger: "Расчет MRP / Низкий остаток ТМЦ / Заявка подразделения"
+        system_action: "proc_purchase_requisition.status_id = 'draft'"
+        ui_notification: "Сформирована заявка на закупку ТМЦ."
+
+      - step_id: "PROC-01-02"
+        lane: "PROC"
+        task: "Согласование заявки и выбор поставщика (RFQ/Тендер)"
+        process_ref: "[PROC-01, TASK-PROC-01-02]"
+        operation_ref: "OP-PROC-03"
+        description: "Согласование заявки с руководителем, отправка коммерческих запросов поставщикам, выбор лучшего предложения."
+        depends_on:
+          - "PROC-01-01"
+        system_action: "proc_purchase_requisition.status_id = 'approved', proc_rfq.status_id = 'completed'"
+        ui_notification: "Заявка согласована, поставщик выбран."
+
+      - step_id: "PROC-01-03"
+        lane: "PROC"
+        task: "Создание и утверждение Заказа на закупку (PO)"
+        process_ref: "[PROC-02, TASK-PROC-02-01]"
+        operation_ref: "OP-PROC-05"
+        description: "Формирование официального заказа поставщику (Purchase Order) с фиксацией цен, условий оплаты и графиков поставки."
+        depends_on:
+          - "PROC-01-02"
+        system_action: "proc_purchase_order.status_id = 'confirmed'"
+        ui_notification: "Заказ поставщику №... отправлен и confirmed."
+
+      - step_id: "PROC-01-04"
+        lane: "FIN"
+        task: "Согласование и проведение авансовой оплаты (при условии)"
+        process_ref: "[FIN-04, TASK-FIN-04-02]"
+        operation_ref: "OP-FIN-16"
+        description: "Проведение предоплаты поставщику в соответствии с договором."
+        depends_on:
+          - "PROC-01-03"
+        condition: "Договор предусматривает предоплату"
+        system_action: "fin_payment_order.status_id = 'executed', proc_purchase_order.payment_status = 'partially_paid'"
+        ui_notification: "Авансовый платеж поставщику выполнен."
+
+      - step_id: "PROC-01-05"
+        lane: "WMS"
+        task: "Приемка и входной контроль ТМЦ на складе"
+        process_ref: "[WMS-02, TASK-WMS-02-01]"
+        operation_ref: "OP-WMS-08"
+        description: "Поступление груза, физическая приемка, проверка по накладной, проведение контроля качества (QC)."
+        depends_on:
+          - "PROC-01-03"
+        system_action: "wms_receipt_note.status_id = 'completed', wms_inventory.quantity += received_qty"
+        ui_notification: "ТМЦ успешно приняты и оприходованы на склад."
+
+      - step_id: "PROC-01-06"
+        lane: "FIN/PROC"
+        task: "Регистрация входящего счета (Invoice Matching 3-Way)"
+        process_ref: "[FIN-02, TASK-FIN-02-01]"
+        operation_ref: "OP-FIN-08"
+        description: "Сверка данных: Заказ (PO) - Акт/Накладная (Receipt) - Счет поставщика (Invoice). Утверждение к оплате."
+        depends_on:
+          - "PROC-01-05"
+        system_action: "fin_vendor_invoice.status_id = 'matched', fin_gl_entry.posted = true"
+        ui_notification: "Счет поставщика проверен (3-Way Match) и принят к учету."
+
+      - step_id: "PROC-01-END"
+        lane: "PROC"
+        task: "Завершение заказа на закупку"
+        description: "ТМЦ на складе, задолженность зафиксирована, заказ закрыт."
+        depends_on:
+          - "PROC-01-06"
+        system_action: "proc_purchase_order.status_id = 'closed', core_audit_log"
+        ui_notification: "Цикл закупки успешно завершен."
+
+  - id: "SCENARIO-PROC-02"
+    title: "Обработка отклонений и расхождений при приемке (Расхождение / Брак)"
+    description: "Обработка ситуаций, когда поставщик поставил товар ненадлежащего качества, в меньшем/большем количестве или с повреждениями."
+    module: "PROC"
+    scenario_type: "exception"
+    priority: "high"
+    roles:
+      - "warehouse_keeper"
+      - "quality_inspector"
+      - "procurement_manager"
+      - "accountant"
+    steps:
+      - step_id: "PROC-02-01"
+        lane: "WMS/Quality"
+        task: "Фиксация расхождений / брака при приёмке"
+        process_ref: "[WMS-02, TASK-WMS-02-02]"
+        operation_ref: "OP-WMS-09"
+        description: "Кладовщик или инспектор ОКК выявляет недостачу, пересорт или повреждение товара."
+        depends_on: []
+        trigger: "Выявление дефектов при входном контроле"
+        system_action: "wms_receipt_note.status_id = 'discrepancy_found', wms_quarantine.quantity += defective_qty"
+        ui_notification: "Зафиксированы расхождения при приёмке! Товар помещен в карантин."
+
+      - step_id: "PROC-02-02"
+        lane: "PROC"
+        task: "Оформление коммерческого акта и претензии поставщику"
+        process_ref: "[PROC-03, TASK-PROC-03-01]"
+        operation_ref: "OP-PROC-12"
+        description: "Закупщик формирует Акт о расхождениях (ТОРГ-2) и официальную претензию поставщику."
+        depends_on:
+          - "PROC-02-01"
+        system_action: "proc_claim.status_id = 'sent_to_vendor'"
+        ui_notification: "Претензия поставщику сформирована и направлена."
+
+      - step_id: "PROC-02-03-A"
+        lane: "WMS/PROC"
+        task: "Возврат бракованного товара поставщику"
+        process_ref: "[WMS-04, TASK-WMS-04-01]"
+        operation_ref: "OP-WMS-22"
+        description: "При принятии решения о возврате: отгрузка брака обратно поставщику."
+        condition: "Решение: Возврат товара"
+        depends_on:
+          - "PROC-02-02"
+        system_action: "wms_inventory.quarantine_quantity -= defective_qty, wms_return_note.status = 'shipped'"
+        ui_notification: "Бракованный товар отгружен поставщику."
+
+      - step_id: "PROC-02-03-B"
+        lane: "FIN"
+        task: "Корректировка финансовой задолженности / Корректировочный счет"
+        process_ref: "[FIN-02, TASK-FIN-02-03]"
+        operation_ref: "OP-FIN-10"
+        description: "Уменьшение суммы к оплате поставщику на сумму брака/недостачи или получение Дебет-ноты."
+        depends_on:
+          - "PROC-02-02"
+        system_action: "fin_vendor_invoice.total_amount -= claim_amount, fin_debit_note.status = 'issued'"
+        ui_notification: "Сумма взаиморасчетов с поставщиком скорректирована."
+
+      - step_id: "PROC-02-END"
+        lane: "PROC"
+        task: "Завершение обработки претензии"
+        description: "Претензионная работа завершена, финансовые и складские остатки выверены."
+        depends_on:
+          - "PROC-02-03-A"
+          - "PROC-02-03-B"
+        system_action: "proc_claim.status_id = 'resolved', core_audit_log"
+        ui_notification: "Претензия закрыта."
+
+  - id: "SCENARIO-PROC-03"
+    title: "Корректировка / Отмена заказа на закупку (PO Change Order)"
+    description: "Процесс изменения условий действующего заказа (изменение цен, количества, отмена позиций или всего заказа) до момента отгрузки."
+    module: "PROC"
+    scenario_type: "change"
+    priority: "medium"
+    roles:
+      - "procurement_manager"
+      - "financial_controller"
+    steps:
+      - step_id: "PROC-03-01"
+        lane: "PROC"
+        task: "Инициация изменения Заказа на закупку"
+        process_ref: "[PROC-02, TASK-PROC-02-03]"
+        operation_ref: "OP-PROC-09"
+        description: "Корректировка позиций, объемов или дат поставки в утвержденном PO по инициативе поставщика или компании."
+        depends_on: []
+        trigger: "Изменение производственного плана / Уведомление от поставщика"
+        system_action: "proc_purchase_order.status_id = 'under_revision'"
+        ui_notification: "Заказ на закупку переведен в статус редактирования."
+
+      - step_id: "PROC-03-02"
+        lane: "PROC/FIN"
+        task: "Пересогласование условий и лимитов бюджетного контроля"
+        process_ref: "[FIN-01, TASK-FIN-01-04]"
+        operation_ref: "OP-FIN-04"
+        description: "Автоматическая проверка попадания новой суммы заказа в бюджеты и повторное утверждение."
+        depends_on:
+          - "PROC-03-01"
+        system_action: "fin_budget_check.status = 'passed', proc_purchase_order.version += 1"
+        ui_notification: "Новая версия заказа прошла бюджетный контроль."
+
+      - step_id: "PROC-03-03"
+        lane: "PROC"
+        task: "Фиксация и отправка обновленного PO поставщику"
+        process_ref: "[PROC-02, TASK-PROC-02-01]"
+        operation_ref: "OP-PROC-06"
+        description: "Утверждение новой версии документа и отправка поставщику."
+        depends_on:
+          - "PROC-03-02"
+        system_action: "proc_purchase_order.status_id = 'confirmed'"
+        ui_notification: "Обновленный заказ на закупку (v2) утвержден."
+
+      - step_id: "PROC-03-END"
+        lane: "PROC"
+        task: "Завершение изменения заказа"
+        description: "Изменения зафиксированы в истории версионности."
+        depends_on:
+          - "PROC-03-03"
+        system_action: "core_audit_log"
+        ui_notification: "Изменение PO успешно завершено."

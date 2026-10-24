@@ -1,0 +1,269 @@
+{
+    "module": "Procurement",
+    "description": "Тестовые данные для модуля Закупки",
+    "tables": {
+      "procurement_supplier": [
+        {
+          "supplier_id": "SUP-001",
+          "counterparty_id": "CP-001",
+          "rating": 9,
+          "payment_terms": "net30",
+          "delivery_terms": "DDP",
+          "lead_time_days": 7,
+          "is_preferred": true,
+          "company_id": "COMP-001"
+        },
+        {
+          "supplier_id": "SUP-002",
+          "counterparty_id": "CP-002",
+          "rating": 8,
+          "payment_terms": "net45",
+          "delivery_terms": "FOB",
+          "lead_time_days": 10,
+          "is_preferred": false,
+          "company_id": "COMP-001"
+        },
+        {
+          "supplier_id": "SUP-003",
+          "counterparty_id": "CP-003",
+          "rating": 7,
+          "payment_terms": "prepayment",
+          "delivery_terms": "DAP",
+          "lead_time_days": 14,
+          "is_preferred": false,
+          "company_id": "COMP-001"
+        },
+        {
+          "supplier_id": "SUP-004",
+          "counterparty_id": "CP-004",
+          "rating": 10,
+          "payment_terms": "net60",
+          "delivery_terms": "EXW",
+          "lead_time_days": 5,
+          "is_preferred": true,
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_requisition": [
+        {
+          "requisition_id": "REQ-001",
+          "requisition_number": "REQ-2026-001",
+          "source_type": "wms_deficit",
+          "source_id": "MAT-001",
+          "requisition_date": "2026-06-01",
+          "requested_by_employee_id": "EMP-009",
+          "status_id": "approved",
+          "planned_order_date": "2026-06-05",
+          "required_date": "2026-06-15",
+          "company_id": "COMP-001"
+        },
+        {
+          "requisition_id": "REQ-002",
+          "requisition_number": "REQ-2026-002",
+          "source_type": "production_need",
+          "source_id": "PROD-001",
+          "requisition_date": "2026-06-10",
+          "requested_by_employee_id": "EMP-002",
+          "status_id": "approved",
+          "planned_order_date": "2026-06-12",
+          "required_date": "2026-06-25",
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_requisition_line": [
+        {
+          "requisition_line_id": "REQ-L-001",
+          "requisition_id": "REQ-001",
+          "material_id": "MAT-001",
+          "quantity": 1000,
+          "unit_id": "UNIT-001",
+          "estimated_unit_cost": 150.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "requisition_line_id": "REQ-L-002",
+          "requisition_id": "REQ-001",
+          "material_id": "MAT-002",
+          "quantity": 2000,
+          "unit_id": "UNIT-001",
+          "estimated_unit_cost": 250.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "requisition_line_id": "REQ-L-003",
+          "requisition_id": "REQ-002",
+          "material_id": "MAT-003",
+          "quantity": 500,
+          "unit_id": "UNIT-001",
+          "estimated_unit_cost": 300.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_rfq": [
+        {
+          "rfq_id": "RFQ-001",
+          "rfq_number": "RFQ-2026-001",
+          "requisition_id": "REQ-001",
+          "rfq_date": "2026-06-01",
+          "response_deadline": "2026-06-07",
+          "status_id": "closed",
+          "company_id": "COMP-001"
+        },
+        {
+          "rfq_id": "RFQ-002",
+          "rfq_number": "RFQ-2026-002",
+          "requisition_id": "REQ-002",
+          "rfq_date": "2026-06-10",
+          "response_deadline": "2026-06-14",
+          "status_id": "closed",
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_rfq_supplier": [
+        {
+          "rfq_supplier_id": "RFS-001",
+          "rfq_id": "RFQ-001",
+          "supplier_id": "SUP-001",
+          "company_id": "COMP-001"
+        },
+        {
+          "rfq_supplier_id": "RFS-002",
+          "rfq_id": "RFQ-001",
+          "supplier_id": "SUP-004",
+          "company_id": "COMP-001"
+        },
+        {
+          "rfq_supplier_id": "RFS-003",
+          "rfq_id": "RFQ-002",
+          "supplier_id": "SUP-002",
+          "company_id": "COMP-001"
+        },
+        {
+          "rfq_supplier_id": "RFS-004",
+          "rfq_id": "RFQ-002",
+          "supplier_id": "SUP-003",
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_supplier_quote": [
+        {
+          "quote_id": "QUOTE-001",
+          "rfq_supplier_id": "RFS-001",
+          "material_id": "MAT-001",
+          "unit_price": 145.00,
+          "quantity": 1000,
+          "delivery_days": 5,
+          "company_id": "COMP-001"
+        },
+        {
+          "quote_id": "QUOTE-002",
+          "rfq_supplier_id": "RFS-001",
+          "material_id": "MAT-002",
+          "unit_price": 240.00,
+          "quantity": 2000,
+          "delivery_days": 5,
+          "company_id": "COMP-001"
+        },
+        {
+          "quote_id": "QUOTE-003",
+          "rfq_supplier_id": "RFS-002",
+          "material_id": "MAT-001",
+          "unit_price": 155.00,
+          "quantity": 1000,
+          "delivery_days": 7,
+          "company_id": "COMP-001"
+        },
+        {
+          "quote_id": "QUOTE-004",
+          "rfq_supplier_id": "RFS-003",
+          "material_id": "MAT-003",
+          "unit_price": 290.00,
+          "quantity": 500,
+          "delivery_days": 8,
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_order": [
+        {
+          "order_id": "PO-001",
+          "order_number": "PO-2026-001",
+          "supplier_id": "SUP-001",
+          "requisition_id": "REQ-001",
+          "rfq_id": "RFQ-001",
+          "order_date": "2026-06-08",
+          "expected_delivery_date": "2026-06-15",
+          "actual_delivery_date": "2026-06-14",
+          "status_id": "completed",
+          "total_amount": 625000.00,
+          "currency_id": "CUR-001",
+          "created_by_employee_id": "EMP-010",
+          "company_id": "COMP-001"
+        },
+        {
+          "order_id": "PO-002",
+          "order_number": "PO-2026-002",
+          "supplier_id": "SUP-002",
+          "requisition_id": "REQ-002",
+          "rfq_id": "RFQ-002",
+          "order_date": "2026-06-12",
+          "expected_delivery_date": "2026-06-25",
+          "actual_delivery_date": null,
+          "status_id": "confirmed",
+          "total_amount": 145000.00,
+          "currency_id": "CUR-001",
+          "created_by_employee_id": "EMP-010",
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_order_line": [
+        {
+          "order_line_id": "POL-001",
+          "order_id": "PO-001",
+          "material_id": "MAT-001",
+          "quantity": 1000,
+          "unit_price": 145.00,
+          "total_price": 145000.00,
+          "received_quantity": 1000,
+          "company_id": "COMP-001"
+        },
+        {
+          "order_line_id": "POL-002",
+          "order_id": "PO-001",
+          "material_id": "MAT-002",
+          "quantity": 2000,
+          "unit_price": 240.00,
+          "total_price": 480000.00,
+          "received_quantity": 2000,
+          "company_id": "COMP-001"
+        },
+        {
+          "order_line_id": "POL-003",
+          "order_id": "PO-002",
+          "material_id": "MAT-003",
+          "quantity": 500,
+          "unit_price": 290.00,
+          "total_price": 145000.00,
+          "received_quantity": 0,
+          "company_id": "COMP-001"
+        }
+      ],
+      "procurement_delivery": [
+        {
+          "delivery_id": "DEL-001",
+          "order_id": "PO-001",
+          "delivery_date": "2026-06-14",
+          "quantity": 1000,
+          "status_id": "received",
+          "company_id": "COMP-001"
+        },
+        {
+          "delivery_id": "DEL-002",
+          "order_id": "PO-001",
+          "delivery_date": "2026-06-14",
+          "quantity": 2000,
+          "status_id": "received",
+          "company_id": "COMP-001"
+        }
+      ]
+    }
+  }

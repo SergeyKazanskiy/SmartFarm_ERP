@@ -1,0 +1,217 @@
+# =====================================================================================
+# Procurement — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на Procurement_Schema.json
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Менеджер по закупкам
+# =====================================================================================
+- role: "менеджер_по_закупкам"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PROC-01: Заявка на закупку
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROC-01
+      report: "Заявка на закупку"
+      description: >
+        Внутренний документ, содержащий перечень материалов для закупки
+        с указанием количества и ориентировочной стоимости.
+        Используется для инициации процесса закупки.
+      parameters:
+        - name: requisition_id
+          label: "ID заявки на закупку"
+          type: number
+          required: true
+          description: "Введите ID заявки на закупку"
+      sections:
+        - title: "Позиции заявки"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: integer }
+            - { field: estimated_unit_cost, label: "Ориентир. цена за ед.", type: number, format: currency }
+            - { field: total_estimated_cost, label: "Ориентир. сумма", type: number, format: currency }
+        - title: "Итого по заявке"
+          columns:
+            - { field: total_estimated_cost, label: "Общая ориентировочная стоимость", type: number, format: currency }
+      summary:
+        - field: total_estimated_cost
+          label: "Итого по заявке"
+          aggregation: SUM
+      query_ref: Q-PROC-R01
+      linked_operations:
+        - OP-PROC-03  # Создание заявки
+        - OP-PROC-04  # Добавление позиции в заявку
+      export:
+        formats: [pdf, print]
+        template: "purchase_requisition"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROC-02: Сравнительная ведомость предложений (RFQ)
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROC-02
+      report: "Сравнительная ведомость предложений (RFQ)"
+      description: >
+        Сравнительный анализ ценовых предложений от поставщиков
+        по запросу котировок (RFQ). Показывает цены, сроки поставки
+        и позволяет выбрать оптимального поставщика.
+      parameters:
+        - name: rfq_id
+          label: "ID RFQ"
+          type: number
+          required: true
+          description: "Введите ID запроса котировок"
+      sections:
+        - title: "Сравнение предложений поставщиков"
+          columns:
+            - { field: supplier_id, label: "ID поставщика", type: number, format: integer }
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: unit_price, label: "Цена за ед.", type: number, format: currency }
+            - { field: quantity, label: "Количество", type: number, format: integer }
+            - { field: delivery_days, label: "Срок поставки (дней)", type: number, format: integer }
+            - { field: total_price, label: "Общая сумма", type: number, format: currency }
+      query_ref: Q-PROC-R02
+      linked_operations:
+        - OP-PROC-07  # Создание RFQ
+        - OP-PROC-08  # Добавление поставщика в RFQ
+        - OP-PROC-10  # Внесение предложения
+      export:
+        formats: [pdf, excel, print]
+        template: "rfq_comparison"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROC-03: Заказ поставщику
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROC-03
+      report: "Заказ поставщику"
+      description: >
+        Официальный документ на закупку материалов у поставщика
+        с указанием количества, цены и фактически полученного объема.
+        Используется для контроля поставок и взаиморасчетов.
+      parameters:
+        - name: order_id
+          label: "ID заказа поставщику"
+          type: number
+          required: true
+          description: "Введите ID заказа поставщику"
+      sections:
+        - title: "Позиции заказа"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: quantity, label: "Заказано", type: number, format: integer }
+            - { field: unit_price, label: "Цена за ед.", type: number, format: currency }
+            - { field: total_price, label: "Сумма", type: number, format: currency }
+            - { field: received_quantity, label: "Получено", type: number, format: integer }
+        - title: "Итого по заказу"
+          columns:
+            - { field: total_amount, label: "Общая сумма заказа", type: number, format: currency }
+      summary:
+        - field: total_price
+          label: "Итого по заказу"
+          aggregation: SUM
+      query_ref: Q-PROC-R03
+      linked_operations:
+        - OP-PROC-12  # Создание заказа поставщику
+        - OP-PROC-13  # Добавление позиции в заказ
+        - OP-PROC-17  # Регистрация поставки
+      export:
+        formats: [pdf, print]
+        template: "purchase_order"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROC-04: Анализ выполнения заказов поставщиками
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROC-04
+      report: "Анализ выполнения заказов поставщиками"
+      description: >
+        Комплексный анализ работы поставщиков за период:
+        - Количество и сумма заказов
+        - Соблюдение сроков поставки (%)
+        - Средняя задержка (дней)
+        Используется для оценки надежности поставщиков и принятия решений
+        о продолжении сотрудничества.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Рейтинг поставщиков"
+          columns:
+            - { field: supplier_id, label: "ID поставщика", type: number, format: integer }
+            - { field: total_orders, label: "Всего заказов", type: number, format: integer }
+            - { field: total_amount, label: "Общая сумма", type: number, format: currency }
+            - { field: on_time_percent, label: "Соблюдение сроков (%)", type: number, format: percent, color: status }
+            - { field: avg_delay_days, label: "Ср. задержка (дней)", type: number, format: decimal }
+      summary:
+        - field: total_orders
+          label: "Итого"
+          aggregation: SUM
+        - field: total_amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-PROC-R04
+      linked_operations:
+        - OP-PROC-12  # Создание заказа поставщику
+        - OP-PROC-18  # Завершение заказа
+      export:
+        formats: [pdf, excel, print]
+        template: "supplier_analysis"
+
+
+# =====================================================================================
+# РОЛЬ: Директор
+# =====================================================================================
+- role: "директор"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PROC-04: Анализ выполнения заказов поставщиками
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROC-04
+      report: "Анализ выполнения заказов поставщиками"
+      description: >
+        Комплексный анализ работы поставщиков за период:
+        - Количество и сумма заказов
+        - Соблюдение сроков поставки (%)
+        - Средняя задержка (дней)
+        Используется для оценки надежности поставщиков и принятия решений
+        о продолжении сотрудничества.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Рейтинг поставщиков"
+          columns:
+            - { field: supplier_id, label: "ID поставщика", type: number, format: integer }
+            - { field: total_orders, label: "Всего заказов", type: number, format: integer }
+            - { field: total_amount, label: "Общая сумма", type: number, format: currency }
+            - { field: on_time_percent, label: "Соблюдение сроков (%)", type: number, format: percent, color: status }
+            - { field: avg_delay_days, label: "Ср. задержка (дней)", type: number, format: decimal }
+      summary:
+        - field: total_orders
+          label: "Итого"
+          aggregation: SUM
+        - field: total_amount
+          label: "Итого"
+          aggregation: SUM
+      query_ref: Q-PROC-R04
+      linked_operations:
+        - OP-PROC-12  # Создание заказа поставщику
+        - OP-PROC-18  # Завершение заказа
+      export:
+        formats: [pdf, excel, print]
+        template: "supplier_analysis"

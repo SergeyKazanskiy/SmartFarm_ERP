@@ -1,0 +1,43 @@
+# 1. Базовые модули уже загружены
+python manage.py demo_cp --company=1
+python manage.py demo_wms --company=1
+python manage.py demo_finance --company=1
+python manage.py process_events --once
+
+# 2. Workflow Procurement
+python manage.py load_workflow --company=1 --module=PROCUREMENT
+# Ожидаете: created=13, updated=0, transitions=?
+
+# 3. Demo-данные Procurement
+python manage.py demo_procurement --company=1 \
+  --file=apps/procurement/workflow/Procurement_test_data.json
+# Ожидаете:
+#   supplier: 4
+#   requisition: 2
+#   requisition_line: 3
+#   rfq: 2
+#   rfq_supplier: 4
+#   supplier_quote: 4
+#   order: 2
+#   order_line: 3
+#   delivery: 2
+
+# 4. Обработка событий
+python manage.py process_events --once
+
+# 5. Проверка задач
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+for t in TaskTask.objects.filter(definition__module='PROCUREMENT')[:20]:
+    print(t.id, t.definition.code, t.assigned_role, t.status)
+"
+
+# 6. Проверка AP-счетов в FIN
+python manage.py shell -c "
+from apps.finance.models import Invoice
+for inv in Invoice.objects.filter(source_object_type='procurement_order')[:10]:
+    print(inv.id, inv.invoice_number, inv.amount, inv.status)
+"
+
+# 7. Тесты
+pytest apps/procurement/tests/ -v

@@ -1,0 +1,191 @@
+meta:
+  title: Procurement_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов закупок с ролями, задачами, переходами
+    между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов.
+  schema_notes: >
+    Задача (task) соответствует ОДНОМУ экрану/форме.
+
+roles_catalog:
+  purchasing_manager: Менеджер по закупкам
+  warehouse_keeper: Кладовщик
+  director: Директор по производству / Финансовый директор
+
+processes:
+
+- id: PROC-01
+  name: Справочники поставщиков
+  description: Ведение реестра поставщиков.
+  dashboards:
+  - DASH-PROC-02 (Анализ поставщиков)
+  tasks:
+  - id: TASK-PROC-01-01
+    name: Ведение поставщиков
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-01, OP-PROC-02]
+    sql_queries:
+      on_insert:
+        query_code: OP-PROC-01
+      on_update:
+        query_code: OP-PROC-02
+    transitions: []
+
+- id: PROC-02
+  name: Заявки на закупку
+  description: Формирование и согласование внутренних заявок на закупку.
+  dashboards:
+  - DASH-PROC-01 (Дефицит и заявки)
+  reports:
+  - REP-PROC-01 (Заявка на закупку)
+  tasks:
+  - id: TASK-PROC-02-01
+    name: Создание заявки на закупку
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-03, OP-PROC-04]
+    sql_queries:
+      on_insert:
+        query_code: OP-PROC-03
+      on_add_line:
+        query_code: OP-PROC-04
+    transitions:
+    - target_task: TASK-PROC-02-02
+      condition: Заявка заполнена, передаётся на согласование
+      on_event: [on_insert, on_add_line]
+
+  - id: TASK-PROC-02-02
+    name: Согласование заявки
+    role: director
+    has_form: true
+    form_ref: [OP-PROC-06]
+    sql_queries:
+      on_approve:
+        query_code: OP-PROC-06
+        description: Утверждение заявки (status_id = approved)
+      on_reject:
+        query_code: OP-PROC-06
+        description: Отклонение заявки (status_id = rejected)
+    transitions:
+    - target_task: TASK-PROC-03-01
+      condition: Заявка утверждена, можно создавать RFQ
+      on_event: [on_approve]
+    - target_task: END_PROCESS
+      condition: Заявка отклонена
+      on_event: [on_reject]
+
+- id: PROC-03
+  name: Запрос предложений (RFQ)
+  description: Запрос ценовых предложений у поставщиков, выбор лучшего.
+  dashboards:
+  - DASH-PROC-02 (Анализ поставщиков)
+  reports:
+  - REP-PROC-02 (Сравнительная ведомость предложений)
+  tasks:
+  - id: TASK-PROC-03-01
+    name: Создание и отправка RFQ
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-07, OP-PROC-08, OP-PROC-09]
+    sql_queries:
+      on_create:
+        query_code: OP-PROC-07
+      on_add_supplier:
+        query_code: OP-PROC-08
+      on_send:
+        query_code: OP-PROC-09
+    transitions:
+    - target_task: TASK-PROC-03-02
+      condition: RFQ отправлен, ожидаются ответы
+      on_event: [on_send]
+
+  - id: TASK-PROC-03-02
+    name: Внесение предложений поставщиков
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-10]
+    sql_queries:
+      on_quote:
+        query_code: OP-PROC-10
+    transitions:
+    - target_task: TASK-PROC-03-03
+      condition: Все предложения получены, можно выбрать поставщика
+      on_event: [on_quote]
+
+  - id: TASK-PROC-03-03
+    name: Выбор поставщика и закрытие RFQ
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-11]
+    sql_queries:
+      on_close:
+        query_code: OP-PROC-11
+    transitions:
+    - target_task: TASK-PROC-04-01
+      condition: Поставщик выбран, можно создавать заказ
+      on_event: [on_close]
+
+- id: PROC-04
+  name: Заказы поставщикам (PO)
+  description: Оформление заказов, отправка, контроль поставок.
+  dashboards:
+  - DASH-PROC-03 (Заказы и поставки)
+  reports:
+  - REP-PROC-03 (Заказ поставщику)
+  tasks:
+  - id: TASK-PROC-04-01
+    name: Создание заказа поставщику
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-12, OP-PROC-13]
+    sql_queries:
+      on_create:
+        query_code: OP-PROC-12
+      on_add_line:
+        query_code: OP-PROC-13
+    transitions:
+    - target_task: TASK-PROC-04-02
+      condition: Заказ создан, можно отправлять
+      on_event: [on_create, on_add_line]
+
+  - id: TASK-PROC-04-02
+    name: Отправка заказа поставщику
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-15]
+    sql_queries:
+      on_send:
+        query_code: OP-PROC-15
+    transitions:
+    - target_task: TASK-PROC-04-03
+      condition: Заказ отправлен, ожидается подтверждение
+      on_event: [on_send]
+
+  - id: TASK-PROC-04-03
+    name: Подтверждение заказа поставщиком
+    role: purchasing_manager
+    has_form: true
+    form_ref: [OP-PROC-16]
+    sql_queries:
+      on_confirm:
+        query_code: OP-PROC-16
+    transitions:
+    - target_task: TASK-PROC-04-04
+      condition: Заказ подтверждён, ожидается поставка
+      on_event: [on_confirm]
+
+  - id: TASK-PROC-04-04
+    name: Регистрация поставки (приёмка на склад)
+    role: warehouse_keeper
+    has_form: true
+    form_ref: [OP-PROC-17, OP-PROC-18]
+    sql_queries:
+      on_receive:
+        query_code: OP-PROC-17
+      on_complete:
+        query_code: OP-PROC-18
+    transitions:
+    - target_task: END_PROCESS
+      condition: Все позиции получены, заказ завершён
+      on_event: [on_complete]
