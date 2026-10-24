@@ -1,0 +1,184 @@
+# ==============================================================================
+# МОДУЛЬ: ПРОИЗВОДСТВО (PROD / PRODUCTION)
+# ==============================================================================
+
+module_info:
+  id: "PROD"
+  name: "Управление производством"
+  version: "1.0"
+  description: "Реестр сквозных бизнес-сценариев для модуля Производство (Production)"
+  related_modules:
+    - "WMS"
+    - "PROC"
+    - "SALES"
+    - "FIN"
+    - "MAINT"
+    - "HR"
+
+scenarios:
+  - id: "SCENARIO-PROD-01"
+    title: "Полный цикл выполнения производственного заказа (Discrete Manufacturing)"
+    description: "Сквозной процесс производства продукции: от планирования (MRP/APS), резервирования и выдачи сырья со склада до выполнения технологических операций, контроля качества и сдачи готовой продукции на склад."
+    module: "PROD"
+    scenario_type: "full_cycle"
+    priority: "critical"
+    roles:
+      - "production_planner"
+      - "shop_floor_dispatcher"
+      - "machine_operator"
+      - "quality_inspector"
+      - "warehouse_keeper"
+    steps:
+      - step_id: "PROD-01-01"
+        lane: "PROD/SALES"
+        task: "Формирование и составление графика производственного заказа (APS/MRP)"
+        process_ref: "[PROD-01, TASK-PROD-01-01]"
+        operation_ref: "OP-PROD-01"
+        description: "Расчет потребности в материалах и производственных мощностях на основе спецификации (BOM) и технологической карты, создание заказа на производство."
+        depends_on: []
+        trigger: "Заказ покупателя / План продаж / Расчет MRP"
+        system_action: "prod_work_order.status_id = 'planned', prod_work_order.bom_id = bom.id"
+        ui_notification: "Сформирован производственный заказ №... График составлен."
+
+      - step_id: "PROD-01-02"
+        lane: "PROD/WMS"
+        task: "Резервирование и лимитно-заборная карта сырья/комплектующих"
+        process_ref: "[WMS-03, TASK-WMS-03-01]"
+        operation_ref: "OP-WMS-15"
+        description: "Автоматическая проверка наличия ТМЦ по BOM на складе и их резервирование под заказ."
+        depends_on:
+          - "PROD-01-01"
+        system_action: "wms_material_reservation.status = 'reserved'"
+        ui_notification: "Сырье и комплектующие зарезервированы под производственный заказ."
+
+      - step_id: "PROD-01-03"
+        lane: "WMS/PROD"
+        task: "Передача сырья и материалов в цеховую кладовую (Work-In-Process / WIP)"
+        process_ref: "[WMS-03, TASK-WMS-03-02]"
+        operation_ref: "OP-WMS-16"
+        description: "Перемещение компонентов со склада хранения в незавершенное производство цеха по требованию-накладной."
+        depends_on:
+          - "PROD-01-02"
+        system_action: "wms_inventory.bin_id = 'wip_zone', prod_work_order.status_id = 'released'"
+        ui_notification: "Сырье передано в незавершенное производство (WIP)."
+
+      - step_id: "PROD-01-04"
+        lane: "PROD/HR"
+        task: "Выполнение технологических операций на рабочих центрах (MES)"
+        process_ref: "[PROD-02, TASK-PROD-02-01]"
+        operation_ref: "OP-PROD-12"
+        description: "Фиксация старта/финиша технологических операций оператором на ТСД/терминале MES, отметка времени и исполнителей."
+        depends_on:
+          - "PROD-01-03"
+        system_action: "prod_operation_execution.status = 'completed', prod_work_order.status_id = 'in_progress'"
+        ui_notification: "Технологические операции по наряду выполнены."
+
+      - step_id: "PROD-01-05"
+        lane: "PROD/Quality"
+        task: "Контроль качества готовой продукции (ОКК)"
+        process_ref: "[PROD-03, TASK-PROD-03-01]"
+        operation_ref: "OP-PROD-20"
+        description: "Проведение приемочного контроля качества произведенной партии, проведение испытаний, оформление паспорта качества."
+        depends_on:
+          - "PROD-01-04"
+        system_action: "prod_quality_certificate.status = 'approved'"
+        ui_notification: "Продукция прошла контрольные испытания ОКК."
+
+      - step_id: "PROD-01-06"
+        lane: "PROD/WMS"
+        task: "Передача готовой продукции (ГП) на склад хранения"
+        process_ref: "[WMS-02, TASK-WMS-02-01]"
+        operation_ref: "OP-WMS-08"
+        description: "Оприходование выпущенной готовой продукции на склад с присвоением номеров партий/серий."
+        depends_on:
+          - "PROD-01-05"
+        system_action: "wms_inventory.quantity += finished_goods_qty, prod_work_order.status_id = 'completed'"
+        ui_notification: "Готовая продукция оприходована на склад."
+
+      - step_id: "PROD-01-07"
+        lane: "FIN/PROD"
+        task: "Расчет фактической себестоимости и закрытие заказа"
+        process_ref: "[FIN-05, TASK-FIN-05-01]"
+        operation_ref: "OP-FIN-18"
+        description: "Списание фактических прямых расходов (сырье, энергоресурсы, трудозатраты) и распределение косвенных затрат на выпуск."
+        depends_on:
+          - "PROD-01-06"
+        system_action: "fin_cost_calculation.status = 'calculated', fin_gl_entry.posted = true"
+        ui_notification: "Фактическая себестоимость партии рассчитана."
+
+      - step_id: "PROD-01-END"
+        lane: "PROD"
+        task: "Завершение производственного заказа"
+        description: "Заказ полностью закрыт, себестоимость сформирована, ГП готова к реализации."
+        depends_on:
+          - "PROD-01-07"
+        system_action: "prod_work_order.status_id = 'closed', core_audit_log"
+        ui_notification: "Производственный заказ закрыт."
+
+  - id: "SCENARIO-PROD-02"
+    title: "Брак в производстве и переработка (Rework / Scrap)"
+    description: "Обработка ситуаций выявления брака в процессе производства: регистрация брака, изоляция в карантин, принятие решения о списании или исправлении."
+    module: "PROD"
+    scenario_type: "exception"
+    priority: "high"
+    roles:
+      - "machine_operator"
+      - "quality_inspector"
+      - "shop_floor_dispatcher"
+      - "accountant"
+    steps:
+      - step_id: "PROD-02-01"
+        lane: "PROD/Quality"
+        task: "Фиксация брака на технологической операции"
+        process_ref: "[PROD-03, TASK-PROD-03-02]"
+        operation_ref: "OP-PROD-22"
+        description: "Оператор или инспектор ОКК фиксирует отклонение от ТУ/чертежа и регистрирует извещение о браке."
+        depends_on: []
+        trigger: "Выявление дефекта на межоперационном контроле"
+        system_action: "prod_scrap_note.status_id = 'registered'"
+        ui_notification: "Зарегистрирован производственный брак!"
+
+      - step_id: "PROD-02-02"
+        lane: "PROD/Quality"
+        task: "Классификация брака (Исправимый / Неисправимый)"
+        process_ref: "[PROD-03, TASK-PROD-03-03]"
+        operation_ref: "OP-PROD-23"
+        description: "Комиссия/ОКК определяет причину и вид брака."
+        depends_on:
+          - "PROD-02-01"
+        system_action: "prod_scrap_note.disposition = 'decision_made'"
+        ui_notification: "Решение по браку принята комиссией."
+
+      - step_id: "PROD-02-03-A"
+        lane: "PROD"
+        task: "Формирование доп. наряда на исправление (Rework Order)"
+        process_ref: "[PROD-01, TASK-PROD-01-03]"
+        operation_ref: "OP-PROD-08"
+        description: "Формирование технологического маршрута повторной обработки бракованных изделий."
+        condition: "Брак квалифицирован как исправимый"
+        depends_on:
+          - "PROD-02-02"
+        system_action: "prod_rework_order.status_id = 'created'"
+        ui_notification: "Создан наряд на исправление брака."
+
+      - step_id: "PROD-02-03-B"
+        lane: "FIN/WMS"
+        task: "Списание окончательного брака и оприходование отходов"
+        process_ref: "[FIN-05, TASK-FIN-05-02]"
+        operation_ref: "OP-FIN-19"
+        description: "Списание затрат на виновных лиц или статьи потерь от брака, передача деловых отходов/лома на склад."
+        condition: "Брак квалифицирован как окончательный (неисправимый)"
+        depends_on:
+          - "PROD-02-02"
+        system_action: "wms_inventory.scrap_qty += scrap_qty, fin_gl_entry.account = 'scrap_loss'"
+        ui_notification: "Неисправимый брак списан на потери."
+
+      - step_id: "PROD-02-END"
+        lane: "PROD"
+        task: "Завершение обработки брака"
+        description: "Затраты учтены, статистика по качеству обновлена."
+        depends_on:
+          - "PROD-02-03-A"
+          - "PROD-02-03-B"
+        system_action: "prod_scrap_note.status_id = 'closed', core_audit_log"
+        ui_notification: "Обработка случая брака завершена."

@@ -1,0 +1,620 @@
+meta:
+  title: Production_Processes_Workflow_Definition
+  version: "1.0"
+  description: >
+    Полное описание бизнес-процессов производства с ролями, задачами, переходами
+    между состояниями и привязкой дашбордов, отчётов, форм и SQL-запросов (по кодам
+    OP-PROD-01…43). Объединяет через процессы четыре ранее созданных файла:
+    Production_Business_Roles.yml (поля форм), Production_Business_Queries.sql
+    (сами SQL-запросы), Production_Dashboards_Roles.yml (дашборды),
+    Production_Reports_Roles.yml (отчёты).
+  schema_notes: >
+    Задача (task) соответствует ОДНОМУ экрану/форме. Если несколько операций
+    (op_code) из Production_Business_Queries.sql относятся к одной и той же
+    предметной сущности и заполняются на одном экране (создание+редактирование,
+    либо альтернативные исходы одного решения вроде подтвердить/отменить,
+    завершить/отправить на доработку) — они объединены в одну задачу: ключи
+    sql_queries (on_insert, on_update, on_confirm, on_reject и т.п.) перечисляют
+    все действия этого экрана, а form_ref указывает все op_code из
+    Production_Business_Roles.yml, чьи поля вместе образуют форму этой задачи.
+    Каждый элемент transitions[].on_event — это ключ(и) из sql_queries этой же
+    задачи, при котором происходит переход. trigger: system помечает задачи,
+    выполняемые автоматически приложением (без формы и нажатия кнопки).
+
+roles_catalog:
+  technologist: Технолог / инженер-технолог
+  planner: Плановик ПДО (планово-диспетчерский отдел)
+  master: Мастер участка / диспетчер
+  quality_controller: Контролёр качества
+  director: Директор по производству
+  operator: Оператор оборудования
+
+processes:
+
+- id: PROD-01
+  name: Технологическая подготовка производства
+  description: Ведение технологий, маршрутов, рабочих центров, операций и контрольных точек качества — нормативно-справочная база для планирования и выполнения.
+  dashboards:
+  - DASH-PROD-03 (Технологическая матрица)
+  reports:
+  - REP-PROD-02 (Маршрутный лист заказа)
+  tasks:
+
+  - id: TASK-PROD-01-01
+    name: Ведение справочника рабочих центров
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-05
+    - OP-PROD-06
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-05
+        description: Создание рабочего центра
+      on_update:
+        query_code: OP-PROD-06
+        description: Переименование рабочего центра
+    transitions:
+    - target_task: TASK-PROD-01-03
+      condition: Рабочий центр доступен для назначения операциям маршрута
+      on_event:
+      - on_insert
+      - on_update
+
+  - id: TASK-PROD-01-02
+    name: Ведение справочника технологий
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-01
+    - OP-PROD-02
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-01
+        description: Создание технологии
+      on_update:
+        query_code: OP-PROD-02
+        description: Переименование технологии
+    transitions:
+    - target_task: TASK-PROD-01-03
+      condition: Технология создана, переход к формированию маршрута
+      on_event:
+      - on_insert
+      - on_update
+
+  - id: TASK-PROD-01-03
+    name: Создание/редактирование технологического маршрута
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-03
+    - OP-PROD-04
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-03
+        description: Создание технологического маршрута
+      on_update:
+        query_code: OP-PROD-04
+        description: Переименование маршрута / смена технологии маршрута
+    transitions:
+    - target_task: TASK-PROD-01-04
+      condition: Маршрут создан, переход к наполнению операциями
+      on_event:
+      - on_insert
+      - on_update
+
+  - id: TASK-PROD-01-04
+    name: Добавление операции в маршрут
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-07
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-07
+        description: Добавление операции в маршрут
+    transitions:
+    - target_task: TASK-PROD-01-05
+      condition: Операция добавлена, доступна для последующего редактирования параметров
+      on_event:
+      - on_insert
+    - target_task: TASK-PROD-01-06
+      condition: Операция добавлена, можно назначить контрольную точку качества
+      on_event:
+      - on_insert
+
+  - id: TASK-PROD-01-05
+    name: Редактирование операции маршрута
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-08
+    - OP-PROD-09
+    - OP-PROD-10
+    - OP-PROD-11
+    - OP-PROD-12
+    sql_queries:
+      on_update_parameters:
+        query_code: OP-PROD-08
+        description: Изменение технологических параметров операции
+      on_update_resources:
+        query_code: OP-PROD-09
+        description: Изменение потребности операции в ресурсах
+      on_move_work_center:
+        query_code: OP-PROD-10
+        description: Перенос операции на другой рабочий центр
+      on_reorder:
+        query_code: OP-PROD-11
+        description: Изменение порядка операции в маршруте
+      on_rename:
+        query_code: OP-PROD-12
+        description: Переименование операции
+    transitions:
+    - target_task: TASK-PROD-02-01
+      condition: Маршрут и операции готовы, можно формировать спецификацию изделия
+      on_event:
+      - on_update_parameters
+      - on_update_resources
+      - on_move_work_center
+      - on_reorder
+      - on_rename
+
+  - id: TASK-PROD-01-06
+    name: Ведение контрольных точек качества операции
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-13
+    - OP-PROD-14
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-13
+        description: Добавление контрольной точки качества к операции
+      on_update:
+        query_code: OP-PROD-14
+        description: Переименование контрольной точки качества
+    transitions:
+    - target_task: TASK-PROD-02-01
+      condition: Контрольные точки заданы, можно формировать спецификацию изделия
+      on_event:
+      - on_insert
+      - on_update
+
+- id: PROD-02
+  name: Спецификация изделия (BOM)
+  description: Формирование состава изделия и норм расхода компонентов на единицу выпуска.
+  dashboards: []
+  reports:
+  - REP-PROD-06 (Спецификация изделия (BOM))
+  tasks:
+
+  - id: TASK-PROD-02-01
+    name: Создание/редактирование спецификации изделия
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-15
+    - OP-PROD-16
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-15
+        description: Создание спецификации изделия
+      on_update:
+        query_code: OP-PROD-16
+        description: Изменение спецификации (переименование / смена готового изделия)
+    transitions:
+    - target_task: TASK-PROD-02-02
+      condition: Спецификация создана, переход к наполнению компонентами
+      on_event:
+      - on_insert
+      - on_update
+
+  - id: TASK-PROD-02-02
+    name: Добавление компонента в спецификацию
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-17
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-17
+        description: Добавление компонента в спецификацию
+    transitions:
+    - target_task: TASK-PROD-02-03
+      condition: Компонент добавлен, доступен для редактирования нормы/материала/цены
+      on_event:
+      - on_insert
+
+  - id: TASK-PROD-02-03
+    name: Редактирование компонента спецификации
+    role: technologist
+    has_form: true
+    form_ref:
+    - OP-PROD-18
+    - OP-PROD-19
+    - OP-PROD-43
+    sql_queries:
+      on_update_quantity:
+        query_code: OP-PROD-18
+        description: Изменение нормы расхода компонента
+      on_replace_material:
+        query_code: OP-PROD-19
+        description: Замена компонента в спецификации
+      on_update_cost:
+        query_code: OP-PROD-43
+        description: Изменение плановой цены компонента
+    transitions:
+    - target_task: TASK-PROD-03-01
+      condition: Спецификация укомплектована, можно создавать заказы на производство
+      on_event:
+      - on_update_quantity
+      - on_replace_material
+      - on_update_cost
+
+- id: PROD-03
+  name: Формирование и жизненный цикл производственного заказа
+  description: Создание заказа на производство по спецификации и маршруту, его согласование, корректировка и закрытие.
+  dashboards:
+  - DASH-PROD-01 (Производственные заказы)
+  - DASH-PROD-08 (Перерасход материалов)
+  reports:
+  - REP-PROD-04 (Отчёт о выполнении производственных заказов)
+  - REP-PROD-05 (Ведомость расхода материалов по заказу)
+  tasks:
+
+  - id: TASK-PROD-03-01
+    name: Создание заказа на производство
+    role: planner
+    has_form: true
+    form_ref:
+    - OP-PROD-20
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-20
+        description: Создание заказа на производство
+    transitions:
+    - target_task: TASK-PROD-03-02
+      condition: Заказ создан в статусе draft, требуется рассмотрение
+      on_event:
+      - on_insert
+
+  - id: TASK-PROD-03-02
+    name: Редактирование заказа (план/спецификация/маршрут)
+    role: planner
+    has_form: true
+    form_ref:
+    - OP-PROD-22
+    - OP-PROD-23
+    sql_queries:
+      on_update_plan:
+        query_code: OP-PROD-22
+        description: Изменение планового количества и сроков заказа
+      on_update_bom_routing:
+        query_code: OP-PROD-23
+        description: Смена спецификации или маршрута заказа
+    transitions:
+    - target_task: TASK-PROD-03-03
+      condition: Изменения внесены, заказ готов к подтверждению
+      on_event:
+      - on_update_plan
+      - on_update_bom_routing
+
+  - id: TASK-PROD-03-03
+    name: Подтверждение или отмена заказа
+    role:
+    - planner
+    - director
+    has_form: true
+    form_ref:
+    - OP-PROD-21
+    - OP-PROD-26
+    sql_queries:
+      on_confirm:
+        query_code: OP-PROD-21
+        description: Подтверждение заказа на производство (запуск в план)
+      on_cancel:
+        query_code: OP-PROD-26
+        description: Отмена заказа на производство
+    transitions:
+    - target_task: TASK-PROD-04-01
+      condition: Заказ подтверждён (confirmed), можно формировать наряды
+      on_event:
+      - on_confirm
+    - target_task: END_PROCESS
+      condition: Заказ отменён до запуска в производство
+      on_event:
+      - on_cancel
+
+  - id: TASK-PROD-03-04
+    name: Автоматический перевод заказа в статус "в производстве"
+    role: planner
+    has_form: false
+    trigger: system
+    sql_queries:
+      on_start:
+        query_code: OP-PROD-24
+        description: Перевод заказа в статус "в производстве"
+    transitions:
+    - target_task: TASK-PROD-03-05
+      condition: Заказ переведён в работу при запуске первого наряда (см. TASK-PROD-04-02)
+      on_event:
+      - on_start
+
+  - id: TASK-PROD-03-05
+    name: Закрытие заказа на производство
+    role: planner
+    has_form: true
+    form_ref:
+    - OP-PROD-25
+    sql_queries:
+      on_complete:
+        query_code: OP-PROD-25
+        description: Закрытие заказа на производство
+    transitions:
+    - target_task: END_PROCESS
+      condition: Все наряды по заказу завершены, заказ закрыт
+      on_event:
+      - on_complete
+
+- id: PROD-04
+  name: Наряд на производство
+  description: Формирование, запуск и исполнительский контроль нарядов в рамках производственного заказа.
+  dashboards:
+  - DASH-PROD-02 (Выполнение нарядов в срок)
+  - DASH-PROD-07 (Загруженность рабочих центров)
+  reports:
+  - REP-PROD-01 (Наряд на выполнение работ)
+  tasks:
+
+  - id: TASK-PROD-04-01
+    name: Формирование наряда в рамках заказа
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-27
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-27
+        description: Формирование наряда в рамках заказа
+    transitions:
+    - target_task: TASK-PROD-04-02
+      condition: Наряд создан в статусе planned, готов к запуску
+      on_event:
+      - on_insert
+
+  - id: TASK-PROD-04-02
+    name: Запуск наряда в работу
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-28
+    sql_queries:
+      on_start:
+        query_code: OP-PROD-28
+        description: Запуск наряда в работу
+    transitions:
+    - target_task: TASK-PROD-03-04
+      condition: Первый запущенный наряд по заказу переводит сам заказ в "в производстве"
+      on_event:
+      - on_start
+    - target_task: TASK-PROD-05-01
+      condition: Наряд в работе, можно регистрировать выполнение операций маршрута
+      on_event:
+      - on_start
+
+  - id: TASK-PROD-04-03
+    name: Приостановка / возобновление наряда
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-29
+    - OP-PROD-30
+    sql_queries:
+      on_hold:
+        query_code: OP-PROD-29
+        description: Приостановка наряда
+      on_resume:
+        query_code: OP-PROD-30
+        description: Возобновление наряда после приостановки
+    transitions:
+    - target_task: TASK-PROD-04-02
+      condition: Причина устранена, наряд возобновлён
+      on_event:
+      - on_resume
+
+  - id: TASK-PROD-04-04
+    name: Изменение плановых сроков наряда
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-33
+    sql_queries:
+      on_update:
+        query_code: OP-PROD-33
+        description: Изменение плановых сроков наряда
+    transitions: []
+
+  - id: TASK-PROD-04-05
+    name: Регистрация фактического расхода материалов по наряду
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-34
+    sql_queries:
+      on_update:
+        query_code: OP-PROD-34
+        description: Регистрация фактического расхода материалов по наряду
+    transitions: []
+
+  - id: TASK-PROD-04-06
+    name: Завершение наряда
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-31
+    sql_queries:
+      on_complete:
+        query_code: OP-PROD-31
+        description: Завершение наряда
+    transitions:
+    - target_task: TASK-PROD-03-05
+      condition: Проверяется, все ли наряды заказа завершены — если да, доступно закрытие заказа
+      on_event:
+      - on_complete
+
+  - id: TASK-PROD-04-07
+    name: Отмена наряда
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-32
+    sql_queries:
+      on_cancel:
+        query_code: OP-PROD-32
+        description: Отмена наряда
+    transitions:
+    - target_task: END_PROCESS
+      condition: Наряд отменён до запуска
+      on_event:
+      - on_cancel
+
+- id: PROD-05
+  name: Выполнение операции и контроль качества
+  description: Регистрация фактического выполнения операций маршрута, фиксация параметров и результатов контроля качества.
+  dashboards:
+  - DASH-PROD-05 (Контроль качества)
+  - DASH-PROD-06 (Анализ технологических параметров)
+  reports:
+  - REP-PROD-03 (Акт о браке)
+  - REP-PROD-07 (Отчёт по отклонениям технологических параметров)
+  - REP-PROD-08 (Отчёт по производительности сотрудников)
+  tasks:
+
+  - id: TASK-PROD-05-01
+    name: Регистрация начала выполнения операции
+    role: operator
+    has_form: true
+    form_ref:
+    - OP-PROD-35
+    sql_queries:
+      on_insert:
+        query_code: OP-PROD-35
+        description: Регистрация начала выполнения операции
+    transitions:
+    - target_task: TASK-PROD-05-02
+      condition: Операция запущена (in_progress), доступно ведение хода выполнения
+      on_event:
+      - on_insert
+
+  - id: TASK-PROD-05-02
+    name: Ведение хода выполнения операции
+    role: operator
+    has_form: true
+    form_ref:
+    - OP-PROD-36
+    - OP-PROD-37
+    - OP-PROD-38
+    sql_queries:
+      on_assign:
+        query_code: OP-PROD-36
+        description: Назначение/смена исполнителя операции
+      on_move_work_center:
+        query_code: OP-PROD-37
+        description: Перевод операции на фактически другой рабочий центр
+      on_measure:
+        query_code: OP-PROD-38
+        description: Фиксация фактических измерений технологических параметров
+    transitions:
+    - target_task: TASK-PROD-05-03
+      condition: Операция фактически выполнена, готова к завершению
+      on_event:
+      - on_assign
+      - on_move_work_center
+      - on_measure
+
+  - id: TASK-PROD-05-03
+    name: Завершение выполнения операции
+    role: operator
+    has_form: true
+    form_ref:
+    - OP-PROD-40
+    sql_queries:
+      on_complete:
+        query_code: OP-PROD-40
+        description: Завершение выполнения операции
+    transitions:
+    - target_task: TASK-PROD-05-04
+      condition: Операция завершена (completed), требуется контроль качества
+      on_event:
+      - on_complete
+
+  - id: TASK-PROD-05-04
+    name: Контроль качества операции
+    role: quality_controller
+    has_form: true
+    form_ref:
+    - OP-PROD-39
+    sql_queries:
+      on_record:
+        query_code: OP-PROD-39
+        description: Фиксация результата контроля качества по контрольной точке
+    transitions:
+    - target_task: TASK-PROD-05-01
+      condition: 'Все контрольные точки пройдены (is_passed=true): операция принята, переход к следующей операции маршрута наряда'
+      on_event:
+      - on_record
+    - target_task: TASK-PROD-05-05
+      condition: 'Обнаружено несоответствие (is_passed=false в одной из контрольных точек): операция направляется на доработку'
+      on_event:
+      - on_record
+
+  - id: TASK-PROD-05-05
+    name: Возврат операции на доработку
+    role: quality_controller
+    has_form: true
+    form_ref:
+    - OP-PROD-41
+    sql_queries:
+      on_reject:
+        query_code: OP-PROD-41
+        description: Возврат операции на доработку (несоответствие по контролю качества)
+    transitions:
+    - target_task: TASK-PROD-05-02
+      condition: Операция возвращена в статус rework, продолжается ведение хода выполнения
+      on_event:
+      - on_reject
+
+  - id: TASK-PROD-05-06
+    name: Отмена регистрации выполнения операции
+    role: master
+    has_form: true
+    form_ref:
+    - OP-PROD-42
+    sql_queries:
+      on_cancel:
+        query_code: OP-PROD-42
+        description: Отмена выполнения операции (ошибочная регистрация)
+    transitions:
+    - target_task: END_PROCESS
+      condition: Регистрация операции отменена как ошибочная
+      on_event:
+      - on_cancel
+
+bpmn_diagrams:
+- id: BPMN-PROD-01
+  name: Технологическая и нормативная подготовка
+  description: От справочников рабочих центров и технологий, через маршруты и операции, до укомплектованной спецификации изделия (BOM).
+  process_ids:
+  - PROD-01
+  - PROD-02
+- id: BPMN-PROD-02
+  name: Формирование и планирование производства
+  description: Жизненный цикл заказа на производство (создание → согласование → закрытие) и связанных с ним нарядов (создание → запуск → завершение).
+  process_ids:
+  - PROD-03
+  - PROD-04
+- id: BPMN-PROD-03
+  name: Выполнение операций и контроль качества
+  description: Регистрация фактического выполнения операций маршрута, фиксация параметров, контроль качества и обработка несоответствий.
+  process_ids:
+  - PROD-05

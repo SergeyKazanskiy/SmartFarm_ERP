@@ -1,0 +1,733 @@
+# =====================================================================================
+# Production — отчеты по ролям (с полной конфигурацией)
+# Версия: 2.0
+# Построен на Production_Schema.json версии 1.2
+# =====================================================================================
+
+# =====================================================================================
+# РОЛЬ: Директор
+# =====================================================================================
+- role: "директор"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PROD-03: Акт о браке
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-03
+      report: "Акт о браке"
+      description: >
+        Реестр всех операций, не прошедших контроль качества за период.
+        Показывает причину брака, исполнителя и время выполнения.
+        Используется для анализа качества и принятия управленческих решений.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Акт о браке"
+          columns:
+            - { field: execution_id, label: "ID выполнения", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: work_center_name, label: "Рабочий центр", type: string }
+            - { field: performed_by_employee_id, label: "Исполнитель", type: number, format: integer }
+            - { field: quality_point_id, label: "ID точки контроля", type: string }
+            - { field: quality_point_name, label: "Точка контроля", type: string }
+            - { field: comment, label: "Причина брака", type: string }
+            - { field: end_time, label: "Время", type: datetime }
+      query_ref: Q-PROD-R03
+      linked_operations:
+        - OP-PROD-39  # Контроль качества
+      export:
+        formats: [pdf, excel, print]
+        template: "defect_report"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-04: Отчёт о выполнении производственных заказов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-04
+      report: "Отчёт о выполнении производственных заказов"
+      description: >
+        Сводка по заказам за период: план, статус, доля завершённых нарядов.
+        Используется для контроля выполнения производственной программы.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Выполнение производственных заказов"
+          columns:
+            - { field: production_order_id, label: "ID заказа", type: number, format: integer }
+            - { field: bom_name, label: "Изделие", type: string }
+            - { field: routing_name, label: "Маршрут", type: string }
+            - { field: planned_quantity, label: "План", type: number, format: integer }
+            - { field: planned_start_date, label: "План старт", type: date }
+            - { field: planned_end_date, label: "План финиш", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { confirmed: "info", in_progress: "warning", on_hold: "danger", completed: "success", cancelled: "neutral" } }
+            - { field: work_orders_total, label: "Всего нарядов", type: number, format: integer }
+            - { field: work_orders_completed, label: "Завершено", type: number, format: integer }
+            - { field: completion_percent, label: "Выполнение (%)", type: number, format: percent, color: status }
+      summary:
+        - field: planned_quantity
+          label: "Итого план"
+          aggregation: SUM
+        - field: work_orders_total
+          label: "Итого нарядов"
+          aggregation: SUM
+        - field: work_orders_completed
+          label: "Итого завершено"
+          aggregation: SUM
+      query_ref: Q-PROD-R04
+      linked_operations:
+        - OP-PROD-20  # Создание заказа
+        - OP-PROD-21  # Подтверждение заказа
+        - OP-PROD-24  # Запуск заказа
+        - OP-PROD-25  # Приостановка заказа
+        - OP-PROD-26  # Завершение заказа
+        - OP-PROD-31  # Завершение наряда
+      export:
+        formats: [pdf, excel, print]
+        template: "order_completion"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-05: Ведомость расхода материалов по заказу
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-05
+      report: "Ведомость расхода материалов по заказу"
+      description: >
+        План (норма BOM × плановое количество) против факта (фактический расход)
+        по всем нарядам заказа, в количестве и в деньгах.
+        Используется для контроля соблюдения норм и анализа отклонений.
+      parameters:
+        - name: production_order_id
+          label: "ID производственного заказа"
+          type: number
+          required: true
+          description: "Введите ID производственного заказа"
+      sections:
+        - title: "Расход материалов по заказу"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: planned_quantity, label: "План (шт)", type: number, format: decimal }
+            - { field: actual_quantity, label: "Факт (шт)", type: number, format: decimal }
+            - { field: variance_quantity, label: "Отклонение (шт)", type: number, format: decimal, color: status }
+            - { field: unit_cost, label: "Цена за ед.", type: number, format: currency }
+            - { field: planned_cost, label: "План (грн)", type: number, format: currency }
+            - { field: actual_cost, label: "Факт (грн)", type: number, format: currency }
+            - { field: variance_cost, label: "Отклонение (грн)", type: number, format: currency, color: status }
+      summary:
+        - field: planned_cost
+          label: "Итого план"
+          aggregation: SUM
+        - field: actual_cost
+          label: "Итого факт"
+          aggregation: SUM
+        - field: variance_cost
+          label: "Итого отклонение"
+          aggregation: SUM
+      query_ref: Q-PROD-R05
+      linked_operations:
+        - OP-PROD-17  # Списание материалов по норме
+        - OP-PROD-18  # Фактическое списание материалов
+        - OP-PROD-34  # Корректировка фактического расхода
+      export:
+        formats: [pdf, excel, print]
+        template: "material_consumption_order"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-08: Отчёт по производительности сотрудников
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-08
+      report: "Отчёт по производительности сотрудников"
+      description: >
+        Сводка по каждому исполнителю: количество операций, суммарные часы,
+        доля прошедших контроль качества. Используется для оценки эффективности
+        персонала и принятия решений о мотивации.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Производительность сотрудников"
+          columns:
+            - { field: performed_by_employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: operations_count, label: "Операций", type: number, format: integer }
+            - { field: total_hours, label: "Часов", type: number, format: decimal }
+            - { field: passed_count, label: "Пройдено контролей", type: number, format: integer }
+            - { field: failed_count, label: "Брак", type: number, format: integer }
+            - { field: pass_rate_percent, label: "Качество (%)", type: number, format: percent, color: status }
+      summary:
+        - field: operations_count
+          label: "Итого операций"
+          aggregation: SUM
+        - field: total_hours
+          label: "Итого часов"
+          aggregation: SUM
+        - field: passed_count
+          label: "Итого пройдено"
+          aggregation: SUM
+        - field: failed_count
+          label: "Итого брак"
+          aggregation: SUM
+      query_ref: Q-PROD-R08
+      linked_operations:
+        - OP-PROD-35  # Выполнение операции
+        - OP-PROD-40  # Измерение параметров
+        - OP-PROD-39  # Контроль качества
+      export:
+        formats: [pdf, excel, print]
+        template: "employee_productivity"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-09: Себестоимость продукции в динамике (инвестиционный отчет)
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-09
+      report: "Себестоимость продукции в динамике (инвестиционный отчет)"
+      description: >
+        Сравнивает себестоимость единицы продукции по месяцам за период.
+        Показывает влияние изменения цен компонентов, норм расхода и эффективности
+        производства. Используется для обоснования инвестиций в модернизацию
+        оборудования и оптимизацию BOM.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода (обычно за 12 месяцев)"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Динамика себестоимости"
+          columns:
+            - { field: month, label: "Месяц", type: string }
+            - { field: product_material_id, label: "ID продукта", type: number, format: integer }
+            - { field: bom_name, label: "Изделие", type: string }
+            - { field: material_cost_per_unit, label: "Материалы (грн)", type: number, format: currency }
+            - { field: labor_cost_per_unit, label: "Труд (грн)", type: number, format: currency }
+            - { field: overhead_cost_per_unit, label: "Накладные (грн)", type: number, format: currency }
+            - { field: total_cost_per_unit, label: "Итого (грн)", type: number, format: currency }
+            - { field: margin_percent, label: "Маржинальность (%)", type: number, format: percent, color: status }
+      query_ref: Q-PROD-R09
+      linked_operations:
+        - OP-PROD-15  # Создание BOM
+        - OP-PROD-17  # Списание материалов по норме
+        - OP-PROD-18  # Фактическое списание материалов
+        - OP-PROD-43  # Расчет себестоимости
+        - OP-PROD-20  # Создание заказа
+        - OP-PROD-25  # Приостановка заказа
+      export:
+        formats: [pdf, excel, print]
+        template: "cost_dynamics"
+
+
+# =====================================================================================
+# РОЛЬ: Планировщик
+# =====================================================================================
+- role: "планировщик"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PROD-01: Наряд на выполнение работ
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-01
+      report: "Наряд на выполнение работ"
+      description: >
+        Печатная форма для мастера/бригады: перечень операций наряда по маршруту заказа,
+        с плановыми ресурсами и фактическим статусом выполнения по каждой операции.
+      parameters:
+        - name: work_order_id
+          label: "ID наряда"
+          type: number
+          required: true
+          description: "Введите ID наряда"
+      sections:
+        - title: "Наряд на выполнение работ"
+          columns:
+            - { field: sequence_no, label: "№", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: work_center_name, label: "Рабочий центр", type: string }
+            - { field: resources_json, label: "Ресурсы", type: string }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { planned: "info", in_progress: "warning", completed: "success", failed: "danger" } }
+            - { field: performed_by_employee_id, label: "Исполнитель", type: number, format: integer }
+            - { field: start_time, label: "Начало", type: datetime }
+            - { field: end_time, label: "Конец", type: datetime }
+      query_ref: Q-PROD-R01
+      linked_operations:
+        - OP-PROD-27  # Создание наряда
+        - OP-PROD-28  # Назначение наряда
+        - OP-PROD-35  # Выполнение операции
+      export:
+        formats: [pdf, print]
+        template: "work_order"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-04: Отчёт о выполнении производственных заказов
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-04
+      report: "Отчёт о выполнении производственных заказов"
+      description: >
+        Сводка по заказам за период: план, статус, доля завершённых нарядов.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Выполнение производственных заказов"
+          columns:
+            - { field: production_order_id, label: "ID заказа", type: number, format: integer }
+            - { field: bom_name, label: "Изделие", type: string }
+            - { field: routing_name, label: "Маршрут", type: string }
+            - { field: planned_quantity, label: "План", type: number, format: integer }
+            - { field: planned_start_date, label: "План старт", type: date }
+            - { field: planned_end_date, label: "План финиш", type: date }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { confirmed: "info", in_progress: "warning", on_hold: "danger", completed: "success", cancelled: "neutral" } }
+            - { field: work_orders_total, label: "Всего нарядов", type: number, format: integer }
+            - { field: work_orders_completed, label: "Завершено", type: number, format: integer }
+            - { field: completion_percent, label: "Выполнение (%)", type: number, format: percent, color: status }
+      summary:
+        - field: planned_quantity
+          label: "Итого план"
+          aggregation: SUM
+        - field: work_orders_total
+          label: "Итого нарядов"
+          aggregation: SUM
+        - field: work_orders_completed
+          label: "Итого завершено"
+          aggregation: SUM
+      query_ref: Q-PROD-R04
+      linked_operations:
+        - OP-PROD-20  # Создание заказа
+        - OP-PROD-21  # Подтверждение заказа
+        - OP-PROD-24  # Запуск заказа
+        - OP-PROD-25  # Приостановка заказа
+        - OP-PROD-26  # Завершение заказа
+        - OP-PROD-31  # Завершение наряда
+      export:
+        formats: [pdf, excel, print]
+        template: "order_completion"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-05: Ведомость расхода материалов по заказу
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-05
+      report: "Ведомость расхода материалов по заказу"
+      description: >
+        План (норма BOM × плановое количество) против факта (фактический расход)
+        по всем нарядам заказа, в количестве и в деньгах.
+      parameters:
+        - name: production_order_id
+          label: "ID производственного заказа"
+          type: number
+          required: true
+          description: "Введите ID производственного заказа"
+      sections:
+        - title: "Расход материалов по заказу"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: planned_quantity, label: "План (шт)", type: number, format: decimal }
+            - { field: actual_quantity, label: "Факт (шт)", type: number, format: decimal }
+            - { field: variance_quantity, label: "Отклонение (шт)", type: number, format: decimal, color: status }
+            - { field: unit_cost, label: "Цена за ед.", type: number, format: currency }
+            - { field: planned_cost, label: "План (грн)", type: number, format: currency }
+            - { field: actual_cost, label: "Факт (грн)", type: number, format: currency }
+            - { field: variance_cost, label: "Отклонение (грн)", type: number, format: currency, color: status }
+      summary:
+        - field: planned_cost
+          label: "Итого план"
+          aggregation: SUM
+        - field: actual_cost
+          label: "Итого факт"
+          aggregation: SUM
+        - field: variance_cost
+          label: "Итого отклонение"
+          aggregation: SUM
+      query_ref: Q-PROD-R05
+      linked_operations:
+        - OP-PROD-17  # Списание материалов по норме
+        - OP-PROD-18  # Фактическое списание материалов
+        - OP-PROD-34  # Корректировка фактического расхода
+      export:
+        formats: [pdf, excel, print]
+        template: "material_consumption_order"
+
+
+# =====================================================================================
+# РОЛЬ: Технолог
+# =====================================================================================
+- role: "технолог"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PROD-02: Маршрутный лист заказа
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-02
+      report: "Маршрутный лист заказа"
+      description: >
+        Полная технологическая карта заказа: последовательность операций, ресурсы,
+        целевые параметры, признак контроля качества.
+        Используется для планирования производства и контроля соблюдения технологии.
+      parameters:
+        - name: production_order_id
+          label: "ID производственного заказа"
+          type: number
+          required: true
+          description: "Введите ID производственного заказа"
+      sections:
+        - title: "Маршрутный лист"
+          columns:
+            - { field: sequence_no, label: "№", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: work_center_name, label: "Рабочий центр", type: string }
+            - { field: resources_json, label: "Ресурсы", type: string }
+            - { field: parameters_json, label: "Параметры", type: string }
+            - { field: has_quality_control, label: "Контроль качества", type: boolean }
+      query_ref: Q-PROD-R02
+      linked_operations:
+        - OP-PROD-07  # Создание операции
+        - OP-PROD-09  # Добавление ресурсов
+        - OP-PROD-10  # Добавление параметров
+        - OP-PROD-11  # Назначение рабочего центра
+        - OP-PROD-13  # Добавление контроля качества
+      export:
+        formats: [pdf, print]
+        template: "routing_sheet"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-03: Акт о браке
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-03
+      report: "Акт о браке"
+      description: >
+        Реестр всех операций, не прошедших контроль качества за период.
+        Показывает причину брака, исполнителя и время выполнения.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Акт о браке"
+          columns:
+            - { field: execution_id, label: "ID выполнения", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: work_center_name, label: "Рабочий центр", type: string }
+            - { field: performed_by_employee_id, label: "Исполнитель", type: number, format: integer }
+            - { field: quality_point_id, label: "ID точки контроля", type: string }
+            - { field: quality_point_name, label: "Точка контроля", type: string }
+            - { field: comment, label: "Причина брака", type: string }
+            - { field: end_time, label: "Время", type: datetime }
+      query_ref: Q-PROD-R03
+      linked_operations:
+        - OP-PROD-39  # Контроль качества
+      export:
+        formats: [pdf, excel, print]
+        template: "defect_report"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-06: Спецификация изделия (BOM)
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-06
+      report: "Спецификация изделия (BOM)"
+      description: >
+        Печатная форма состава изделия с нормами расхода и плановой стоимостью.
+        Используется для расчета себестоимости и планирования закупок.
+      parameters:
+        - name: bom_id
+          label: "ID спецификации"
+          type: number
+          required: true
+          description: "Введите ID спецификации"
+      sections:
+        - title: "Спецификация изделия"
+          columns:
+            - { field: material_id, label: "ID материала", type: number, format: integer }
+            - { field: quantity, label: "Количество", type: number, format: decimal }
+            - { field: unit_cost, label: "Цена за ед.", type: number, format: currency }
+            - { field: line_cost, label: "Сумма", type: number, format: currency }
+      summary:
+        - field: line_cost
+          label: "Итого по спецификации"
+          aggregation: SUM
+      query_ref: Q-PROD-R06
+      linked_operations:
+        - OP-PROD-15  # Создание BOM
+        - OP-PROD-17  # Добавление позиции BOM
+        - OP-PROD-18  # Изменение позиции BOM
+        - OP-PROD-19  # Удаление позиции BOM
+      export:
+        formats: [pdf, print]
+        template: "bom_specification"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-07: Отчёт по отклонениям технологических параметров
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-07
+      report: "Отчёт по отклонениям технологических параметров"
+      description: >
+        Все фактические измерения, вышедшие за допуск целевого параметра операции.
+        Используется для контроля соблюдения технологии и анализа качества.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Отклонения параметров"
+          columns:
+            - { field: execution_id, label: "ID выполнения", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: parameter_name, label: "Параметр", type: string }
+            - { field: measured_value, label: "Факт", type: number, format: decimal }
+            - { field: target_value, label: "Цель", type: number, format: decimal }
+            - { field: tolerance, label: "Допуск", type: number, format: decimal }
+            - { field: deviation, label: "Отклонение", type: number, format: decimal, color: status }
+      query_ref: Q-PROD-R07
+      linked_operations:
+        - OP-PROD-08  # Добавление параметров
+        - OP-PROD-38  # Измерение параметров
+      export:
+        formats: [pdf, excel, print]
+        template: "parameter_deviation"
+
+
+# =====================================================================================
+# РОЛЬ: Мастер
+# =====================================================================================
+- role: "мастер"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PROD-01: Наряд на выполнение работ
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-01
+      report: "Наряд на выполнение работ"
+      description: >
+        Печатная форма для мастера/бригады: перечень операций наряда по маршруту заказа,
+        с плановыми ресурсами и фактическим статусом выполнения по каждой операции.
+      parameters:
+        - name: work_order_id
+          label: "ID наряда"
+          type: number
+          required: true
+          description: "Введите ID наряда"
+      sections:
+        - title: "Наряд на выполнение работ"
+          columns:
+            - { field: sequence_no, label: "№", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: work_center_name, label: "Рабочий центр", type: string }
+            - { field: resources_json, label: "Ресурсы", type: string }
+            - { field: status_id, label: "Статус", type: string, widget: status, statusMap: { planned: "info", in_progress: "warning", completed: "success", failed: "danger" } }
+            - { field: performed_by_employee_id, label: "Исполнитель", type: number, format: integer }
+            - { field: start_time, label: "Начало", type: datetime }
+            - { field: end_time, label: "Конец", type: datetime }
+      query_ref: Q-PROD-R01
+      linked_operations:
+        - OP-PROD-27  # Создание наряда
+        - OP-PROD-28  # Назначение наряда
+        - OP-PROD-35  # Выполнение операции
+      export:
+        formats: [pdf, print]
+        template: "work_order"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-02: Маршрутный лист заказа
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-02
+      report: "Маршрутный лист заказа"
+      description: >
+        Полная технологическая карта заказа: последовательность операций, ресурсы,
+        целевые параметры, признак контроля качества.
+      parameters:
+        - name: production_order_id
+          label: "ID производственного заказа"
+          type: number
+          required: true
+          description: "Введите ID производственного заказа"
+      sections:
+        - title: "Маршрутный лист"
+          columns:
+            - { field: sequence_no, label: "№", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: work_center_name, label: "Рабочий центр", type: string }
+            - { field: resources_json, label: "Ресурсы", type: string }
+            - { field: parameters_json, label: "Параметры", type: string }
+            - { field: has_quality_control, label: "Контроль качества", type: boolean }
+      query_ref: Q-PROD-R02
+      linked_operations:
+        - OP-PROD-07  # Создание операции
+        - OP-PROD-09  # Добавление ресурсов
+        - OP-PROD-10  # Добавление параметров
+        - OP-PROD-11  # Назначение рабочего центра
+        - OP-PROD-13  # Добавление контроля качества
+      export:
+        formats: [pdf, print]
+        template: "routing_sheet"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-08: Отчёт по производительности сотрудников
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-08
+      report: "Отчёт по производительности сотрудников"
+      description: >
+        Сводка по каждому исполнителю: количество операций, суммарные часы,
+        доля прошедших контроль качества.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Производительность сотрудников"
+          columns:
+            - { field: performed_by_employee_id, label: "ID сотрудника", type: number, format: integer }
+            - { field: operations_count, label: "Операций", type: number, format: integer }
+            - { field: total_hours, label: "Часов", type: number, format: decimal }
+            - { field: passed_count, label: "Пройдено контролей", type: number, format: integer }
+            - { field: failed_count, label: "Брак", type: number, format: integer }
+            - { field: pass_rate_percent, label: "Качество (%)", type: number, format: percent, color: status }
+      summary:
+        - field: operations_count
+          label: "Итого операций"
+          aggregation: SUM
+        - field: total_hours
+          label: "Итого часов"
+          aggregation: SUM
+        - field: passed_count
+          label: "Итого пройдено"
+          aggregation: SUM
+        - field: failed_count
+          label: "Итого брак"
+          aggregation: SUM
+      query_ref: Q-PROD-R08
+      linked_operations:
+        - OP-PROD-35  # Выполнение операции
+        - OP-PROD-40  # Измерение параметров
+        - OP-PROD-39  # Контроль качества
+      export:
+        formats: [pdf, excel, print]
+        template: "employee_productivity"
+
+
+# =====================================================================================
+# РОЛЬ: Контролёр
+# =====================================================================================
+- role: "контролер"
+  reports:
+    # -------------------------------------------------------------------------------
+    # REP-PROD-03: Акт о браке
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-03
+      report: "Акт о браке"
+      description: >
+        Реестр всех операций, не прошедших контроль качества за период.
+        Показывает причину брака, исполнителя и время выполнения.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Акт о браке"
+          columns:
+            - { field: execution_id, label: "ID выполнения", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: work_center_name, label: "Рабочий центр", type: string }
+            - { field: performed_by_employee_id, label: "Исполнитель", type: number, format: integer }
+            - { field: quality_point_id, label: "ID точки контроля", type: string }
+            - { field: quality_point_name, label: "Точка контроля", type: string }
+            - { field: comment, label: "Причина брака", type: string }
+            - { field: end_time, label: "Время", type: datetime }
+      query_ref: Q-PROD-R03
+      linked_operations:
+        - OP-PROD-39  # Контроль качества
+      export:
+        formats: [pdf, excel, print]
+        template: "defect_report"
+
+    # -------------------------------------------------------------------------------
+    # REP-PROD-07: Отчёт по отклонениям технологических параметров
+    # -------------------------------------------------------------------------------
+    - report_code: REP-PROD-07
+      report: "Отчёт по отклонениям технологических параметров"
+      description: >
+        Все фактические измерения, вышедшие за допуск целевого параметра операции.
+        Используется для контроля соблюдения технологии.
+      parameters:
+        - name: period_from
+          label: "Период с"
+          type: date
+          required: true
+          description: "Начало периода"
+        - name: period_to
+          label: "Период по"
+          type: date
+          required: true
+          description: "Конец периода"
+      sections:
+        - title: "Отклонения параметров"
+          columns:
+            - { field: execution_id, label: "ID выполнения", type: number, format: integer }
+            - { field: operation_name, label: "Операция", type: string }
+            - { field: parameter_name, label: "Параметр", type: string }
+            - { field: measured_value, label: "Факт", type: number, format: decimal }
+            - { field: target_value, label: "Цель", type: number, format: decimal }
+            - { field: tolerance, label: "Допуск", type: number, format: decimal }
+            - { field: deviation, label: "Отклонение", type: number, format: decimal, color: status }
+      query_ref: Q-PROD-R07
+      linked_operations:
+        - OP-PROD-08  # Добавление параметров
+        - OP-PROD-38  # Измерение параметров
+      export:
+        formats: [pdf, excel, print]
+        template: "parameter_deviation"

@@ -1,0 +1,45 @@
+# 1. Убедиться, что базовые модули загружены
+python manage.py demo_cp --company=1
+python manage.py demo_wms --company=1
+python manage.py demo_procurement --company=1
+python manage.py demo_sales --company=1
+python manage.py process_events --once
+
+# 2. Workflow Production
+python manage.py load_workflow --company=1 --module=PRODUCTION
+# Ожидаете: created=22, updated=0, transitions=?
+
+# 3. Demo-данные Production
+python manage.py demo_production --company=1 \
+  --file=apps/production/workflow/Production_test_data.json
+# Ожидаете:
+#   technology: 2
+#   work_center: 3
+#   routing: 1
+#   operation_definition: 5
+#   quality_point: 3
+#   bom: 1
+#   bom_item: 5
+#   production_order: 2
+#   work_order: 2
+#   operation_execution: 4
+
+# 4. Обработка событий
+python manage.py process_events --once
+
+# 5. Проверка задач
+python manage.py shell -c "
+from apps.tasks.models import TaskTask
+for t in TaskTask.objects.filter(definition__module='PRODUCTION')[:20]:
+    print(t.id, t.definition.code, t.assigned_role, t.status)
+"
+
+# 6. Проверка резервов и приходов
+python manage.py shell -c "
+from apps.wms.models import MaterialReservation, GoodsReceipt
+print('Reservations:', MaterialReservation.objects.filter(task_object_type='production_order').count())
+print('Receipts:', GoodsReceipt.objects.filter(code__startswith='GR-PROD-').count())
+"
+
+# 7. Тесты
+pytest apps/production/tests/ -v

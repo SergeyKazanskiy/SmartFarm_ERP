@@ -1,0 +1,310 @@
+{
+    "module": "Production",
+    "description": "Тестовые данные для модуля Производство",
+    "tables": {
+      "prod_technology": [
+        {
+          "technology_id": "TECH-001",
+          "technology_name": "Сборка телевизора SmartTV X-100",
+          "company_id": "COMP-001"
+        },
+        {
+          "technology_id": "TECH-002",
+          "technology_name": "Тестирование и калибровка",
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_work_center": [
+        {
+          "work_center_id": "WC-001",
+          "work_center_name": "Участок сборки",
+          "company_id": "COMP-001"
+        },
+        {
+          "work_center_id": "WC-002",
+          "work_center_name": "Участок тестирования",
+          "company_id": "COMP-001"
+        },
+        {
+          "work_center_id": "WC-003",
+          "work_center_name": "Участок упаковки",
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_routing": [
+        {
+          "routing_id": "ROUT-001",
+          "technology_id": "TECH-001",
+          "routing_name": "Маршрут сборки SmartTV X-100",
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_operation_definition": [
+        {
+          "operation_id": "OP-DEF-001",
+          "routing_id": "ROUT-001",
+          "operation_name": "Сборка корпуса",
+          "sequence_no": 1,
+          "work_center_id": "WC-001",
+          "resources_json": {
+            "employee_count": 2,
+            "required_skills": ["Сборка электроники"]
+          },
+          "parameters_json": {
+            "temperature": {"target": 22, "tolerance": 2},
+            "humidity": {"target": 45, "tolerance": 10}
+          },
+          "company_id": "COMP-001"
+        },
+        {
+          "operation_id": "OP-DEF-002",
+          "routing_id": "ROUT-001",
+          "operation_name": "Установка ЖК-панели",
+          "sequence_no": 2,
+          "work_center_id": "WC-001",
+          "resources_json": {
+            "employee_count": 2,
+            "required_skills": ["Сборка электроники"]
+          },
+          "parameters_json": {
+            "pressure": {"target": 5, "tolerance": 0.5}
+          },
+          "company_id": "COMP-001"
+        },
+        {
+          "operation_id": "OP-DEF-003",
+          "routing_id": "ROUT-001",
+          "operation_name": "Подключение электроники",
+          "sequence_no": 3,
+          "work_center_id": "WC-001",
+          "resources_json": {
+            "employee_count": 1,
+            "required_skills": ["Сборка электроники"]
+          },
+          "parameters_json": {
+            "voltage": {"target": 220, "tolerance": 5}
+          },
+          "company_id": "COMP-001"
+        },
+        {
+          "operation_id": "OP-DEF-004",
+          "routing_id": "ROUT-001",
+          "operation_name": "Тестирование и калибровка",
+          "sequence_no": 4,
+          "work_center_id": "WC-002",
+          "resources_json": {
+            "employee_count": 1,
+            "required_skills": ["Контроль качества"]
+          },
+          "parameters_json": {
+            "brightness": {"target": 100, "tolerance": 5},
+            "contrast": {"target": 100, "tolerance": 5}
+          },
+          "company_id": "COMP-001"
+        },
+        {
+          "operation_id": "OP-DEF-005",
+          "routing_id": "ROUT-001",
+          "operation_name": "Упаковка",
+          "sequence_no": 5,
+          "work_center_id": "WC-003",
+          "resources_json": {
+            "employee_count": 1,
+            "required_skills": []
+          },
+          "parameters_json": {},
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_quality_point": [
+        {
+          "quality_point_id": "QP-001",
+          "operation_id": "OP-DEF-001",
+          "quality_point_name": "Проверка зазоров корпуса",
+          "company_id": "COMP-001"
+        },
+        {
+          "quality_point_id": "QP-002",
+          "operation_id": "OP-DEF-002",
+          "quality_point_name": "Проверка фиксации панели",
+          "company_id": "COMP-001"
+        },
+        {
+          "quality_point_id": "QP-003",
+          "operation_id": "OP-DEF-004",
+          "quality_point_name": "Проверка параметров изображения",
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_bom": [
+        {
+          "bom_id": "BOM-001",
+          "product_material_id": "MAT-006",
+          "bom_name": "Спецификация SmartTV X-100 55\"",
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_bom_item": [
+        {
+          "bom_item_id": "BOMI-001",
+          "bom_id": "BOM-001",
+          "material_id": "MAT-001",
+          "quantity": 1,
+          "unit_cost": 145.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "bom_item_id": "BOMI-002",
+          "bom_id": "BOM-001",
+          "material_id": "MAT-002",
+          "quantity": 2,
+          "unit_cost": 240.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "bom_item_id": "BOMI-003",
+          "bom_id": "BOM-001",
+          "material_id": "MAT-003",
+          "quantity": 1,
+          "unit_cost": 290.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "bom_item_id": "BOMI-004",
+          "bom_id": "BOM-001",
+          "material_id": "MAT-004",
+          "quantity": 1,
+          "unit_cost": 2500.00,
+          "company_id": "COMP-001"
+        },
+        {
+          "bom_item_id": "BOMI-005",
+          "bom_id": "BOM-001",
+          "material_id": "MAT-005",
+          "quantity": 1,
+          "unit_cost": 180.00,
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_production_order": [
+        {
+          "production_order_id": "PROD-001",
+          "bom_id": "BOM-001",
+          "routing_id": "ROUT-001",
+          "planned_quantity": 100,
+          "planned_start_date": "2026-06-20",
+          "planned_end_date": "2026-07-05",
+          "status_id": "confirmed",
+          "company_id": "COMP-001"
+        },
+        {
+          "production_order_id": "PROD-002",
+          "bom_id": "BOM-001",
+          "routing_id": "ROUT-001",
+          "planned_quantity": 50,
+          "planned_start_date": "2026-07-10",
+          "planned_end_date": "2026-07-20",
+          "status_id": "draft",
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_work_order": [
+        {
+          "work_order_id": "WO-001",
+          "production_order_id": "PROD-001",
+          "status_id": "in_progress",
+          "planned_start": "2026-06-20 08:00:00",
+          "planned_finish": "2026-06-27 17:00:00",
+          "actual_start": "2026-06-20 08:30:00",
+          "actual_finish": null,
+          "actual_materials_json": {
+            "MAT-001": {"planned": 100, "actual": 98},
+            "MAT-002": {"planned": 200, "actual": 195},
+            "MAT-003": {"planned": 100, "actual": 100},
+            "MAT-004": {"planned": 100, "actual": 99},
+            "MAT-005": {"planned": 100, "actual": 100}
+          },
+          "company_id": "COMP-001"
+        },
+        {
+          "work_order_id": "WO-002",
+          "production_order_id": "PROD-001",
+          "status_id": "planned",
+          "planned_start": "2026-06-28 08:00:00",
+          "planned_finish": "2026-07-05 17:00:00",
+          "actual_start": null,
+          "actual_finish": null,
+          "actual_materials_json": null,
+          "company_id": "COMP-001"
+        }
+      ],
+      "prod_operation_execution": [
+        {
+          "execution_id": "EXEC-001",
+          "work_order_id": "WO-001",
+          "operation_id": "OP-DEF-001",
+          "work_center_id": "WC-001",
+          "performed_by_employee_id": "EMP-007",
+          "start_time": "2026-06-20 08:30:00",
+          "end_time": "2026-06-20 12:30:00",
+          "status_id": "completed",
+          "measurements_json": {
+            "temperature": 21.5,
+            "humidity": 48
+          },
+          "quality_results_json": [
+            {"quality_point_id": "QP-001", "is_passed": true, "comment": "OK"}
+          ],
+          "company_id": "COMP-001"
+        },
+        {
+          "execution_id": "EXEC-002",
+          "work_order_id": "WO-001",
+          "operation_id": "OP-DEF-002",
+          "work_center_id": "WC-001",
+          "performed_by_employee_id": "EMP-007",
+          "start_time": "2026-06-20 13:00:00",
+          "end_time": "2026-06-20 16:00:00",
+          "status_id": "completed",
+          "measurements_json": {
+            "pressure": 5.2
+          },
+          "quality_results_json": [
+            {"quality_point_id": "QP-002", "is_passed": true, "comment": "OK"}
+          ],
+          "company_id": "COMP-001"
+        },
+        {
+          "execution_id": "EXEC-003",
+          "work_order_id": "WO-001",
+          "operation_id": "OP-DEF-004",
+          "work_center_id": "WC-002",
+          "performed_by_employee_id": "EMP-003",
+          "start_time": "2026-06-21 09:00:00",
+          "end_time": "2026-06-21 12:00:00",
+          "status_id": "completed",
+          "measurements_json": {
+            "brightness": 102,
+            "contrast": 98
+          },
+          "quality_results_json": [
+            {"quality_point_id": "QP-003", "is_passed": true, "comment": "В допуске"}
+          ],
+          "company_id": "COMP-001"
+        },
+        {
+          "execution_id": "EXEC-004",
+          "work_order_id": "WO-001",
+          "operation_id": "OP-DEF-005",
+          "work_center_id": "WC-003",
+          "performed_by_employee_id": "EMP-008",
+          "start_time": "2026-06-22 10:00:00",
+          "end_time": "2026-06-22 12:00:00",
+          "status_id": "completed",
+          "measurements_json": {},
+          "quality_results_json": [],
+          "company_id": "COMP-001"
+        }
+      ]
+    }
+  }

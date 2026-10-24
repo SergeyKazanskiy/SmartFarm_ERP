@@ -1,0 +1,1448 @@
+# =====================================================================================
+# Production — дашборды по ролям (с полной конфигурацией виджетов)
+# Версия: 2.0
+# Построен на Production_Schema.json (10 таблиц)
+# =====================================================================================
+
+- role: "директор"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-01: Производственные заказы
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-01
+      dashboard: "Производственные заказы"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-orders"
+          type: "kpi"
+          title: "Ключевые показатели заказов"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные заказы"
+              subtitle: "в работе"
+              dataSource: "Q-PROD-01-01"
+              field: "active_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-20, OP-PROD-21, OP-PROD-24]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Просроченные заказы"
+              subtitle: "требуют внимания"
+              dataSource: "Q-PROD-01-02"
+              field: "overdue_orders"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 2
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 3
+                  value2: 5
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 5
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-22, OP-PROD-24]
+
+        - id: "sec-analytics-orders"
+          type: "analytics"
+          title: "Аналитика заказов"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение заказов по статусам"
+              subtitle: "текущее состояние"
+              dataSource: "Q-PROD-01-03"
+              chartType: "pie"
+              category: "status_id"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "order_count"
+                  label: "Количество заказов"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-20, OP-PROD-21, OP-PROD-24, OP-PROD-25, OP-PROD-26]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-02: Выполнение нарядов в срок
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-02
+      dashboard: "Выполнение нарядов в срок"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-wo"
+          type: "kpi"
+          title: "Ключевые показатели нарядов"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Нарядов завершено вовремя"
+              subtitle: "% от общего количества"
+              dataSource: "Q-PROD-02-01"
+              field: "on_time_percent"
+              aggregation: "SUM"
+              format: "percent"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 90
+                  status: "success"
+                  label: "Отлично"
+                - field: "value"
+                  operator: "between"
+                  value: 70
+                  value2: 90
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: "<"
+                  value: 70
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-31]
+
+        - id: "sec-analytics-wo"
+          type: "analytics"
+          title: "Аналитика выполнения"
+          widgets:
+            - widget_id: W02-03
+              type: Chart
+              title: "Динамика завершения нарядов по неделям"
+              subtitle: "количество"
+              dataSource: "Q-PROD-02-03"
+              chartType: "area"
+              category: "week_start"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "completed_orders"
+                  label: "Завершено нарядов"
+                  color: "#34d399"
+              grid: { w: 8 }
+              linked_operations: [OP-PROD-27, OP-PROD-28, OP-PROD-31]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-05: Контроль качества
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-05
+      dashboard: "Контроль качества"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-quality"
+          type: "kpi"
+          title: "Ключевые показатели качества"
+          widgets:
+            - widget_id: W05-01
+              type: Indicator
+              title: "Операций, не прошедших контроль"
+              subtitle: "% брака"
+              dataSource: "Q-PROD-05-01"
+              field: "fail_rate_percent"
+              aggregation: "SUM"
+              format: "percent"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 5
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 5
+                  value2: 15
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 15
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-39]
+
+        - id: "sec-analytics-quality"
+          type: "analytics"
+          title: "Аналитика качества"
+          widgets:
+            - widget_id: W05-02
+              type: Chart
+              title: "Годно / Брак"
+              subtitle: "результаты контроля"
+              dataSource: "Q-PROD-05-02"
+              chartType: "pie"
+              category: "quality_category"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "result_count"
+                  label: "Количество"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-39]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-08: Перерасход материалов
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-08
+      dashboard: "Перерасход материалов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-overrun"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W08-02
+              type: Indicator
+              title: "Позиций с перерасходом"
+              subtitle: "требуют контроля"
+              dataSource: "Q-PROD-08-02"
+              field: "overrun_items_count"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 5
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 6
+                  value2: 15
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 15
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-17, OP-PROD-18, OP-PROD-34]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-09: Эффективность производства (инвестиционная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-09
+      dashboard: "Эффективность производства"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-efficiency"
+          type: "kpi"
+          title: "Ключевые показатели эффективности"
+          widgets:
+            - widget_id: W09-02
+              type: Indicator
+              title: "Себестоимость единицы продукции"
+              subtitle: "текущий месяц"
+              dataSource: "Q-PROD-09-02"
+              field: "avg_cost_per_unit"
+              aggregation: "SUM"
+              format: "currency"
+              currencyCode: "UAH"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 100
+                  status: "success"
+                  label: "Низкая"
+                - field: "value"
+                  operator: "between"
+                  value: 100
+                  value2: 200
+                  status: "warning"
+                  label: "Средняя"
+                - field: "value"
+                  operator: ">"
+                  value: 200
+                  status: "danger"
+                  label: "Высокая"
+              grid: { w: 3 }
+              linked_operations: [OP-PROD-17, OP-PROD-18, OP-PROD-34, OP-PROD-43]
+              
+            - widget_id: W09-03
+              type: Indicator
+              title: "OEE (Общая эффективность)"
+              subtitle: "оборудования"
+              dataSource: "Q-PROD-09-03"
+              field: "oee_percent"
+              aggregation: "SUM"
+              format: "percent"
+              conditions:
+                - field: "value"
+                  operator: ">="
+                  value: 85
+                  status: "success"
+                  label: "Отлично"
+                - field: "value"
+                  operator: "between"
+                  value: 60
+                  value2: 85
+                  status: "warning"
+                  label: "Средне"
+                - field: "value"
+                  operator: "<"
+                  value: 60
+                  status: "danger"
+                  label: "Низкая"
+              grid: { w: 3 }
+              linked_operations: [OP-PROD-35, OP-PROD-40, OP-TOIP-35, OP-TOIP-36]
+
+        - id: "sec-analytics-efficiency"
+          type: "analytics"
+          title: "Аналитика эффективности"
+          widgets:
+            - widget_id: W09-01
+              type: Chart
+              title: "Динамика выполнения плана по месяцам"
+              subtitle: "%"
+              dataSource: "Q-PROD-09-01"
+              chartType: "line"
+              category: "month"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "percent"
+              series:
+                - field: "plan_completion_percent"
+                  label: "Выполнение плана %"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-20, OP-PROD-24, OP-PROD-25]
+              
+            - widget_id: W09-04
+              type: Chart
+              title: "ТОП-5 продукции по маржинальности"
+              subtitle: "прибыльность"
+              dataSource: "Q-PROD-09-04"
+              chartType: "bar"
+              category: "bom_name"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "currency"
+                currencyCode: "UAH"
+              series:
+                - field: "total_margin"
+                  label: "Маржинальность"
+                  color: "#34d399"
+                - field: "margin_percent"
+                  label: "Маржинальность %"
+                  color: "#f59e0b"
+                  yAxisId: "right"
+              rightAxis:
+                format: "percent"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-15, OP-PROD-17, OP-PROD-43, OP-PROD-20]
+
+
+# =====================================================================================
+# РОЛЬ: Планировщик
+# =====================================================================================
+- role: "планировщик"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-01: Производственные заказы (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-01
+      dashboard: "Производственные заказы"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-orders-planner"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные заказы"
+              dataSource: "Q-PROD-01-01"
+              field: "active_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-20, OP-PROD-21, OP-PROD-24]
+              
+            - widget_id: W01-02
+              type: Indicator
+              title: "Просроченные заказы"
+              dataSource: "Q-PROD-01-02"
+              field: "overdue_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-22, OP-PROD-24]
+
+        - id: "sec-analytics-orders-planner"
+          type: "analytics"
+          title: "Аналитика"
+          widgets:
+            - widget_id: W01-03
+              type: Chart
+              title: "Распределение заказов по статусам"
+              dataSource: "Q-PROD-01-03"
+              chartType: "pie"
+              category: "status_id"
+              showLegend: true
+              height: 320
+              series:
+                - field: "order_count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-20, OP-PROD-21, OP-PROD-24, OP-PROD-25, OP-PROD-26]
+              
+            - widget_id: W01-04
+              type: Table
+              title: "Реестр активных заказов"
+              subtitle: "текущие заказы"
+              dataSource: "Q-PROD-01-04"
+              pageSize: 15
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "production_order_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "bom_name"
+                  title: "Изделие"
+                  width: 180
+                  sortable: true
+                - field: "routing_name"
+                  title: "Маршрут"
+                  width: 150
+                - field: "planned_quantity"
+                  title: "Количество"
+                  width: 100
+                  align: "right"
+                - field: "planned_start_date"
+                  title: "Старт"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "planned_end_date"
+                  title: "Финиш"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "confirmed": "info"
+                      "in_progress": "warning"
+                      "on_hold": "danger"
+                      "completed": "success"
+              grid: { w: 8 }
+              linked_operations: [OP-PROD-20, OP-PROD-23]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-02: Выполнение нарядов в срок (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-02
+      dashboard: "Выполнение нарядов в срок"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-wo-planner"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W02-01
+              type: Indicator
+              title: "Нарядов завершено вовремя"
+              dataSource: "Q-PROD-02-01"
+              field: "on_time_percent"
+              aggregation: "SUM"
+              format: "percent"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-31]
+
+        - id: "sec-analytics-wo-planner"
+          type: "analytics"
+          title: "Аналитика отклонений"
+          widgets:
+            - widget_id: W02-02
+              type: Chart
+              title: "ТОП отклонений факт/план по нарядам"
+              subtitle: "часы"
+              dataSource: "Q-PROD-02-02"
+              chartType: "bar"
+              category: "work_order_id"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+                unit: "ч"
+              series:
+                - field: "deviation_hours"
+                  label: "Отклонение (ч)"
+                  color: "#f87171"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-33, OP-PROD-31]
+              
+            - widget_id: W02-03
+              type: Chart
+              title: "Динамика завершения нарядов по неделям"
+              dataSource: "Q-PROD-02-03"
+              chartType: "area"
+              category: "week_start"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "completed_orders"
+                  label: "Завершено нарядов"
+                  color: "#34d399"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-27, OP-PROD-28, OP-PROD-31]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-03: Технологическая матрица
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-03
+      dashboard: "Технологическая матрица"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-tech"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Всего технологических операций"
+              subtitle: "в системе"
+              dataSource: "Q-PROD-03-01"
+              field: "total_operations"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-07]
+
+        - id: "sec-analytics-tech"
+          type: "analytics"
+          title: "Технологические операции"
+          widgets:
+            - widget_id: W03-02
+              type: Table
+              title: "Операции и их ресурсные потребности"
+              subtitle: "детализация"
+              dataSource: "Q-PROD-03-02"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "operation_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "routing_name"
+                  title: "Маршрут"
+                  width: 150
+                  sortable: true
+                - field: "sequence_no"
+                  title: "№"
+                  width: 60
+                  align: "center"
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 200
+                  sortable: true
+                - field: "work_center_name"
+                  title: "Рабочий центр"
+                  width: 150
+                - field: "resources_json"
+                  title: "Ресурсы"
+                  width: 200
+              grid: { w: 8 }
+              linked_operations: [OP-PROD-07, OP-PROD-09, OP-PROD-10, OP-PROD-11]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-07: Загруженность рабочих центров
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-07
+      dashboard: "Загруженность рабочих центров"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-work-centers"
+          type: "analytics"
+          title: "Аналитика загрузки"
+          widgets:
+            - widget_id: W07-01
+              type: Chart
+              title: "Время выполнения операций по рабочим центрам"
+              subtitle: "часы"
+              dataSource: "Q-PROD-07-01"
+              chartType: "bar"
+              category: "work_center_name"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+                unit: "ч"
+              series:
+                - field: "busy_hours"
+                  label: "Занятость (ч)"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-35, OP-PROD-40]
+              
+            - widget_id: W07-02
+              type: Table
+              title: "Выполненные операции по рабочим центрам"
+              subtitle: "детализация"
+              dataSource: "Q-PROD-07-02"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "work_center_name"
+                  title: "Рабочий центр"
+                  width: 150
+                  sortable: true
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 200
+                  sortable: true
+                - field: "performed_by_employee_id"
+                  title: "Исполнитель"
+                  width: 100
+                  align: "center"
+                - field: "start_time"
+                  title: "Начало"
+                  width: 150
+                  formatter: "datetime"
+                  sortable: true
+                - field: "end_time"
+                  title: "Конец"
+                  width: 150
+                  formatter: "datetime"
+                  sortable: true
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "in_progress": "warning"
+                      "completed": "success"
+                      "failed": "danger"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-35, OP-PROD-36, OP-PROD-40]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-08: Перерасход материалов (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-08
+      dashboard: "Перерасход материалов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-overrun-planner"
+          type: "analytics"
+          title: "Аналитика перерасхода"
+          widgets:
+            - widget_id: W08-01
+              type: Chart
+              title: "Перерасход материалов (факт vs норма) по заказам"
+              subtitle: "отклонение"
+              dataSource: "Q-PROD-08-01"
+              chartType: "bar"
+              category: "production_order_id"
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "planned_quantity"
+                  label: "Норма"
+                  color: "#60a5fa"
+                - field: "actual_quantity"
+                  label: "Факт"
+                  color: "#f87171"
+                - field: "overrun_quantity"
+                  label: "Перерасход"
+                  color: "#fbbf24"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-17, OP-PROD-18, OP-PROD-34]
+              
+            - widget_id: W08-02
+              type: Indicator
+              title: "Количество позиций с перерасходом"
+              dataSource: "Q-PROD-08-02"
+              field: "overrun_items_count"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-17, OP-PROD-18, OP-PROD-34]
+
+
+# =====================================================================================
+# РОЛЬ: Технолог
+# =====================================================================================
+- role: "технолог"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-03: Технологическая матрица (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-03
+      dashboard: "Технологическая матрица"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-tech-tech"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W03-01
+              type: Indicator
+              title: "Всего технологических операций"
+              dataSource: "Q-PROD-03-01"
+              field: "total_operations"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-07]
+
+        - id: "sec-analytics-tech-tech"
+          type: "analytics"
+          title: "Технологическая аналитика"
+          widgets:
+            - widget_id: W03-02
+              type: Table
+              title: "Операции и их ресурсные потребности"
+              dataSource: "Q-PROD-03-02"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "operation_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "routing_name"
+                  title: "Маршрут"
+                  width: 150
+                  sortable: true
+                - field: "sequence_no"
+                  title: "№"
+                  width: 60
+                  align: "center"
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 200
+                  sortable: true
+                - field: "work_center_name"
+                  title: "Рабочий центр"
+                  width: 150
+                - field: "resources_json"
+                  title: "Ресурсы"
+                  width: 200
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-07, OP-PROD-09, OP-PROD-10, OP-PROD-11]
+              
+            - widget_id: W03-03
+              type: Chart
+              title: "Доля операций с контролем качества"
+              subtitle: "покрытие контролем"
+              dataSource: "Q-PROD-03-03"
+              chartType: "pie"
+              category: "category"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "operation_count"
+                  label: "Количество операций"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-07, OP-PROD-13]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-04: Спецификации изделий (BOM)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-04
+      dashboard: "Спецификации изделий (BOM)"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-bom"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W04-01
+              type: Indicator
+              title: "Количество спецификаций"
+              subtitle: "в системе"
+              dataSource: "Q-PROD-04-01"
+              field: "bom_count"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-15]
+
+        - id: "sec-analytics-bom"
+          type: "analytics"
+          title: "Аналитика спецификаций"
+          widgets:
+            - widget_id: W04-02
+              type: Table
+              title: "Нормы расхода материалов по спецификациям"
+              subtitle: "нормативы"
+              dataSource: "Q-PROD-04-02"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "bom_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "bom_name"
+                  title: "Изделие"
+                  width: 180
+                  sortable: true
+                - field: "material_id"
+                  title: "ID материала"
+                  width: 100
+                  align: "center"
+                - field: "consumption_rate"
+                  title: "Норма расхода"
+                  width: 120
+                  align: "right"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-17, OP-PROD-18, OP-PROD-19]
+              
+            - widget_id: W04-03
+              type: Chart
+              title: "ТОП изделий по количеству компонентов"
+              subtitle: "сложность"
+              dataSource: "Q-PROD-04-03"
+              chartType: "bar"
+              category: "bom_name"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "component_count"
+                  label: "Количество компонентов"
+                  color: "#a78bfa"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-17]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-05: Контроль качества (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-05
+      dashboard: "Контроль качества"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-quality-tech"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W05-01
+              type: Indicator
+              title: "Операций, не прошедших контроль"
+              dataSource: "Q-PROD-05-01"
+              field: "fail_rate_percent"
+              aggregation: "SUM"
+              format: "percent"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-39]
+
+        - id: "sec-alerts-quality-tech"
+          type: "alerts"
+          title: "Операции с отклонениями"
+          widgets:
+            - widget_id: W05-04
+              type: Table
+              title: "Операции с непройденным контролем"
+              subtitle: "требуют доработки"
+              dataSource: "Q-PROD-05-04"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "execution_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 200
+                  sortable: true
+                - field: "work_center_name"
+                  title: "Рабочий центр"
+                  width: 150
+                - field: "performed_by_employee_id"
+                  title: "Исполнитель"
+                  width: 100
+                  align: "center"
+                - field: "quality_point_id"
+                  title: "ID контроля"
+                  width: 100
+                  align: "center"
+                - field: "comment"
+                  title: "Причина"
+                  width: 200
+                - field: "end_time"
+                  title: "Время"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 8 }
+              linked_operations: [OP-PROD-39, OP-PROD-41]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-06: Анализ технологических параметров
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-06
+      dashboard: "Анализ технологических параметров"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-params"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W06-02
+              type: Indicator
+              title: "Количество отклонений параметров"
+              subtitle: "за период"
+              dataSource: "Q-PROD-06-02"
+              field: "deviations_count"
+              aggregation: "SUM"
+              format: "number"
+              conditions:
+                - field: "value"
+                  operator: "<="
+                  value: 5
+                  status: "success"
+                  label: "Норма"
+                - field: "value"
+                  operator: "between"
+                  value: 6
+                  value2: 15
+                  status: "warning"
+                  label: "Требует внимания"
+                - field: "value"
+                  operator: ">"
+                  value: 15
+                  status: "danger"
+                  label: "Критично"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-08, OP-PROD-38]
+
+        - id: "sec-alerts-params"
+          type: "alerts"
+          title: "Отклонения параметров"
+          widgets:
+            - widget_id: W06-01
+              type: Table
+              title: "Операции с отклонением фактических параметров сверх допуска"
+              subtitle: "требуют корректировки"
+              dataSource: "Q-PROD-06-01"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "execution_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 180
+                  sortable: true
+                - field: "parameter_name"
+                  title: "Параметр"
+                  width: 150
+                - field: "measured_value"
+                  title: "Факт"
+                  width: 100
+                  align: "right"
+                - field: "target_value"
+                  title: "Цель"
+                  width: 100
+                  align: "right"
+                - field: "tolerance"
+                  title: "Допуск"
+                  width: 100
+                  align: "right"
+                - field: "start_time"
+                  title: "Время"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 8 }
+              linked_operations: [OP-PROD-08, OP-PROD-38]
+
+
+# =====================================================================================
+# РОЛЬ: Мастер
+# =====================================================================================
+- role: "мастер"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-01: Производственные заказы (сокращенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-01
+      dashboard: "Производственные заказы"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-orders-master"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W01-01
+              type: Indicator
+              title: "Активные заказы"
+              dataSource: "Q-PROD-01-01"
+              field: "active_orders"
+              aggregation: "SUM"
+              format: "number"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-20, OP-PROD-21, OP-PROD-24]
+
+        - id: "sec-alerts-orders-master"
+          type: "alerts"
+          title: "Реестр заказов"
+          widgets:
+            - widget_id: W01-04
+              type: Table
+              title: "Реестр активных заказов"
+              dataSource: "Q-PROD-01-04"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "production_order_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "bom_name"
+                  title: "Изделие"
+                  width: 180
+                  sortable: true
+                - field: "routing_name"
+                  title: "Маршрут"
+                  width: 150
+                - field: "planned_quantity"
+                  title: "Количество"
+                  width: 100
+                  align: "right"
+                - field: "planned_start_date"
+                  title: "Старт"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "planned_end_date"
+                  title: "Финиш"
+                  width: 120
+                  formatter: "date"
+                  sortable: true
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "confirmed": "info"
+                      "in_progress": "warning"
+                      "on_hold": "danger"
+              grid: { w: 8 }
+              linked_operations: [OP-PROD-20, OP-PROD-23]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-03: Технологическая матрица (сокращенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-03
+      dashboard: "Технологическая матрица"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-tech-master"
+          type: "analytics"
+          title: "Технологические операции"
+          widgets:
+            - widget_id: W03-02
+              type: Table
+              title: "Операции и их ресурсные потребности"
+              dataSource: "Q-PROD-03-02"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "operation_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "routing_name"
+                  title: "Маршрут"
+                  width: 150
+                  sortable: true
+                - field: "sequence_no"
+                  title: "№"
+                  width: 60
+                  align: "center"
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 200
+                  sortable: true
+                - field: "work_center_name"
+                  title: "Рабочий центр"
+                  width: 150
+                - field: "resources_json"
+                  title: "Ресурсы"
+                  width: 200
+              grid: { w: 12 }
+              linked_operations: [OP-PROD-07, OP-PROD-09, OP-PROD-10, OP-PROD-11]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-05: Контроль качества (сокращенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-05
+      dashboard: "Контроль качества"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-quality-master"
+          type: "analytics"
+          title: "Карта брака"
+          widgets:
+            - widget_id: W05-03
+              type: Chart
+              title: "Карта брака по рабочим центрам"
+              subtitle: "тепловая карта"
+              dataSource: "Q-PROD-05-03"
+              chartType: "heatmap"
+              category: "work_center_name"
+              showLegend: true
+              height: 400
+              leftAxis:
+                format: "number"
+              series:
+                - field: "defect_count"
+                  label: "Количество дефектов"
+                  color: "#f87171"
+              grid: { w: 12 }
+              linked_operations: [OP-PROD-39]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-07: Загруженность рабочих центров
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-07
+      dashboard: "Загруженность рабочих центров"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-work-centers-master"
+          type: "analytics"
+          title: "Аналитика загрузки"
+          widgets:
+            - widget_id: W07-01
+              type: Chart
+              title: "Время выполнения операций по рабочим центрам"
+              dataSource: "Q-PROD-07-01"
+              chartType: "bar"
+              category: "work_center_name"
+              gradient: true
+              showGrid: true
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+                unit: "ч"
+              series:
+                - field: "busy_hours"
+                  label: "Занятость (ч)"
+                  color: "#60a5fa"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-35, OP-PROD-40]
+              
+            - widget_id: W07-02
+              type: Table
+              title: "Выполненные операции по рабочим центрам"
+              dataSource: "Q-PROD-07-02"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "work_center_name"
+                  title: "Рабочий центр"
+                  width: 150
+                  sortable: true
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 200
+                  sortable: true
+                - field: "performed_by_employee_id"
+                  title: "Исполнитель"
+                  width: 100
+                  align: "center"
+                - field: "start_time"
+                  title: "Начало"
+                  width: 150
+                  formatter: "datetime"
+                  sortable: true
+                - field: "end_time"
+                  title: "Конец"
+                  width: 150
+                  formatter: "datetime"
+                  sortable: true
+                - field: "status_id"
+                  title: "Статус"
+                  width: 120
+                  widget:
+                    type: "status"
+                    statusMap:
+                      "in_progress": "warning"
+                      "completed": "success"
+                      "failed": "danger"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-35, OP-PROD-36, OP-PROD-40]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-08: Перерасход материалов (сокращенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-08
+      dashboard: "Перерасход материалов"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-overrun-master"
+          type: "analytics"
+          title: "Аналитика перерасхода"
+          widgets:
+            - widget_id: W08-01
+              type: Chart
+              title: "Перерасход материалов (факт vs норма) по заказам"
+              dataSource: "Q-PROD-08-01"
+              chartType: "bar"
+              category: "production_order_id"
+              showGrid: true
+              showLegend: true
+              height: 400
+              leftAxis:
+                format: "number"
+              series:
+                - field: "planned_quantity"
+                  label: "Норма"
+                  color: "#60a5fa"
+                - field: "actual_quantity"
+                  label: "Факт"
+                  color: "#f87171"
+                - field: "overrun_quantity"
+                  label: "Перерасход"
+                  color: "#fbbf24"
+              grid: { w: 12 }
+              linked_operations: [OP-PROD-17, OP-PROD-18, OP-PROD-34]
+
+
+# =====================================================================================
+# РОЛЬ: Контролер
+# =====================================================================================
+- role: "контролер"
+  dashboards:
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-03: Технологическая матрица (сокращенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-03
+      dashboard: "Технологическая матрица"
+      layout: "three-zones"
+      sections:
+        - id: "sec-analytics-tech-controller"
+          type: "analytics"
+          title: "Контроль качества в технологии"
+          widgets:
+            - widget_id: W03-03
+              type: Chart
+              title: "Доля операций с контролем качества"
+              dataSource: "Q-PROD-03-03"
+              chartType: "pie"
+              category: "category"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "operation_count"
+                  label: "Количество операций"
+              grid: { w: 6 }
+              linked_operations: [OP-PROD-07, OP-PROD-13]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-05: Контроль качества (расширенная)
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-05
+      dashboard: "Контроль качества"
+      layout: "three-zones"
+      sections:
+        - id: "sec-kpi-quality-controller"
+          type: "kpi"
+          title: "Ключевые показатели"
+          widgets:
+            - widget_id: W05-01
+              type: Indicator
+              title: "Операций, не прошедших контроль"
+              dataSource: "Q-PROD-05-01"
+              field: "fail_rate_percent"
+              aggregation: "SUM"
+              format: "percent"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-39]
+
+        - id: "sec-analytics-quality-controller"
+          type: "analytics"
+          title: "Аналитика качества"
+          widgets:
+            - widget_id: W05-02
+              type: Chart
+              title: "Годно / Брак"
+              dataSource: "Q-PROD-05-02"
+              chartType: "pie"
+              category: "quality_category"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "result_count"
+                  label: "Количество"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-39]
+              
+            - widget_id: W05-03
+              type: Chart
+              title: "Карта брака по рабочим центрам"
+              dataSource: "Q-PROD-05-03"
+              chartType: "heatmap"
+              category: "work_center_name"
+              showLegend: true
+              height: 320
+              leftAxis:
+                format: "number"
+              series:
+                - field: "defect_count"
+                  label: "Количество дефектов"
+                  color: "#f87171"
+              grid: { w: 4 }
+              linked_operations: [OP-PROD-39]
+
+        - id: "sec-alerts-quality-controller"
+          type: "alerts"
+          title: "Операции с отклонениями"
+          widgets:
+            - widget_id: W05-04
+              type: Table
+              title: "Операции с непройденным контролем"
+              dataSource: "Q-PROD-05-04"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "execution_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 200
+                  sortable: true
+                - field: "work_center_name"
+                  title: "Рабочий центр"
+                  width: 150
+                - field: "performed_by_employee_id"
+                  title: "Исполнитель"
+                  width: 100
+                  align: "center"
+                - field: "quality_point_id"
+                  title: "ID контроля"
+                  width: 100
+                  align: "center"
+                - field: "comment"
+                  title: "Причина"
+                  width: 200
+                - field: "end_time"
+                  title: "Время"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 8 }
+              linked_operations: [OP-PROD-39, OP-PROD-41]
+
+    # -------------------------------------------------------------------------------
+    # DASH-PROD-06: Анализ технологических параметров
+    # -------------------------------------------------------------------------------
+    - dashboard_code: DASH-PROD-06
+      dashboard: "Анализ технологических параметров"
+      layout: "three-zones"
+      sections:
+        - id: "sec-alerts-params-controller"
+          type: "alerts"
+          title: "Отклонения параметров"
+          widgets:
+            - widget_id: W06-01
+              type: Table
+              title: "Операции с отклонением фактических параметров сверх допуска"
+              dataSource: "Q-PROD-06-01"
+              pageSize: 20
+              enableSearch: true
+              enableExport: true
+              columns:
+                - field: "execution_id"
+                  title: "ID"
+                  width: 80
+                  align: "center"
+                - field: "operation_name"
+                  title: "Операция"
+                  width: 180
+                  sortable: true
+                - field: "parameter_name"
+                  title: "Параметр"
+                  width: 150
+                - field: "measured_value"
+                  title: "Факт"
+                  width: 100
+                  align: "right"
+                - field: "target_value"
+                  title: "Цель"
+                  width: 100
+                  align: "right"
+                - field: "tolerance"
+                  title: "Допуск"
+                  width: 100
+                  align: "right"
+                - field: "start_time"
+                  title: "Время"
+                  width: 130
+                  formatter: "datetime"
+                  sortable: true
+              grid: { w: 12 }
+              linked_operations: [OP-PROD-08, OP-PROD-38]

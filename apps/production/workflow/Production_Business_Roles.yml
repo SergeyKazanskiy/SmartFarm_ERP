@@ -1,0 +1,950 @@
+# =====================================================================================
+# Production — каталог форм для бизнес-операций
+# Источник: Production_Business_Queries.sql (43 операции OP-PROD-01…43, схема v1.2).
+#
+# НАЗНАЧЕНИЕ ФАЙЛА: по каждой операции описаны поля формы (что показать пользователю
+# для заполнения/выбора) и событие, которое запускает соответствующий SQL-запрос
+# из Production_Business_Queries.sql. Frontend (Next.js/React Native) рендерит форму
+# по полям ниже; backend (FastAPI) при получении события выполняет ровно тот запрос,
+# что помечен комментарием "-- OP-PROD-XX" в SQL-файле.
+#
+# Операции сгруппированы в 5 процессов (это естественные кандидаты на kb_process /
+# kb_task_type в KnowledgeBase — см. Construction_TaskCentric_Guide.md, раздел про
+# то, как процесс специализируется инструкцией):
+#   PROC-PROD-01  Технологическая подготовка
+#   PROC-PROD-02  Спецификация изделия (BOM)
+#   PROC-PROD-03  Производственный заказ   (жизненный цикл со статусами)
+#   PROC-PROD-04  Наряд на производство     (жизненный цикл со статусами)
+#   PROC-PROD-05  Выполнение операции       (жизненный цикл со статусами)
+#
+# СТРУКТУРА ОПЕРАЦИИ:
+#   op_code            — код операции, соответствует комментарию в SQL-файле
+#   name                — название операции (заголовок формы/пункта меню)
+#   table               — таблица, в которую пишет операция
+#   type                — insert | update
+#   role                — кто выполняет (core_process_role); если не указана на
+#                         уровне операции — берётся role процесса
+#   event               — имя события, которое отправляет frontend при нажатии кнопки
+#                         (формат Module.entity.action — как в CapabilityRegistry)
+#   button              — подпись кнопки на форме
+#   precondition        — условие, при котором кнопка вообще показывается/активна
+#                         (обычно текущий status_id записи); отсутствует у операций
+#                         без ограничения по статусу
+#   fields              — поля формы. У каждого поля:
+#       field           — имя параметра, 1:1 совпадает с :param в SQL
+#       label           — подпись поля на форме
+#       type            — text | textarea | number | date | datetime | select |
+#                         checkbox | repeater | hidden
+#       required        — обязательно ли для отправки формы
+#       source          — для select/repeater-подполей: таблица и поля для списка
+#                         выбора (value_field отдаётся в SQL, label_field показывается
+#                         пользователю)
+#       fields          — только для type=repeater: описание полей одной строки списка
+#
+# Поля с type=hidden в форме не показываются пользователю: id-поля заполняются
+# приложением (str(uuid4())), поля с фиксированным значением (например статус
+# 'draft' при создании) прописаны прямо в SQL и в форму не попадают вовсе —
+# в списке fields ниже их нет.
+# =====================================================================================
+
+process: PROC-PROD-01
+process_name: "Технологическая подготовка"
+role: "технолог"
+operations:
+
+  - op_code: OP-PROD-01
+    name: "Создание технологии"
+    table: prod_technology
+    type: insert
+    event: "Production.technology.create"
+    button: "Создать технологию"
+    fields:
+      - field: technology_name
+        label: "Название технологии"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-02
+    name: "Переименование технологии"
+    table: prod_technology
+    type: update
+    event: "Production.technology.rename"
+    button: "Сохранить"
+    fields:
+      - field: technology_id
+        label: "Технология"
+        type: select
+        required: true
+        source: { table: prod_technology, value_field: technology_id, label_field: technology_name }
+      - field: technology_name
+        label: "Новое название"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-03
+    name: "Создание технологического маршрута"
+    table: prod_routing
+    type: insert
+    event: "Production.routing.create"
+    button: "Создать маршрут"
+    fields:
+      - field: technology_id
+        label: "Технология"
+        type: select
+        required: true
+        source: { table: prod_technology, value_field: technology_id, label_field: technology_name }
+      - field: routing_name
+        label: "Название маршрута"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-04
+    name: "Переименование маршрута / смена технологии маршрута"
+    table: prod_routing
+    type: update
+    event: "Production.routing.update"
+    button: "Сохранить"
+    fields:
+      - field: routing_id
+        label: "Маршрут"
+        type: select
+        required: true
+        source: { table: prod_routing, value_field: routing_id, label_field: routing_name }
+      - field: routing_name
+        label: "Название маршрута"
+        type: text
+        required: true
+      - field: technology_id
+        label: "Технология"
+        type: select
+        required: true
+        source: { table: prod_technology, value_field: technology_id, label_field: technology_name }
+
+  - op_code: OP-PROD-05
+    name: "Создание рабочего центра"
+    table: prod_work_center
+    type: insert
+    event: "Production.workCenter.create"
+    button: "Создать рабочий центр"
+    fields:
+      - field: work_center_name
+        label: "Название рабочего центра"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-06
+    name: "Переименование рабочего центра"
+    table: prod_work_center
+    type: update
+    event: "Production.workCenter.rename"
+    button: "Сохранить"
+    fields:
+      - field: work_center_id
+        label: "Рабочий центр"
+        type: select
+        required: true
+        source: { table: prod_work_center, value_field: work_center_id, label_field: work_center_name }
+      - field: work_center_name
+        label: "Новое название"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-07
+    name: "Добавление операции в маршрут"
+    table: prod_operation_definition
+    type: insert
+    event: "Production.operation.create"
+    button: "Добавить операцию"
+    fields:
+      - field: routing_id
+        label: "Маршрут"
+        type: select
+        required: true
+        source: { table: prod_routing, value_field: routing_id, label_field: routing_name }
+      - field: operation_name
+        label: "Название операции"
+        type: text
+        required: true
+      - field: sequence_no
+        label: "Порядковый номер"
+        type: number
+        required: true
+      - field: work_center_id
+        label: "Рабочий центр по умолчанию"
+        type: select
+        required: false
+        source: { table: prod_work_center, value_field: work_center_id, label_field: work_center_name }
+      - field: resources_json
+        label: "Потребность в ресурсах"
+        type: repeater
+        required: false
+        fields:
+          - field: resource_type
+            label: "Тип ресурса"
+            type: select
+            options: [employee, asset, material]
+          - field: quantity
+            label: "Количество"
+            type: number
+      - field: parameters_json
+        label: "Технологические параметры"
+        type: repeater
+        required: false
+        fields:
+          - field: name
+            label: "Параметр"
+            type: text
+          - field: target_value
+            label: "Целевое значение"
+            type: number
+          - field: tolerance
+            label: "Допуск"
+            type: number
+
+  - op_code: OP-PROD-08
+    name: "Изменение технологических параметров операции"
+    table: prod_operation_definition
+    type: update
+    event: "Production.operation.updateParameters"
+    button: "Сохранить параметры"
+    fields:
+      - field: operation_id
+        label: "Операция"
+        type: select
+        required: true
+        source: { table: prod_operation_definition, value_field: operation_id, label_field: operation_name }
+      - field: parameters_json
+        label: "Технологические параметры"
+        type: repeater
+        required: true
+        fields:
+          - field: name
+            label: "Параметр"
+            type: text
+          - field: target_value
+            label: "Целевое значение"
+            type: number
+          - field: tolerance
+            label: "Допуск"
+            type: number
+
+  - op_code: OP-PROD-09
+    name: "Изменение потребности операции в ресурсах"
+    table: prod_operation_definition
+    type: update
+    event: "Production.operation.updateResources"
+    button: "Сохранить ресурсы"
+    fields:
+      - field: operation_id
+        label: "Операция"
+        type: select
+        required: true
+        source: { table: prod_operation_definition, value_field: operation_id, label_field: operation_name }
+      - field: resources_json
+        label: "Потребность в ресурсах"
+        type: repeater
+        required: true
+        fields:
+          - field: resource_type
+            label: "Тип ресурса"
+            type: select
+            options: [employee, asset, material]
+          - field: quantity
+            label: "Количество"
+            type: number
+
+  - op_code: OP-PROD-10
+    name: "Перенос операции на другой рабочий центр"
+    table: prod_operation_definition
+    type: update
+    event: "Production.operation.moveWorkCenter"
+    button: "Перенести"
+    fields:
+      - field: operation_id
+        label: "Операция"
+        type: select
+        required: true
+        source: { table: prod_operation_definition, value_field: operation_id, label_field: operation_name }
+      - field: work_center_id
+        label: "Новый рабочий центр"
+        type: select
+        required: true
+        source: { table: prod_work_center, value_field: work_center_id, label_field: work_center_name }
+
+  - op_code: OP-PROD-11
+    name: "Изменение порядка операции в маршруте"
+    table: prod_operation_definition
+    type: update
+    event: "Production.operation.reorder"
+    button: "Сохранить порядок"
+    fields:
+      - field: operation_id
+        label: "Операция"
+        type: select
+        required: true
+        source: { table: prod_operation_definition, value_field: operation_id, label_field: operation_name }
+      - field: sequence_no
+        label: "Новый порядковый номер"
+        type: number
+        required: true
+
+  - op_code: OP-PROD-12
+    name: "Переименование операции"
+    table: prod_operation_definition
+    type: update
+    event: "Production.operation.rename"
+    button: "Сохранить"
+    fields:
+      - field: operation_id
+        label: "Операция"
+        type: select
+        required: true
+        source: { table: prod_operation_definition, value_field: operation_id, label_field: operation_name }
+      - field: operation_name
+        label: "Новое название"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-13
+    name: "Добавление контрольной точки качества к операции"
+    table: prod_quality_point
+    type: insert
+    event: "Production.qualityPoint.create"
+    button: "Добавить контрольную точку"
+    fields:
+      - field: operation_id
+        label: "Операция"
+        type: select
+        required: true
+        source: { table: prod_operation_definition, value_field: operation_id, label_field: operation_name }
+      - field: quality_point_name
+        label: "Название контрольной точки"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-14
+    name: "Переименование контрольной точки качества"
+    table: prod_quality_point
+    type: update
+    event: "Production.qualityPoint.rename"
+    button: "Сохранить"
+    fields:
+      - field: quality_point_id
+        label: "Контрольная точка"
+        type: select
+        required: true
+        source: { table: prod_quality_point, value_field: quality_point_id, label_field: quality_point_name }
+      - field: quality_point_name
+        label: "Новое название"
+        type: text
+        required: true
+
+---
+process: PROC-PROD-02
+process_name: "Спецификация изделия (BOM)"
+role: "технолог"
+operations:
+
+  - op_code: OP-PROD-15
+    name: "Создание спецификации изделия"
+    table: prod_bom
+    type: insert
+    event: "Production.bom.create"
+    button: "Создать спецификацию"
+    fields:
+      - field: product_material_id
+        label: "Готовое изделие"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: bom_name
+        label: "Название спецификации"
+        type: text
+        required: true
+
+  - op_code: OP-PROD-16
+    name: "Изменение спецификации"
+    table: prod_bom
+    type: update
+    event: "Production.bom.update"
+    button: "Сохранить"
+    fields:
+      - field: bom_id
+        label: "Спецификация"
+        type: select
+        required: true
+        source: { table: prod_bom, value_field: bom_id, label_field: bom_name }
+      - field: bom_name
+        label: "Название"
+        type: text
+        required: true
+      - field: product_material_id
+        label: "Готовое изделие"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+
+  - op_code: OP-PROD-17
+    name: "Добавление компонента в спецификацию"
+    table: prod_bom_item
+    type: insert
+    event: "Production.bomItem.create"
+    button: "Добавить компонент"
+    fields:
+      - field: bom_id
+        label: "Спецификация"
+        type: select
+        required: true
+        source: { table: prod_bom, value_field: bom_id, label_field: bom_name }
+      - field: material_id
+        label: "Материал/компонент"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+      - field: quantity
+        label: "Норма расхода на единицу изделия"
+        type: number
+        required: true
+      - field: unit_cost
+        label: "Плановая цена за единицу"
+        type: number
+        required: false
+
+  - op_code: OP-PROD-18
+    name: "Изменение нормы расхода компонента"
+    table: prod_bom_item
+    type: update
+    event: "Production.bomItem.updateQuantity"
+    button: "Сохранить норму"
+    fields:
+      - field: bom_item_id
+        label: "Компонент спецификации"
+        type: select
+        required: true
+        source: { table: prod_bom_item, value_field: bom_item_id, label_field: material_id }
+      - field: quantity
+        label: "Новая норма расхода"
+        type: number
+        required: true
+
+  - op_code: OP-PROD-19
+    name: "Замена компонента в спецификации"
+    table: prod_bom_item
+    type: update
+    event: "Production.bomItem.replaceMaterial"
+    button: "Заменить компонент"
+    fields:
+      - field: bom_item_id
+        label: "Компонент спецификации"
+        type: select
+        required: true
+        source: { table: prod_bom_item, value_field: bom_item_id, label_field: material_id }
+      - field: material_id
+        label: "Новый материал"
+        type: select
+        required: true
+        source: { table: wms_material, value_field: material_id, label_field: material_name }
+
+  - op_code: OP-PROD-43
+    name: "Изменение плановой цены компонента"
+    table: prod_bom_item
+    type: update
+    event: "Production.bomItem.updateCost"
+    button: "Сохранить цену"
+    fields:
+      - field: bom_item_id
+        label: "Компонент спецификации"
+        type: select
+        required: true
+        source: { table: prod_bom_item, value_field: bom_item_id, label_field: material_id }
+      - field: unit_cost
+        label: "Новая плановая цена за единицу"
+        type: number
+        required: true
+
+---
+process: PROC-PROD-03
+process_name: "Производственный заказ"
+statuses: [draft, confirmed, in_progress, completed, cancelled]
+operations:
+
+  - op_code: OP-PROD-20
+    name: "Создание заказа на производство"
+    table: prod_production_order
+    type: insert
+    role: "планировщик"
+    event: "Production.productionOrder.create"
+    button: "Создать заказ"
+    fields:
+      - field: bom_id
+        label: "Спецификация изделия"
+        type: select
+        required: true
+        source: { table: prod_bom, value_field: bom_id, label_field: bom_name }
+      - field: routing_id
+        label: "Технологический маршрут"
+        type: select
+        required: true
+        source: { table: prod_routing, value_field: routing_id, label_field: routing_name }
+      - field: planned_quantity
+        label: "Плановое количество"
+        type: number
+        required: true
+      - field: planned_start_date
+        label: "Плановая дата начала"
+        type: date
+        required: false
+      - field: planned_end_date
+        label: "Плановая дата окончания"
+        type: date
+        required: false
+
+  - op_code: OP-PROD-21
+    name: "Подтверждение заказа на производство"
+    table: prod_production_order
+    type: update
+    role: ["планировщик", "директор"]
+    event: "Production.productionOrder.confirm"
+    button: "Подтвердить заказ"
+    precondition: "status_id = draft"
+    fields:
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+
+  - op_code: OP-PROD-22
+    name: "Изменение планового количества и сроков заказа"
+    table: prod_production_order
+    type: update
+    role: "планировщик"
+    event: "Production.productionOrder.updatePlan"
+    button: "Сохранить изменения"
+    precondition: "status_id in (draft, confirmed)"
+    fields:
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+      - field: planned_quantity
+        label: "Плановое количество"
+        type: number
+        required: true
+      - field: planned_start_date
+        label: "Плановая дата начала"
+        type: date
+        required: false
+      - field: planned_end_date
+        label: "Плановая дата окончания"
+        type: date
+        required: false
+
+  - op_code: OP-PROD-23
+    name: "Смена спецификации или маршрута заказа"
+    table: prod_production_order
+    type: update
+    role: "планировщик"
+    event: "Production.productionOrder.updateBomRouting"
+    button: "Сохранить"
+    precondition: "status_id in (draft, confirmed)"
+    fields:
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+      - field: bom_id
+        label: "Спецификация изделия"
+        type: select
+        required: true
+        source: { table: prod_bom, value_field: bom_id, label_field: bom_name }
+      - field: routing_id
+        label: "Технологический маршрут"
+        type: select
+        required: true
+        source: { table: prod_routing, value_field: routing_id, label_field: routing_name }
+
+  - op_code: OP-PROD-24
+    name: 'Перевод заказа в статус "в производстве"'
+    table: prod_production_order
+    type: update
+    role: "планировщик"
+    event: "Production.productionOrder.start"
+    button: "Запустить в производство"
+    note: "Обычно вызывается автоматически из OP-PROD-28 (запуск первого наряда), а не вручную с формы."
+    fields:
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+
+  - op_code: OP-PROD-25
+    name: "Закрытие заказа на производство"
+    table: prod_production_order
+    type: update
+    role: "планировщик"
+    event: "Production.productionOrder.complete"
+    button: "Закрыть заказ"
+    fields:
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+
+  - op_code: OP-PROD-26
+    name: "Отмена заказа на производство"
+    table: prod_production_order
+    type: update
+    role: ["планировщик", "директор"]
+    event: "Production.productionOrder.cancel"
+    button: "Отменить заказ"
+    precondition: "status_id in (draft, confirmed)"
+    fields:
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+      - field: reason
+        label: "Причина отмены"
+        type: textarea
+        required: false
+        note: "Не пишется в БД напрямую — фиксируется в core_note/core_audit_log при отмене."
+
+---
+process: PROC-PROD-04
+process_name: "Наряд на производство"
+role: "мастер"
+statuses: [planned, in_progress, on_hold, completed, cancelled]
+operations:
+
+  - op_code: OP-PROD-27
+    name: "Формирование наряда в рамках заказа"
+    table: prod_work_order
+    type: insert
+    event: "Production.workOrder.create"
+    button: "Создать наряд"
+    fields:
+      - field: production_order_id
+        label: "Заказ на производство"
+        type: select
+        required: true
+        source: { table: prod_production_order, value_field: production_order_id, label_field: production_order_id }
+      - field: planned_start
+        label: "Плановое начало"
+        type: datetime
+        required: false
+      - field: planned_finish
+        label: "Плановое завершение"
+        type: datetime
+        required: false
+
+  - op_code: OP-PROD-28
+    name: "Запуск наряда в работу"
+    table: prod_work_order
+    type: update
+    event: "Production.workOrder.start"
+    button: "Запустить наряд"
+    precondition: "status_id = planned"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+
+  - op_code: OP-PROD-29
+    name: "Приостановка наряда"
+    table: prod_work_order
+    type: update
+    event: "Production.workOrder.hold"
+    button: "Приостановить"
+    precondition: "status_id = in_progress"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+      - field: reason
+        label: "Причина приостановки"
+        type: textarea
+        required: true
+        note: "Фиксируется в core_note, привязанной к наряду."
+
+  - op_code: OP-PROD-30
+    name: "Возобновление наряда после приостановки"
+    table: prod_work_order
+    type: update
+    event: "Production.workOrder.resume"
+    button: "Возобновить"
+    precondition: "status_id = on_hold"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+
+  - op_code: OP-PROD-31
+    name: "Завершение наряда"
+    table: prod_work_order
+    type: update
+    event: "Production.workOrder.complete"
+    button: "Завершить наряд"
+    precondition: "status_id in (in_progress, on_hold)"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+
+  - op_code: OP-PROD-32
+    name: "Отмена наряда"
+    table: prod_work_order
+    type: update
+    event: "Production.workOrder.cancel"
+    button: "Отменить наряд"
+    precondition: "status_id = planned"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+
+  - op_code: OP-PROD-33
+    name: "Изменение плановых сроков наряда"
+    table: prod_work_order
+    type: update
+    event: "Production.workOrder.updateSchedule"
+    button: "Сохранить сроки"
+    precondition: "status_id in (planned, on_hold)"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+      - field: planned_start
+        label: "Плановое начало"
+        type: datetime
+        required: true
+      - field: planned_finish
+        label: "Плановое завершение"
+        type: datetime
+        required: true
+
+  - op_code: OP-PROD-34
+    name: "Регистрация фактического расхода материалов по наряду"
+    table: prod_work_order
+    type: update
+    event: "Production.workOrder.registerMaterials"
+    button: "Сохранить расход материалов"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+      - field: actual_materials_json
+        label: "Фактический расход материалов"
+        type: repeater
+        required: true
+        fields:
+          - field: material_id
+            label: "Материал"
+            type: select
+            source: { table: wms_material, value_field: material_id, label_field: material_name }
+          - field: quantity
+            label: "Количество"
+            type: number
+          - field: wms_reservation_id
+            label: "Резервирование (WMS)"
+            type: select
+            source: { table: wms_material_reservation, value_field: reservation_id, label_field: reservation_id }
+
+---
+process: PROC-PROD-05
+process_name: "Выполнение операции"
+statuses: [in_progress, completed, rework, cancelled]
+operations:
+
+  - op_code: OP-PROD-35
+    name: "Регистрация начала выполнения операции"
+    table: prod_operation_execution
+    type: insert
+    role: "мастер"
+    event: "Production.operationExecution.start"
+    button: "Начать операцию"
+    fields:
+      - field: work_order_id
+        label: "Наряд"
+        type: select
+        required: true
+        source: { table: prod_work_order, value_field: work_order_id, label_field: work_order_id }
+      - field: operation_id
+        label: "Операция"
+        type: select
+        required: true
+        source: { table: prod_operation_definition, value_field: operation_id, label_field: operation_name }
+      - field: work_center_id
+        label: "Рабочий центр"
+        type: select
+        required: false
+        source: { table: prod_work_center, value_field: work_center_id, label_field: work_center_name }
+      - field: performed_by_employee_id
+        label: "Исполнитель"
+        type: select
+        required: false
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-PROD-36
+    name: "Назначение/смена исполнителя операции"
+    table: prod_operation_execution
+    type: update
+    role: "мастер"
+    event: "Production.operationExecution.assignEmployee"
+    button: "Назначить исполнителя"
+    fields:
+      - field: execution_id
+        label: "Выполнение операции"
+        type: select
+        required: true
+        source: { table: prod_operation_execution, value_field: execution_id, label_field: execution_id }
+      - field: performed_by_employee_id
+        label: "Исполнитель"
+        type: select
+        required: true
+        source: { table: hr_employee, value_field: employee_id, label_field: personnel_number }
+
+  - op_code: OP-PROD-37
+    name: "Перевод операции на фактически другой рабочий центр"
+    table: prod_operation_execution
+    type: update
+    role: "мастер"
+    event: "Production.operationExecution.moveWorkCenter"
+    button: "Изменить рабочий центр"
+    fields:
+      - field: execution_id
+        label: "Выполнение операции"
+        type: select
+        required: true
+        source: { table: prod_operation_execution, value_field: execution_id, label_field: execution_id }
+      - field: work_center_id
+        label: "Фактический рабочий центр"
+        type: select
+        required: true
+        source: { table: prod_work_center, value_field: work_center_id, label_field: work_center_name }
+
+  - op_code: OP-PROD-38
+    name: "Фиксация фактических измерений технологических параметров"
+    table: prod_operation_execution
+    type: update
+    role: ["мастер", "технолог"]
+    event: "Production.operationExecution.recordMeasurements"
+    button: "Сохранить измерения"
+    fields:
+      - field: execution_id
+        label: "Выполнение операции"
+        type: select
+        required: true
+        source: { table: prod_operation_execution, value_field: execution_id, label_field: execution_id }
+      - field: measurements_json
+        label: "Фактические измерения"
+        type: repeater
+        required: true
+        fields:
+          - field: parameter_name
+            label: "Параметр"
+            type: text
+          - field: measured_value
+            label: "Измеренное значение"
+            type: number
+          - field: measured_at
+            label: "Время измерения"
+            type: datetime
+
+  - op_code: OP-PROD-39
+    name: "Фиксация результата контроля качества"
+    table: prod_operation_execution
+    type: update
+    role: "контролер"
+    event: "Production.operationExecution.recordQualityResult"
+    button: "Сохранить результат контроля"
+    fields:
+      - field: execution_id
+        label: "Выполнение операции"
+        type: select
+        required: true
+        source: { table: prod_operation_execution, value_field: execution_id, label_field: execution_id }
+      - field: quality_results_json
+        label: "Результаты контроля качества"
+        type: repeater
+        required: true
+        fields:
+          - field: quality_point_id
+            label: "Контрольная точка"
+            type: select
+            source: { table: prod_quality_point, value_field: quality_point_id, label_field: quality_point_name }
+          - field: is_passed
+            label: "Соответствует норме"
+            type: checkbox
+          - field: comment
+            label: "Комментарий"
+            type: text
+
+  - op_code: OP-PROD-40
+    name: "Завершение выполнения операции"
+    table: prod_operation_execution
+    type: update
+    role: "мастер"
+    event: "Production.operationExecution.complete"
+    button: "Завершить операцию"
+    precondition: "status_id = in_progress"
+    fields:
+      - field: execution_id
+        label: "Выполнение операции"
+        type: select
+        required: true
+        source: { table: prod_operation_execution, value_field: execution_id, label_field: execution_id }
+
+  - op_code: OP-PROD-41
+    name: "Возврат операции на доработку"
+    table: prod_operation_execution
+    type: update
+    role: "контролер"
+    event: "Production.operationExecution.sendToRework"
+    button: "Вернуть на доработку"
+    precondition: "status_id = completed"
+    fields:
+      - field: execution_id
+        label: "Выполнение операции"
+        type: select
+        required: true
+        source: { table: prod_operation_execution, value_field: execution_id, label_field: execution_id }
+      - field: reason
+        label: "Причина возврата"
+        type: textarea
+        required: true
+        note: "Фиксируется в core_note, привязанной к выполнению операции."
+
+  - op_code: OP-PROD-42
+    name: "Отмена выполнения операции"
+    table: prod_operation_execution
+    type: update
+    role: "мастер"
+    event: "Production.operationExecution.cancel"
+    button: "Отменить регистрацию"
+    precondition: "status_id in (in_progress, rework)"
+    fields:
+      - field: execution_id
+        label: "Выполнение операции"
+        type: select
+        required: true
+        source: { table: prod_operation_execution, value_field: execution_id, label_field: execution_id }

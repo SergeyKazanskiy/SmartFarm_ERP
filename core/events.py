@@ -84,3 +84,59 @@ class CPEvents:
     BLACKLIST_REMOVE = "CP.blacklist.remove"
     ATTACHMENT_CREATE = "CP.attachment.create"
     ATTACHMENT_DELETE = "CP.attachment.delete"
+
+
+class ProductionEvents:
+    """События Production-модуля (из Production_Business_Roles.yml)."""
+    # Технологии, маршруты, центры, операции
+    TECHNOLOGY_CREATE = "Production.technology.create"
+    TECHNOLOGY_RENAME = "Production.technology.rename"
+    ROUTING_CREATE = "Production.routing.create"
+    ROUTING_UPDATE = "Production.routing.update"
+    WORK_CENTER_CREATE = "Production.workCenter.create"
+    WORK_CENTER_RENAME = "Production.workCenter.rename"
+    OPERATION_CREATE = "Production.operation.create"
+    OPERATION_UPDATE_PARAMETERS = "Production.operation.updateParameters"
+    OPERATION_UPDATE_RESOURCES = "Production.operation.updateResources"
+    OPERATION_MOVE_WORK_CENTER = "Production.operation.moveWorkCenter"
+    OPERATION_REORDER = "Production.operation.reorder"
+    OPERATION_RENAME = "Production.operation.rename"
+    QUALITY_POINT_CREATE = "Production.qualityPoint.create"
+    QUALITY_POINT_RENAME = "Production.qualityPoint.rename"
+
+    # BOM
+    BOM_CREATE = "Production.bom.create"
+    BOM_UPDATE = "Production.bom.update"
+    BOM_ITEM_CREATE = "Production.bomItem.create"
+    BOM_ITEM_UPDATE_QUANTITY = "Production.bomItem.updateQuantity"
+    BOM_ITEM_REPLACE_MATERIAL = "Production.bomItem.replaceMaterial"
+    BOM_ITEM_UPDATE_COST = "Production.bomItem.updateCost"
+
+    # Производственный заказ
+    PRODUCTION_ORDER_CREATE = "Production.productionOrder.create"
+    PRODUCTION_ORDER_CONFIRM = "Production.productionOrder.confirm"
+    PRODUCTION_ORDER_UPDATE_PLAN = "Production.productionOrder.updatePlan"
+    PRODUCTION_ORDER_UPDATE_BOM_ROUTING = "Production.productionOrder.updateBomRouting"
+    PRODUCTION_ORDER_START = "Production.productionOrder.start"
+    PRODUCTION_ORDER_COMPLETE = "Production.productionOrder.complete"
+    PRODUCTION_ORDER_CANCEL = "Production.productionOrder.cancel"
+
+    # Наряд
+    WORK_ORDER_CREATE = "Production.workOrder.create"
+    WORK_ORDER_START = "Production.workOrder.start"
+    WORK_ORDER_HOLD = "Production.workOrder.hold"
+    WORK_ORDER_RESUME = "Production.workOrder.resume"
+    WORK_ORDER_COMPLETE = "Production.workOrder.complete"
+    WORK_ORDER_CANCEL = "Production.workOrder.cancel"
+    WORK_ORDER_UPDATE_SCHEDULE = "Production.workOrder.updateSchedule"
+    WORK_ORDER_REGISTER_MATERIALS = "Production.workOrder.registerMaterials"
+
+    # Выполнение операции
+    EXECUTION_START = "Production.operationExecution.start"
+    EXECUTION_ASSIGN_EMPLOYEE = "Production.operationExecution.assignEmployee"
+    EXECUTION_MOVE_WORK_CENTER = "Production.operationExecution.moveWorkCenter"
+    EXECUTION_RECORD_MEASUREMENTS = "Production.operationExecution.recordMeasurements"
+    EXECUTION_RECORD_QUALITY = "Production.operationExecution.recordQualityResult"
+    EXECUTION_COMPLETE = "Production.operationExecution.complete"
+    EXECUTION_SEND_TO_REWORK = "Production.operationExecution.sendToRework"
+    EXECUTION_CANCEL = "Production.operationExecution.cancel"
